@@ -617,7 +617,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <div id="lg-err" class="mini" style="color:#A6543F;margin-top:8px;min-height:16px"></div>
     </div>
     <div class="modal-f" style="justify-content:space-between;align-items:center">
-      <span></span>
+      <a href="javascript:void(0)" id="lg-toggle" class="mini" style="text-decoration:underline;cursor:pointer" onclick="modoLogin(!lgNuevo)">¿No tienes cuenta? Crear una</a>
       <button class="btn org" id="lg-btn" onclick="hacerLogin()">Entrar</button>
     </div>
   </div>
@@ -1416,6 +1416,7 @@ function modoLogin(nuevo){
   $('lg-nombre-w').classList.toggle('hide',!nuevo);
   $('lg-btn').textContent=nuevo?'Crear cuenta':'Entrar';
   $('lg-hint').textContent=nuevo?'La primera cuenta que se crea queda como administrador. Las siguientes entran en modo consulta hasta que el administrador les dé permiso.':'Entra con tu correo y contraseña.';
+  $('lg-toggle').textContent=nuevo?'¿Ya tienes cuenta? Entrar':'¿No tienes cuenta? Crear una';
   $('lg-err').textContent='';
 }
 async function hacerLogin(){
