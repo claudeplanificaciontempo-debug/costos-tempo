@@ -474,7 +474,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <thead><tr><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th></tr></thead>
       <tbody id="tb-cat"></tbody>
     </table>
-    <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost">Agregar ítem</button></div>
+    <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost" onclick="agregarMat()">Agregar ítem</button></div>
   </div>
 </section>
 
@@ -1876,6 +1876,14 @@ function cerrar(id){$(id).classList.add('hide')}
 
 /* ====== MAESTROS ====== */
 let catF='all';
+function agregarMat(){
+  const c='NUEVO-'+Date.now().toString(36).toUpperCase();
+  CAT.push({c,d:'Nuevo material',k:'mp',um:'u',p:0,f:hoy()});
+  rowsCatMat('all');draw();rowsProd();
+  const fila=document.querySelector('#tb-cat tr:last-child input.fld');
+  if(fila){fila.scrollIntoView({block:'center'});fila.focus();fila.select&&fila.select()}
+  toast('Material agregado','Edita la descripción, categoría, unidad y costo en la fila nueva (al final de la lista).');
+}
 function rowsCatMat(f){
   catF=f||catF;
   $('tb-cat').innerHTML=CAT.map((x,i)=>({x,i})).filter(({x})=>catF==='all'||x.k===catF).map(({x,i})=>`
