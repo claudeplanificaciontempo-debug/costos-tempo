@@ -918,7 +918,7 @@ const CEN=[
 const CLI_V=2;
 const CLI=[
  {id:'fc',cli:'Fashion Club',zona:'Ecuador',meta:30,base:true},
- {id:'ad',cli:'Aero Dep',zona:'Ecuador',meta:35,vinc:'fc',mas:5},
+ {id:'ad',cli:'Aero Dep',zona:'Ecuador',meta:35,vinc:'fc',mas:5,modo:'sobrebase'}, // precio = PVP de Fashion Club (Ecuador) + 5%, no margen propio
  {id:'jl',cli:'JL Fashion Club',zona:'Colombia',meta:15},
  {id:'pr',cli:'Price',zona:'Ecuador',meta:20},
  {id:'ot',cli:'Otros clientes',zona:'Ecuador',meta:40}
@@ -931,7 +931,7 @@ function nuevaFicha(pre){
   return {
     lines:(pre.lines||[]).map(l=>({c:l[0],q:l[1],d:l[2]})),
     cen:CEN.reduce((o,c)=>{o[c.id]={on:!!pre.cen[c.id],val:pre.cen[c.id]||0};return o},{}),
-    pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.up||0,pvp:0})),
+    pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
     ver:1,saved:false,fecha:'',edit:false,hist:[]
   };
 }
@@ -1599,11 +1599,16 @@ async function subirFotosPendientes(){
 }
 async function syncPush(){
   const Fs=filas();let n=0;
+  const LOTE=300;
   for(const t in Fs){
     const cur_=snapshot(Fs[t]),prev=lastSent[t]||{};
     const up=Fs[t].filter(row=>prev[row.id]!==cur_[row.id]);
     const del=Object.keys(prev).filter(id=>!(id in cur_));
-    if(up.length){await sbUpsert(t,up);n+=up.length}
+    for(let i=0;i<up.length;i+=LOTE){
+      if(up.length>LOTE)marcaSave('Guardando '+Math.min(i+LOTE,up.length)+'/'+up.length+' de '+t+'…','');
+      await sbUpsert(t,up.slice(i,i+LOTE));
+    }
+    n+=up.length;
     if(del.length){await sbDelete(t,del);n+=del.length}
     lastSent[t]=cur_;
   }
@@ -1961,18 +1966,24 @@ function rowsCli(){
   $('tb-cli').innerHTML=CLI.map((c,i)=>`<tr>
     <td class="l"><b style="font-weight:600">${c.cli}</b>${c.base?' <span class="cod">base</span>':''}</td>
     <td class="l ro">${c.zona}</td>
-    <td>${c.vinc?`<span class="tot">${metaDe(c)}%</span>`:`<input class="n" value="${c.meta}" oninput="setCli(${i},this.value)"> %`}</td>
-    <td class="l ro">${c.vinc?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+' puntos':(c.base?'Precio base':'Margen propio')}</td></tr>`).join('');
+    <td>${c.modo==='sobrebase'?`<span class="tot">+${c.mas}%</span>`:c.vinc?`<span class="tot">${metaDe(c)}%</span>`:`<input class="n" value="${c.meta}" oninput="setCli(${i},this.value)"> %`}</td>
+    <td class="l ro">${c.modo==='sobrebase'?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+'% de precio':(c.vinc?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+' puntos':(c.base?'Precio base':'Margen propio'))}</td></tr>`).join('');
 }
 function setCli(i,v){
   CLI[i].meta=num(v);
   aplicarMargenes();rowsCli();resumenFabrica();draw();rowsProd();rowsExp();
 }
 function aplicarMargenes(){
-  CLI.forEach(c=>{if(c.vinc)c.meta=metaDe(c)});
+  CLI.forEach(c=>{if(c.vinc&&c.modo!=='sobrebase')c.meta=metaDe(c)});
   Object.values(FICHAS).forEach(f=>{
     f.pl=CLI.map((c,i)=>{
       const o=(f.pl&&f.pl[i]&&f.pl[i].id===c.id)?f.pl[i]:((f.pl||[]).find(x=>x.id===c.id)||{});
+      if(c.modo==='sobrebase'){
+        // precio ligado al del cliente base (c.vinc), no un margen propio
+        const lock=o.lock==='pvp'?'pvp':'up';
+        const up=(o.modo==='sobrebase'&&o.up!=null)?o.up:(c.mas||0);
+        return {...c,lock,up,pvp:o.pvp||0,pct:0};
+      }
       const lock=o.lock==='pvp'?'pvp':'pct';
       return {...c,lock,pct:c.meta,pvp:o.pvp||0,up:0};
     });
