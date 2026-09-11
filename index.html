@@ -176,7 +176,7 @@ input.n:focus{border-color:var(--orange);outline:none}
 .save p{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
 
 /* productos */
-.prow{display:grid;grid-template-columns:56px 88px minmax(160px,1fr) 150px 120px 178px 178px 110px 34px;gap:10px;align-items:center;
+.prow{display:grid;grid-template-columns:22px 56px 88px minmax(160px,1fr) 150px 120px 178px 178px 110px 34px;gap:10px;align-items:center;
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 .prow:hover{background:#FBFDFB}
 .mth{position:relative;cursor:pointer}
@@ -435,7 +435,15 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   <div class="hint"><b>Aquí se editan los productos: referencia, nombre, categoría, tipo y foto.</b> Con <b>Carga masiva</b> se pegan varios de una vez desde Excel y se suben las fotos en lote. Clic en la foto o en el nombre para abrir su ficha de costos; el lápiz sobre la foto la reemplaza.</div>
   <div class="card">
     <div class="card-h"><h2>Productos</h2><div class="sub" id="prod-sub"></div></div>
-    <div class="prow head"><div>Foto</div><div>Referencia</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
+    <div id="bulk-prod" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--orange-soft);border-radius:10px;margin:0 14px 10px">
+      <b id="bulk-n" style="white-space:nowrap"></b>
+      <select id="bulk-marca" class="fld" style="width:170px"><option value="">Marca…</option></select>
+      <button class="btn ghost sm" onclick="aplicarMasivo('marca')">Aplicar marca</button>
+      <select id="bulk-dep" class="fld" style="width:170px"><option value="">Departamento…</option></select>
+      <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
+      <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
+    </div>
+    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
     <div id="pr-rows"></div>
     <div class="addrow">
       <button class="btn org" onclick="guardarProductos()">Guardar productos</button>
@@ -1239,6 +1247,40 @@ function toast(t,s){
 
 /* ====== PRODUCTOS ====== */
 let prodF='todos';
+let SELP=new Set();
+function prodLista(){
+  return REFS.map((x,i)=>({x,i})).filter(({x})=>{
+    const f=FICHAS[x.r];
+    if(prodF==='pend')return !f.saved||f.edit;
+    if(prodF==='ok')return f.saved&&!f.edit;
+    if(prodF==='sinfoto')return !FOTO[x.r];
+    return true;
+  });
+}
+function toggleProd(r,v){if(v)SELP.add(r);else SELP.delete(r);pintarBulkProd()}
+function toggleAllProd(v){
+  const refs=prodLista().map(({x})=>x.r);
+  if(v)refs.forEach(r=>SELP.add(r));else refs.forEach(r=>SELP.delete(r));
+  rowsProd();
+}
+function limpiarSelProd(){SELP.clear();rowsProd()}
+function pintarBulkProd(){
+  const b=$('bulk-prod');if(!b)return;
+  b.classList.toggle('hide',SELP.size===0);
+  $('bulk-n').textContent=SELP.size+' seleccionado'+(SELP.size===1?'':'s');
+  $('bulk-marca').innerHTML='<option value="">Marca…</option>'+MARCAS.map(m=>`<option>${m}</option>`).join('');
+  $('bulk-dep').innerHTML='<option value="">Departamento…</option>'+DEPS.map(d=>`<option>${d}</option>`).join('');
+  const all=prodLista().map(({x})=>x.r);
+  const allSel=all.length>0&&all.every(r=>SELP.has(r));
+  if($('pr-all'))$('pr-all').checked=allSel;
+}
+function aplicarMasivo(campo){
+  const sel=$(campo==='marca'?'bulk-marca':'bulk-dep').value;
+  if(!sel){toast('Elige un valor','Selecciona '+(campo==='marca'?'una marca':'un departamento')+' antes de aplicar.');return}
+  REFS.forEach((x,i)=>{if(SELP.has(x.r))setP(i,campo,sel)});
+  rowsProd();
+  toast('Actualizado',SELP.size+' producto'+(SELP.size===1?'':'s')+' actualizado'+(SELP.size===1?'':'s')+'.');
+}
 function pendientes(){return REFS.filter(x=>!FICHAS[x.r].saved||FICHAS[x.r].edit)}
 function filtrarProd(f){prodF=(prodF===f&&f!=='todos')?'todos':f;rowsProd();window.scrollTo(0,0)}
 function siguientePend(){
@@ -1263,16 +1305,12 @@ function kpis(){
 }
 function rowsProd(){
   kpis();
-  const lista=REFS.map((x,i)=>({x,i})).filter(({x})=>{
-    const f=FICHAS[x.r];
-    if(prodF==='pend')return !f.saved||f.edit;
-    if(prodF==='ok')return f.saved&&!f.edit;
-    if(prodF==='sinfoto')return !FOTO[x.r];
-    return true;
-  });
+  const lista=prodLista();
+  SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
   $('pr-rows').innerHTML=lista.map(({x,i})=>{
     const f=FICHAS[x.r],t=totRef(x.r);
     return `<div class="prow">
+      <div><input type="checkbox" class="prsel" ${SELP.has(x.r)?'checked':''} onchange="toggleProd('${x.r}',this.checked)"></div>
       <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
       <div><input class="fld cod" style="font-weight:600" value="${x.r}" oninput="setP(${i},'r',this.value)"></div>
@@ -1301,6 +1339,7 @@ function rowsProd(){
       :(prodF==='todos'?REFS.length+' productos · '+(REFS.length-pendientes().length)+' costeados'
         :lista.length+' de '+REFS.length+' <button class="btn ghost sm" style="margin-left:8px" onclick="filtrarProd(\'todos\')">Ver todas</button>'));
   $('nav-prod').textContent=REFS.length;
+  pintarBulkProd();
 }
 function marcaSel(i,sel){
   if(sel.value==='__nueva__'){
