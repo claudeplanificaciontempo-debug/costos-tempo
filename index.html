@@ -352,6 +352,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
           <span class="badge draft" id="rh-badge">Borrador</span>
           <small id="rh-ver"></small>
           <select class="refsel" id="rh-sel" onchange="setRef(this.value)"></select>
+          <button id="bt-avance" class="btn org sm" style="width:100%;margin-top:7px" onclick="guardarAvance()">Guardar avance</button>
           <button class="btn ghost sm" style="width:100%;margin-top:7px" onclick="go('prod')">Editar producto</button>
         </div>
       </div>
@@ -1582,6 +1583,26 @@ function autosave(){
     }
     syncing=false;
   },900);
+}
+async function guardarAvance(){
+  const b=$('bt-avance');if(b){b.disabled=true;b.textContent='Guardando…'}
+  clearTimeout(tSave);
+  try{localStorage.setItem(LKEY,JSON.stringify(estado()))}catch(e){}
+  try{
+    if(!ONLINE||!puedeEditar()){toast('Guardado en este navegador','No hay conexión o permiso para guardar en la nube; el avance quedó local.')}
+    else{
+      await subirFotosPendientes();
+      await syncPush();
+      pendiente=false;
+      marcaSave('Sincronizado '+new Date().toLocaleTimeString().slice(0,5),'ok');
+      toast('Avance guardado','Tu progreso ya está en la nube.');
+    }
+  }catch(e){
+    console.error(e);
+    marcaSave(/40[13]/.test(e.message)?'Sin permiso para guardar':'Sin conexión · cambios pendientes','err');
+    toast('No se pudo guardar en la nube','Quedó guardado en este navegador; se reintentará solo.');
+  }
+  if(b){b.disabled=false;b.textContent='Guardar avance'}
 }
 let SEED=null;
 function tomarSemilla(){SEED={CAT:CAT.map(x=>({...x})),CEN:CEN.map(x=>({...x})),CLI:CLI.map(x=>({...x})),
