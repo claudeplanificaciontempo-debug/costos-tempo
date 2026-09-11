@@ -491,6 +491,15 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
     </table>
     <div class="addrow"><span class="mini" style="margin:0">Los usuarios los crea el administrador en el panel de Supabase (Authentication → Users → Add user). Aquí solo se les asigna el permiso.</span></div>
   </div>
+  <div class="card hide" id="card-respaldo">
+    <div class="card-h"><h2>Respaldo y restauración</h2><div class="sub">Descarga una copia de todo · restaurar compara con la nube antes de tocar nada</div></div>
+    <div class="hint">Descarga un respaldo de vez en cuando (por ejemplo, antes de un cambio grande). Si necesitas restaurar uno, esta función SIEMPRE revisa primero qué hay en la nube: si algo se editó después de la fecha del respaldo, no se sobrescribe solo, para no perder trabajo reciente por accidente.</div>
+    <div class="addrow">
+      <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
+      <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
+      <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
+    </div>
+  </div>
   <div class="card">
     <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
     <table>
@@ -630,6 +639,16 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   </div>
 </div>
 
+<div id="ovl-restore" class="ovl hide">
+  <div class="modal">
+    <div class="modal-h"><h2>Restaurar respaldo</h2></div>
+    <div class="modal-b" id="rst-body"></div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="cerrar('ovl-restore')">Cancelar</button>
+      <button class="btn org" onclick="confirmarRestaurar()">Restaurar lo seguro</button>
+    </div>
+  </div>
+</div>
 <div id="ovl2" class="ovl hide">
   <div class="modal">
     <div class="modal-h"><h2 id="mm-t">Carga masiva de productos</h2></div>
@@ -1726,6 +1745,87 @@ function aplicarEstado(d){
   Object.keys(d.FOTO||{}).forEach(k=>FOTO[k]=d.FOTO[k]);
   cur=(d.cur&&FICHAS[d.cur])?d.cur:(REFS[0]&&REFS[0].r);
 }
+
+/* ====== RESPALDO Y RESTAURACIÓN SEGURA ======
+   La restauración SIEMPRE compara primero con lo que hay en la nube: si un registro
+   se editó en la nube DESPUÉS de la fecha del respaldo, no se sobrescribe solo, para
+   no repetir el incidente del 11-sep-2026 (una restauración pisó ediciones más nuevas). */
+const escR=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function sbGetConFecha(t){
+  const r=await fetchT(SB_URL+'/rest/v1/'+t+'?select=id,actualizado',{headers:hdr()});
+  if(r.status===404)return[];
+  if(!r.ok)throw new Error(t+' '+r.status);
+  return r.json();
+}
+function filasDeRespaldo(d){
+  const url=r=>(d.FOTO&&d.FOTO[r]&&!d.FOTO[r].startsWith('data:'))?d.FOTO[r]:null;
+  return {
+    cst_productos: d.REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r)}})),
+    cst_materiales: d.CAT.map((m,i)=>({id:m.c,data:{...m,orden:i}})),
+    cst_centros: d.CEN.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
+    cst_clientes: d.CLI.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
+    cst_fichas: d.REFS.filter(x=>d.FICHAS[x.r]).map(x=>({id:x.r,data:d.FICHAS[x.r]})),
+  };
+}
+const NOM_TABLA={cst_productos:'Productos',cst_materiales:'Materiales',cst_centros:'Centros',cst_clientes:'Clientes',cst_fichas:'Fichas de costo'};
+function abrirRestaurar(){$('restaurar-file').click()}
+async function onArchivoRestaurar(files){
+  const f=files&&files[0];if(!f)return;
+  let d;
+  try{d=JSON.parse(await f.text())}catch(e){toast('Archivo inválido','No se pudo leer ese archivo.');return}
+  if(!d||!Array.isArray(d.REFS)||!Array.isArray(d.CAT)||!Array.isArray(d.CEN)||!Array.isArray(d.CLI)||!d.FICHAS){
+    toast('Archivo inválido','No parece un respaldo de Costos TEMPO (usa uno descargado con "Descargar respaldo").');return}
+  $('restaurar-file').value='';
+  await compararRestaurar(d,f.name);
+}
+let RESTORE_CTX=null;
+async function compararRestaurar(d,nombreArchivo){
+  $('ovl-restore').classList.remove('hide');
+  $('rst-body').innerHTML='<p>Comparando con la nube…</p>';
+  const filas=filasDeRespaldo(d);
+  const fechaResp=new Date(d.fecha||0).getTime();
+  const riesgo={},resumen=[];
+  for(const t in filas){
+    let vivos=[];
+    try{vivos=await sbGetConFecha(t)}catch(e){vivos=[]}
+    const vivosPorId={};vivos.forEach(r=>vivosPorId[r.id]=r.actualizado);
+    const filasRiesgo=filas[t].filter(r=>{
+      const act=vivosPorId[r.id];
+      return act&&new Date(act).getTime()>fechaResp+2000;
+    });
+    riesgo[t]=filasRiesgo.map(r=>r.id);
+    resumen.push({t,total:filas[t].length,riesgo:filasRiesgo.length});
+  }
+  RESTORE_CTX={filas,riesgo};
+  const totalRiesgo=resumen.reduce((a,x)=>a+x.riesgo,0);
+  $('rst-body').innerHTML=`
+   <p>Respaldo <b>${escR(nombreArchivo)}</b> · guardado el <b>${escR(new Date(d.fecha||0).toLocaleString())}</b>.</p>
+   <table><thead><tr><th class="l">Tabla</th><th>Filas en el respaldo</th><th>Más recientes en la nube</th></tr></thead><tbody>
+   ${resumen.map(r=>`<tr><td class="l">${escR(NOM_TABLA[r.t]||r.t)}</td><td>${r.total}</td><td>${r.riesgo?('<b style="color:var(--red-txt,#b23)">'+r.riesgo+'</b>'):'0'}</td></tr>`).join('')}
+   </tbody></table>
+   ${totalRiesgo
+     ? `<div class="hint" style="margin-top:10px"><b>${totalRiesgo} registro(s) tienen cambios en la nube posteriores a este respaldo.</b> Por seguridad, esos NO se van a tocar. Si de verdad quieres reemplazarlos también por lo que dice el respaldo (no recomendado), marca la casilla:</div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="rst-forzar"> Sobrescribir también esos ${totalRiesgo} registros más recientes</label>`
+     : `<div class="hint" style="margin-top:10px">No hay conflictos: nada en la nube es más nuevo que este respaldo. Se puede restaurar todo tranquilo.</div>`}
+  `;
+}
+async function confirmarRestaurar(){
+  const ctx=RESTORE_CTX;if(!ctx)return;
+  const forzar=($('rst-forzar')||{}).checked;
+  $('rst-body').innerHTML+='<p><b>Restaurando…</b></p>';
+  let total=0,saltados=0;
+  for(const t in ctx.filas){
+    const skip=new Set(forzar?[]:ctx.riesgo[t]);
+    const rows=ctx.filas[t].filter(r=>!skip.has(r.id));
+    saltados+=ctx.filas[t].length-rows.length;
+    for(let i=0;i<rows.length;i+=300){
+      await sbUpsert(t,rows.slice(i,i+300));
+      total+=Math.min(300,rows.length-i);
+    }
+  }
+  cerrar('ovl-restore');
+  toast('Restaurado',total+' registros aplicados'+(saltados?', '+saltados+' se dejaron como estaban por ser más recientes en la nube':'')+'. Recarga la página para verlo todo actualizado.');
+}
 function respaldo(){
   const txt=JSON.stringify(estado());
   const a=document.createElement('a');
@@ -1950,8 +2050,9 @@ function resumenFabrica(){
 }
 async function rowsUsr(){
   const c=$('card-usr');if(!c)return;
-  if(ROL!=='admin'){c.classList.add('hide');return}
-  c.classList.remove('hide');
+  const cr=$('card-respaldo');
+  if(ROL!=='admin'){c.classList.add('hide');if(cr)cr.classList.add('hide');return}
+  c.classList.remove('hide');if(cr)cr.classList.remove('hide');
   try{
     const r=await fetch(SB_URL+'/rest/v1/perfiles?select=id,email,nombre,rol&order=creado',{headers:hdr()});
     const us=await r.json();
