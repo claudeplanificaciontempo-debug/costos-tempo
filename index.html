@@ -483,7 +483,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <thead><tr><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th><th></th></tr></thead>
       <tbody id="tb-cat"></tbody>
     </table>
-    <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost">Agregar ítem</button></div>
+    <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost" onclick="agregarMat()">Agregar ítem</button></div>
   </div>
 </section>
 
@@ -499,6 +499,15 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <tbody id="tb-usr"></tbody>
     </table>
     <div class="addrow"><span class="mini" style="margin:0">Los usuarios los crea el administrador en el panel de Supabase (Authentication → Users → Add user). Aquí solo se les asigna el permiso.</span></div>
+  </div>
+  <div class="card hide" id="card-respaldo">
+    <div class="card-h"><h2>Respaldo y restauración</h2><div class="sub">Descarga una copia de todo · restaurar compara con la nube antes de tocar nada</div></div>
+    <div class="hint">Descarga un respaldo de vez en cuando (por ejemplo, antes de un cambio grande). Si necesitas restaurar uno, esta función SIEMPRE revisa primero qué hay en la nube: si algo se editó después de la fecha del respaldo, no se sobrescribe solo, para no perder trabajo reciente por accidente.</div>
+    <div class="addrow">
+      <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
+      <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
+      <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
+    </div>
   </div>
   <div class="card">
     <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
@@ -640,6 +649,16 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   </div>
 </div>
 
+<div id="ovl-restore" class="ovl hide">
+  <div class="modal">
+    <div class="modal-h"><h2>Restaurar respaldo</h2></div>
+    <div class="modal-b" id="rst-body"></div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="cerrar('ovl-restore')">Cancelar</button>
+      <button class="btn org" onclick="confirmarRestaurar()">Restaurar lo seguro</button>
+    </div>
+  </div>
+</div>
 <div id="ovl2" class="ovl hide">
   <div class="modal">
     <div class="modal-h"><h2 id="mm-t">Carga masiva de productos</h2></div>
@@ -928,7 +947,7 @@ const CEN=[
 const CLI_V=2;
 const CLI=[
  {id:'fc',cli:'Fashion Club',zona:'Ecuador',meta:30,base:true},
- {id:'ad',cli:'Aero Dep',zona:'Ecuador',meta:35,vinc:'fc',mas:5},
+ {id:'ad',cli:'Aero Dep',zona:'Ecuador',meta:35,vinc:'fc',mas:5,modo:'sobrebase'}, // precio = PVP de Fashion Club (Ecuador) + 5%, no margen propio
  {id:'jl',cli:'JL Fashion Club',zona:'Colombia',meta:15},
  {id:'pr',cli:'Price',zona:'Ecuador',meta:20},
  {id:'ot',cli:'Otros clientes',zona:'Ecuador',meta:40}
@@ -941,7 +960,7 @@ function nuevaFicha(pre){
   return {
     lines:(pre.lines||[]).map(l=>({c:l[0],q:l[1],d:l[2]})),
     cen:CEN.reduce((o,c)=>{o[c.id]={on:!!pre.cen[c.id],val:pre.cen[c.id]||0};return o},{}),
-    pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.up||0,pvp:0})),
+    pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
     ver:1,saved:false,fecha:'',edit:false,hist:[]
   };
 }
@@ -1451,8 +1470,15 @@ const SKEY='costos_tempo_sesion';
 let SES=null,ROL='consulta',NOMBRE='',ONLINE=false,lastSent={},syncing=false,pendiente=false;
 const puedeEditar=()=>['admin','planificacion'].includes(ROL);
 const hdr=(extra={})=>({apikey:SB_KEY,Authorization:'Bearer '+(SES?SES.access_token:SB_KEY),'Content-Type':'application/json',...extra});
+/* fetch con límite de tiempo: si el servidor no responde no se queda colgado, se trata como fallo para reintentar */
+async function fetchT(url,opts,ms){
+  const ac=new AbortController();const t=setTimeout(()=>ac.abort(),ms||20000);
+  try{return await fetch(url,{...opts,signal:ac.signal})}
+  catch(e){if(e.name==='AbortError')throw new Error('tiempo de espera agotado');throw e}
+  finally{clearTimeout(t)}
+}
 async function sbAuth(path,body){
-  const r=await fetch(SB_URL+'/auth/v1/'+path,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const r=await fetchT(SB_URL+'/auth/v1/'+path,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.msg||j.error||('auth '+r.status));return j;
 }
 async function refrescar(){
@@ -1461,14 +1487,16 @@ async function refrescar(){
   try{SES=await sbAuth('token?grant_type=refresh_token',{refresh_token:s.refresh_token});localStorage.setItem(SKEY,JSON.stringify(SES));return true}
   catch(e){localStorage.removeItem(SKEY);return false}
 }
-async function sbGet(t,q=''){const r=await fetch(SB_URL+'/rest/v1/'+t+'?select=id,data'+q,{headers:hdr()});if(r.status===404)return[];if(!r.ok)throw new Error(t+' '+r.status);return r.json()}
+async function sbGet(t,q=''){const r=await fetchT(SB_URL+'/rest/v1/'+t+'?select=id,data'+q,{headers:hdr()});if(r.status===404)return[];if(!r.ok)throw new Error(t+' '+r.status);return r.json()}
 async function sbUpsert(t,rows){
   if(!rows.length)return;
-  const r=await fetch(SB_URL+'/rest/v1/'+t,{method:'POST',headers:hdr({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows)});
+  const r=await fetchT(SB_URL+'/rest/v1/'+t,{method:'POST',headers:hdr({Prefer:'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify(rows)},25000);
+  if(r.status===404){console.warn('Tabla "'+t+'" no existe todavía en Supabase; se omite (no bloquea el resto del guardado).');return}
   if(!r.ok)throw new Error(t+' '+r.status+' '+(await r.text()).slice(0,120));
 }
 async function sbDelete(t,ids){
-  for(const id of ids){const r=await fetch(SB_URL+'/rest/v1/'+t+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()});
+  for(const id of ids){const r=await fetchT(SB_URL+'/rest/v1/'+t+'?id=eq.'+encodeURIComponent(id),{method:'DELETE',headers:hdr()});
+    if(r.status===404){console.warn('Tabla "'+t+'" no existe todavía en Supabase; se omite.');continue}
     if(!r.ok)throw new Error(t+' borrar '+r.status)}
 }
 function mostrarLogin(msg){
@@ -1528,12 +1556,24 @@ async function perfil(){
 async function entrar(){
   await perfil();
   marcaSave('Cargando…','');
-  try{await cargarNube()}
-  catch(e){
-    console.error(e);
-    marcaSave('Sin conexión · solo lectura','err');
-    cargarLocal();
-    toast('No se pudo leer la nube','Se muestra la última copia guardada en este navegador. Los cambios NO se guardarán.');
+  let pendienteAntes=false;try{
+    const ts=+(localStorage.getItem(LKEY+'_pend_ts')||0);
+    pendienteAntes=localStorage.getItem(LKEY+'_pend')==='1'&&(Date.now()-ts)<3*24*60*60*1000;
+  }catch(e){}
+  if(pendienteAntes&&cargarLocal()){
+    // había cambios de la vez anterior que no llegaron a guardarse en la nube: se mantienen y se reintenta subirlos
+    ONLINE=true;pendiente=true;
+    marcaSave('Recuperando cambios sin guardar…','');
+    toast('Cambios pendientes recuperados','La última vez quedaron ediciones sin subir a la nube; se están reintentando ahora, sin perder nada.');
+    autosave();
+  }else{
+    try{await cargarNube()}
+    catch(e){
+      console.error(e);
+      marcaSave('Sin conexión · solo lectura','err');
+      cargarLocal();
+      toast('No se pudo leer la nube','Se muestra la última copia guardada en este navegador. Los cambios NO se guardarán.');
+    }
   }
   $('ovl-login').classList.add('hide');
   rowsCatMat();rowsCentros();rowsCli();rowsProd();rowsExp();draw();
@@ -1591,8 +1631,8 @@ async function subirFotoNube(ref){
   const blob=await (await fetch(d)).blob();
   const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
   const path=ref.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
-  const r=await fetch(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
-    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob});
+  const r=await fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
+    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
   if(!r.ok)throw new Error('foto '+ref+' '+r.status);
   FOTO[ref]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
 }
@@ -1605,11 +1645,16 @@ async function subirFotosPendientes(){
 }
 async function syncPush(){
   const Fs=filas();let n=0;
+  const LOTE=300;
   for(const t in Fs){
     const cur_=snapshot(Fs[t]),prev=lastSent[t]||{};
     const up=Fs[t].filter(row=>prev[row.id]!==cur_[row.id]);
     const del=Object.keys(prev).filter(id=>!(id in cur_));
-    if(up.length){await sbUpsert(t,up);n+=up.length}
+    for(let i=0;i<up.length;i+=LOTE){
+      if(up.length>LOTE)marcaSave('Guardando '+Math.min(i+LOTE,up.length)+'/'+up.length+' de '+t+'…','');
+      await sbUpsert(t,up.slice(i,i+LOTE));
+    }
+    n+=up.length;
     if(del.length){await sbDelete(t,del);n+=del.length}
     lastSent[t]=cur_;
   }
@@ -1634,6 +1679,8 @@ function autosave(){
   try{localStorage.setItem(LKEY,JSON.stringify(estado()))}catch(e){}
   if(!ONLINE||!puedeEditar())return;
   pendiente=true;
+  try{localStorage.setItem(LKEY+'_pend','1');localStorage.setItem(LKEY+'_pend_ts',String(Date.now()))}catch(e){}
+  clearTimeout(tRetry);
   tSave=setTimeout(async()=>{
     if(syncing){pendiente=true;return}
     syncing=true;
@@ -1641,15 +1688,24 @@ function autosave(){
       await subirFotosPendientes();
       const n=await syncPush();
       pendiente=false;
+      try{localStorage.removeItem(LKEY+'_pend')}catch(e){}
+      reintentos=0;
       marcaSave('Sincronizado '+new Date().toLocaleTimeString().slice(0,5),'ok');
     }catch(e){
       console.error(e);
-      marcaSave(/40[13]/.test(e.message)?'Sin permiso para guardar':'Sin conexión · cambios pendientes','err');
-      setTimeout(autosave,15000);
+      marcaSave(/40[13]/.test(e.message)?'Sin permiso para guardar':'Sin conexión · reintentando… (queda guardado en este navegador)','err');
+      reintentos=Math.min(reintentos+1,6);
+      tRetry=setTimeout(autosave,Math.min(5000*reintentos,30000));
     }
     syncing=false;
   },900);
 }
+/* si el navegador recupera la conexión, reintenta enseguida en vez de esperar el próximo ciclo */
+let tRetry=null,reintentos=0;
+window.addEventListener('online',()=>{if(pendiente){reintentos=0;clearTimeout(tRetry);autosave()}});
+window.addEventListener('offline',()=>{if(ONLINE&&puedeEditar())marcaSave('Sin conexión a internet · se reintentará al volver','err')});
+/* si hay cambios sin subir, avisa antes de cerrar o recargar la pestaña para no perderlos por accidente */
+window.addEventListener('beforeunload',(e)=>{if(pendiente){e.preventDefault();e.returnValue=''}});
 async function guardarAvance(){
   const b=$('bt-avance');if(b){b.disabled=true;b.textContent='Guardando…'}
   clearTimeout(tSave);
@@ -1665,8 +1721,10 @@ async function guardarAvance(){
     }
   }catch(e){
     console.error(e);
-    marcaSave(/40[13]/.test(e.message)?'Sin permiso para guardar':'Sin conexión · cambios pendientes','err');
+    pendiente=true;try{localStorage.setItem(LKEY+'_pend','1');localStorage.setItem(LKEY+'_pend_ts',String(Date.now()))}catch(e2){}
+    marcaSave(/40[13]/.test(e.message)?'Sin permiso para guardar':'Sin conexión · reintentando… (queda guardado en este navegador)','err');
     toast('No se pudo guardar en la nube','Quedó guardado en este navegador; se reintentará solo.');
+    reintentos=Math.min(reintentos+1,6);clearTimeout(tRetry);tRetry=setTimeout(autosave,Math.min(5000*reintentos,30000));
   }
   if(b){b.disabled=false;b.textContent='Guardar avance'}
 }
@@ -1713,6 +1771,87 @@ function aplicarEstado(d){
   Object.keys(FOTO).forEach(k=>delete FOTO[k]);
   Object.keys(d.FOTO||{}).forEach(k=>FOTO[k]=d.FOTO[k]);
   cur=(d.cur&&FICHAS[d.cur])?d.cur:(REFS[0]&&REFS[0].r);
+}
+
+/* ====== RESPALDO Y RESTAURACIÓN SEGURA ======
+   La restauración SIEMPRE compara primero con lo que hay en la nube: si un registro
+   se editó en la nube DESPUÉS de la fecha del respaldo, no se sobrescribe solo, para
+   no repetir el incidente del 11-sep-2026 (una restauración pisó ediciones más nuevas). */
+const escR=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function sbGetConFecha(t){
+  const r=await fetchT(SB_URL+'/rest/v1/'+t+'?select=id,actualizado',{headers:hdr()});
+  if(r.status===404)return[];
+  if(!r.ok)throw new Error(t+' '+r.status);
+  return r.json();
+}
+function filasDeRespaldo(d){
+  const url=r=>(d.FOTO&&d.FOTO[r]&&!d.FOTO[r].startsWith('data:'))?d.FOTO[r]:null;
+  return {
+    cst_productos: d.REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r)}})),
+    cst_materiales: d.CAT.map((m,i)=>({id:m.c,data:{...m,orden:i}})),
+    cst_centros: d.CEN.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
+    cst_clientes: d.CLI.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
+    cst_fichas: d.REFS.filter(x=>d.FICHAS[x.r]).map(x=>({id:x.r,data:d.FICHAS[x.r]})),
+  };
+}
+const NOM_TABLA={cst_productos:'Productos',cst_materiales:'Materiales',cst_centros:'Centros',cst_clientes:'Clientes',cst_fichas:'Fichas de costo'};
+function abrirRestaurar(){$('restaurar-file').click()}
+async function onArchivoRestaurar(files){
+  const f=files&&files[0];if(!f)return;
+  let d;
+  try{d=JSON.parse(await f.text())}catch(e){toast('Archivo inválido','No se pudo leer ese archivo.');return}
+  if(!d||!Array.isArray(d.REFS)||!Array.isArray(d.CAT)||!Array.isArray(d.CEN)||!Array.isArray(d.CLI)||!d.FICHAS){
+    toast('Archivo inválido','No parece un respaldo de Costos TEMPO (usa uno descargado con "Descargar respaldo").');return}
+  $('restaurar-file').value='';
+  await compararRestaurar(d,f.name);
+}
+let RESTORE_CTX=null;
+async function compararRestaurar(d,nombreArchivo){
+  $('ovl-restore').classList.remove('hide');
+  $('rst-body').innerHTML='<p>Comparando con la nube…</p>';
+  const filas=filasDeRespaldo(d);
+  const fechaResp=new Date(d.fecha||0).getTime();
+  const riesgo={},resumen=[];
+  for(const t in filas){
+    let vivos=[];
+    try{vivos=await sbGetConFecha(t)}catch(e){vivos=[]}
+    const vivosPorId={};vivos.forEach(r=>vivosPorId[r.id]=r.actualizado);
+    const filasRiesgo=filas[t].filter(r=>{
+      const act=vivosPorId[r.id];
+      return act&&new Date(act).getTime()>fechaResp+2000;
+    });
+    riesgo[t]=filasRiesgo.map(r=>r.id);
+    resumen.push({t,total:filas[t].length,riesgo:filasRiesgo.length});
+  }
+  RESTORE_CTX={filas,riesgo};
+  const totalRiesgo=resumen.reduce((a,x)=>a+x.riesgo,0);
+  $('rst-body').innerHTML=`
+   <p>Respaldo <b>${escR(nombreArchivo)}</b> · guardado el <b>${escR(new Date(d.fecha||0).toLocaleString())}</b>.</p>
+   <table><thead><tr><th class="l">Tabla</th><th>Filas en el respaldo</th><th>Más recientes en la nube</th></tr></thead><tbody>
+   ${resumen.map(r=>`<tr><td class="l">${escR(NOM_TABLA[r.t]||r.t)}</td><td>${r.total}</td><td>${r.riesgo?('<b style="color:var(--red-txt,#b23)">'+r.riesgo+'</b>'):'0'}</td></tr>`).join('')}
+   </tbody></table>
+   ${totalRiesgo
+     ? `<div class="hint" style="margin-top:10px"><b>${totalRiesgo} registro(s) tienen cambios en la nube posteriores a este respaldo.</b> Por seguridad, esos NO se van a tocar. Si de verdad quieres reemplazarlos también por lo que dice el respaldo (no recomendado), marca la casilla:</div>
+        <label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input type="checkbox" id="rst-forzar"> Sobrescribir también esos ${totalRiesgo} registros más recientes</label>`
+     : `<div class="hint" style="margin-top:10px">No hay conflictos: nada en la nube es más nuevo que este respaldo. Se puede restaurar todo tranquilo.</div>`}
+  `;
+}
+async function confirmarRestaurar(){
+  const ctx=RESTORE_CTX;if(!ctx)return;
+  const forzar=($('rst-forzar')||{}).checked;
+  $('rst-body').innerHTML+='<p><b>Restaurando…</b></p>';
+  let total=0,saltados=0;
+  for(const t in ctx.filas){
+    const skip=new Set(forzar?[]:ctx.riesgo[t]);
+    const rows=ctx.filas[t].filter(r=>!skip.has(r.id));
+    saltados+=ctx.filas[t].length-rows.length;
+    for(let i=0;i<rows.length;i+=300){
+      await sbUpsert(t,rows.slice(i,i+300));
+      total+=Math.min(300,rows.length-i);
+    }
+  }
+  cerrar('ovl-restore');
+  toast('Restaurado',total+' registros aplicados'+(saltados?', '+saltados+' se dejaron como estaban por ser más recientes en la nube':'')+'. Recarga la página para verlo todo actualizado.');
 }
 function respaldo(){
   const txt=JSON.stringify(estado());
@@ -1864,6 +2003,14 @@ function cerrar(id){$(id).classList.add('hide')}
 
 /* ====== MAESTROS ====== */
 let catF='all';
+function agregarMat(){
+  const c='NUEVO-'+Date.now().toString(36).toUpperCase();
+  CAT.push({c,d:'Nuevo material',k:'mp',um:'u',p:0,f:hoy()});
+  rowsCatMat('all');draw();rowsProd();
+  const fila=document.querySelector('#tb-cat tr:last-child input.fld');
+  if(fila){fila.scrollIntoView({block:'center'});fila.focus();fila.select&&fila.select()}
+  toast('Material agregado','Edita la descripción, categoría, unidad y costo en la fila nueva (al final de la lista).');
+}
 function rowsCatMat(f){
   catF=f||catF;
   $('tb-cat').innerHTML=CAT.map((x,i)=>({x,i})).filter(({x})=>catF==='all'||x.k===catF).map(({x,i})=>`
@@ -1931,8 +2078,9 @@ function resumenFabrica(){
 }
 async function rowsUsr(){
   const c=$('card-usr');if(!c)return;
-  if(ROL!=='admin'){c.classList.add('hide');return}
-  c.classList.remove('hide');
+  const cr=$('card-respaldo');
+  if(ROL!=='admin'){c.classList.add('hide');if(cr)cr.classList.add('hide');return}
+  c.classList.remove('hide');if(cr)cr.classList.remove('hide');
   try{
     const r=await fetch(SB_URL+'/rest/v1/perfiles?select=id,email,nombre,rol&order=creado',{headers:hdr()});
     const us=await r.json();
@@ -1955,18 +2103,24 @@ function rowsCli(){
   $('tb-cli').innerHTML=CLI.map((c,i)=>`<tr>
     <td class="l"><b style="font-weight:600">${c.cli}</b>${c.base?' <span class="cod">base</span>':''}</td>
     <td class="l ro">${c.zona}</td>
-    <td>${c.vinc?`<span class="tot">${metaDe(c)}%</span>`:`<input class="n" value="${c.meta}" oninput="setCli(${i},this.value)"> %`}</td>
-    <td class="l ro">${c.vinc?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+' puntos':(c.base?'Precio base':'Margen propio')}</td></tr>`).join('');
+    <td>${c.modo==='sobrebase'?`<span class="tot">+${c.mas}%</span>`:c.vinc?`<span class="tot">${metaDe(c)}%</span>`:`<input class="n" value="${c.meta}" oninput="setCli(${i},this.value)"> %`}</td>
+    <td class="l ro">${c.modo==='sobrebase'?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+'% de precio':(c.vinc?(CLI.find(x=>x.id===c.vinc)||{}).cli+' + '+c.mas+' puntos':(c.base?'Precio base':'Margen propio'))}</td></tr>`).join('');
 }
 function setCli(i,v){
   CLI[i].meta=num(v);
   aplicarMargenes();rowsCli();resumenFabrica();draw();rowsProd();rowsExp();
 }
 function aplicarMargenes(){
-  CLI.forEach(c=>{if(c.vinc)c.meta=metaDe(c)});
+  CLI.forEach(c=>{if(c.vinc&&c.modo!=='sobrebase')c.meta=metaDe(c)});
   Object.values(FICHAS).forEach(f=>{
     f.pl=CLI.map((c,i)=>{
       const o=(f.pl&&f.pl[i]&&f.pl[i].id===c.id)?f.pl[i]:((f.pl||[]).find(x=>x.id===c.id)||{});
+      if(c.modo==='sobrebase'){
+        // precio ligado al del cliente base (c.vinc), no un margen propio
+        const lock=o.lock==='pvp'?'pvp':'up';
+        const up=(o.modo==='sobrebase'&&o.up!=null)?o.up:(c.mas||0);
+        return {...c,lock,up,pvp:o.pvp||0,pct:0};
+      }
       const lock=o.lock==='pvp'?'pvp':'pct';
       return {...c,lock,pct:c.meta,pvp:o.pvp||0,up:0};
     });
