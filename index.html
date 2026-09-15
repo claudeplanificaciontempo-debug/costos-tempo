@@ -409,7 +409,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
     <!-- BLOQUE 3 -->
     <div>
       <div class="blk-t"><div class="n">3</div><h3>Costos</h3></div>
-      <div class="card">
+      <div class="card" id="card-costo">
         <div class="card-h"><h2>Costo de la prenda</h2></div>
         <div class="sum-body">
           <div class="bar" id="bar"></div>
@@ -419,10 +419,12 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
         </div>
       </div>
       <div class="card">
-        <div class="card-h"><h2>Precio por cliente</h2><div class="sub">margen sobre PVP</div></div>
+        <div class="card-h"><h2>Precio por cliente</h2><div class="sub" id="precio-sub">margen sobre PVP</div></div>
         <div id="plists"></div>
+        <p id="precio-oculto" class="hide" style="padding:0 16px;font-size:11.5px;color:var(--ink-3)">Los precios y márgenes no están disponibles con tu permiso.</p>
         <div class="save">
           <button id="bt-save" class="btn org wide" onclick="guardar()">Guardar costo</button>
+          <button id="bt-aprobar" class="btn org wide hide" onclick="aprobar()">Aprobar y guardar costo</button>
           <button id="bt-rec" class="btn ghost wide hide" style="margin-top:8px" onclick="recostear()">Re-costear · abrir nueva versión</button>
           <p id="save-h">Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.</p>
         </div>
@@ -460,6 +462,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <button class="btn ghost" onclick="nuevoProd()">+ Producto</button>
       <button class="btn ghost" onclick="document.getElementById('fotos-in').click()">Subir fotos en lote</button>
       <button class="btn ghost" onclick="abrirRecorte()">Recortar de una imagen</button>
+      <button class="btn ghost" onclick="exportarBOM()">Exportar BOM (Excel)</button>
       <input type="file" id="fotos-in" accept="image/*" multiple class="hide" onchange="subirFotos(this.files)">
       <input type="file" id="foto-1" accept="image/*" class="hide" onchange="subirFoto1(this.files)">
     </div>
@@ -480,9 +483,10 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   </div>
   <div class="card">
     <table>
-      <thead><tr><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th><th></th></tr></thead>
+      <thead><tr><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th class="l">Familia</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th><th></th></tr></thead>
       <tbody id="tb-cat"></tbody>
     </table>
+    <datalist id="dl-fam"></datalist>
     <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost" onclick="agregarMat()">Agregar ítem</button></div>
   </div>
 </section>
@@ -961,7 +965,7 @@ function nuevaFicha(pre){
     lines:(pre.lines||[]).map(l=>({c:l[0],q:l[1],d:l[2]})),
     cen:CEN.reduce((o,c)=>{o[c.id]={on:!!pre.cen[c.id],val:pre.cen[c.id]||0};return o},{}),
     pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
-    ver:1,saved:false,fecha:'',edit:false,hist:[]
+    ver:1,saved:false,fecha:'',edit:false,hist:[],aprob:null
   };
 }
 const PRE={
@@ -1236,13 +1240,25 @@ function hoy(){
 }
 function guardar(){
   const f=F();
+  if(soloPrearmado()){
+    f.aprob='pendiente';
+    draw();rowsProd();rowsExp();guardarVersion(cur);
+    toast('Enviado para aprobación · REF '+cur,'Un administrador revisará los consumos y tiempos, y cerrará el costo.');
+    return;
+  }
   if(f.saved&&f.edit)f.ver++;
-  f.saved=true;f.edit=false;f.fecha=hoy();
+  f.saved=true;f.edit=false;f.fecha=hoy();f.aprob=null;
   f.hist=f.hist||[];
   f.hist.push({ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,pvp:plCalc(0).pvp});
   draw();rowsProd();rowsExp();guardarVersion(cur);
   toast('Costo guardado · REF '+cur+' v'+f.ver,
     'Costo congelado '+fmt(TOT.total)+' · '+TOT.sam.toFixed(2)+' min. Ya aparece en la lista de precios.');
+}
+function aprobar(){
+  const f=F();
+  if(f.aprob!=='pendiente'||!puedeEditarCostos())return;
+  f.aprob=null;
+  guardar();
 }
 function recostearRef(r){
   cur=r;const f=F();
@@ -1264,17 +1280,29 @@ function rowsHist(){
       <span class="ht">${fmt(v.total)}</span><span class="hs">${v.sam.toFixed(2)} min</span></div>`).join('')
     ||'<div class="empty">Todavía no hay versiones guardadas.</div>';
   $('hist-s').textContent=hs.length?hs.length+(hs.length===1?' versión':' versiones'):'';
-  const bs=$('bt-save'),br=$('bt-rec'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h');
+  const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h');
+  const cc=$('card-costo'),pl=$('plists'),po=$('precio-oculto'),psub=$('precio-sub');
+  const oculta=soloPrearmado();
+  if(cc)cc.classList.toggle('hide',oculta);
+  if(pl)pl.classList.toggle('hide',oculta);
+  if(po)po.classList.toggle('hide',!oculta);
+  if(psub)psub.textContent=oculta?'':'margen sobre PVP';
+  ba.classList.add('hide');
   if(RO()){
     bs.classList.add('hide');br.classList.remove('hide');
     if(bg)bg.disabled=true; if(q){q.disabled=true;q.placeholder='Ficha cerrada · usa Re-costear para modificarla'}
     ph.textContent='La v'+f.ver+' está cerrada. Para cambiar consumos, precios o tiempos abre un re-costeo: se guarda como v'+(f.ver+1)+' y la anterior queda en el historial.';
-  }else{
-    bs.classList.remove('hide');bs.textContent=f.saved?'Guardar re-costeo · v'+(f.ver+1):'Guardar costo';
-    br.classList.add('hide');
+  }else if(f.aprob==='pendiente'&&puedeEditarCostos()){
+    bs.classList.add('hide');br.classList.add('hide');ba.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
-    ph.textContent=f.saved?'Al guardar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy. La v'+f.ver+' queda en el historial.'
-      :'Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.';
+    ph.textContent='Prearmado envió esta ficha para aprobación. Revisa consumos y tiempos, y usa "Aprobar y guardar costo" para calcular el costo real y cerrar la versión.';
+  }else{
+    bs.classList.remove('hide');br.classList.add('hide');
+    bs.textContent=soloPrearmado()?'Enviar para aprobación':(f.saved?'Guardar re-costeo · v'+(f.ver+1):'Guardar costo');
+    if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
+    ph.textContent=soloPrearmado()?'Llena consumos y tiempos. Al enviar, un administrador revisa y cierra el costo con los precios vigentes.'
+      :(f.saved?'Al guardar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy. La v'+f.ver+' queda en el historial.'
+      :'Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.');
   }
 }
 function guardarTarifas(){
@@ -1293,8 +1321,11 @@ let SELP=new Set();
 function prodLista(){
   return REFS.map((x,i)=>({x,i})).filter(({x})=>{
     const f=FICHAS[x.r];
-    if(prodF==='pend')return !f.saved||f.edit;
-    if(prodF==='ok')return f.saved&&!f.edit;
+    if(prodF==='arch')return !!x.arch;
+    if(x.arch)return false;
+    if(prodF==='pend')return (!f.saved||f.edit)&&f.aprob!=='pendiente';
+    if(prodF==='ok')return f.saved&&!f.edit&&f.aprob!=='pendiente';
+    if(prodF==='aprob')return f.aprob==='pendiente';
     if(prodF==='sinfoto')return !FOTO[x.r];
     return true;
   });
@@ -1323,7 +1354,9 @@ function aplicarMasivo(campo){
   rowsProd();
   toast('Actualizado',SELP.size+' producto'+(SELP.size===1?'':'s')+' actualizado'+(SELP.size===1?'':'s')+'.');
 }
-function pendientes(){return REFS.filter(x=>!FICHAS[x.r].saved||FICHAS[x.r].edit)}
+function activos(){return REFS.filter(x=>!x.arch)}
+function porAprobar(){return activos().filter(x=>FICHAS[x.r].aprob==='pendiente')}
+function pendientes(){return activos().filter(x=>(!FICHAS[x.r].saved||FICHAS[x.r].edit)&&FICHAS[x.r].aprob!=='pendiente')}
 function filtrarProd(f){prodF=(prodF===f&&f!=='todos')?'todos':f;rowsProd();window.scrollTo(0,0)}
 function siguientePend(){
   const p=pendientes();
@@ -1331,14 +1364,17 @@ function siguientePend(){
   verFicha(p[0].r);
 }
 function kpis(){
-  const tot=REFS.length,pen=pendientes().length,ok=tot-pen,sf=REFS.filter(x=>!FOTO[x.r]).length;
+  const act=activos();
+  const tot=act.length,pen=pendientes().length,apr=porAprobar().length,ok=tot-pen-apr,sf=act.filter(x=>!FOTO[x.r]).length,arch=REFS.length-tot;
   const pct=tot?Math.round(ok/tot*100):0;
   const k=(id,cls,label,val,hint,on)=>`<button class="kpi ${cls} ${on?'on':''}" onclick="filtrarProd('${id}')">
       <div class="k">${label}</div><div class="v">${val}</div><div class="h">${hint}</div></button>`;
   const html=k('todos','','Total productos',tot,'en el catálogo',prodF==='todos')+
     k('ok','ok','Costeados',ok,pct+'% del catálogo',prodF==='ok')+
     k('pend','pend','Pendientes',pen,pen?'clic para terminarlos':'nada por llenar',prodF==='pend')+
-    k('sinfoto','','Sin foto',sf,'por cargar',prodF==='sinfoto');
+    (apr?k('aprob','pend','Por aprobar',apr,'fichas enviadas por prearmado',prodF==='aprob'):'')+
+    k('sinfoto','','Sin foto',sf,'por cargar',prodF==='sinfoto')+
+    (arch?k('arch','','Archivados',arch,'clic para verlos',prodF==='arch'):'');
   if($('kpis-prod'))$('kpis-prod').innerHTML=html;
   if($('kpis-lp'))$('kpis-lp').innerHTML=
     `<button class="kpi" onclick="go('prod')"><div class="k">Total productos</div><div class="v">${tot}</div><div class="h">en el catálogo</div></button>`+
@@ -1369,10 +1405,14 @@ function rowsProd(){
       <div><select class="fld" onchange="setP(${i},'sub',this.value)">
         ${(CATEG[x.cat]||[]).map(s=>`<option ${s===x.sub?'selected':''}>${s}</option>`).join('')}</select></div>
       <div style="text-align:right"><b>${fmt(t.total)}</b><br>
-        ${f.saved&&!f.edit
+        ${f.aprob==='pendiente'?`<span class="pill pend">Por aprobar</span>`:
+          f.saved&&!f.edit
           ?`<button class="pill ok" style="border:0;cursor:pointer" title="Abrir un re-costeo (nueva versión)" onclick="recostearRef('${x.r}')">v${f.ver} · re-costear</button>`
           :`<span class="pill ${f.edit?'':''}">${f.edit?'Re-costeo v'+(f.ver+1):'Borrador'}</span>`}</div>
-      <div style="text-align:right"><button class="x" onclick="borrarProd(${i})">×</button></div>
+      <div style="text-align:right;white-space:nowrap">
+        <button class="x" title="${x.arch?'Restaurar':'Archivar'}" onclick="toggleArchivo(${i})">${x.arch?'⤴':'🗄'}</button>
+        <button class="x" title="Borrar" onclick="borrarProd(${i})">×</button>
+      </div>
     </div>`;
   }).join('')||`<div class="empty">${prodF==='todos'?'Sin productos. Usa Carga masiva.':'Ninguna referencia en este estado. <button class="btn ghost sm" onclick="filtrarProd(\'todos\')">Ver todas</button>'}</div>`;
   autosave();
@@ -1417,6 +1457,11 @@ function nuevoProd(){
   const r='NUEVO'+n;
   REFS.push({r,n:'PRODUCTO NUEVO',cat:'CAMISETAS',sub:CATEG['CAMISETAS'][0]});
   FICHAS[r]=nuevaFicha(recetaDe('CAMISETAS',CATEG['CAMISETAS'][0]));rowsProd();rowsExp();
+}
+function toggleArchivo(i){
+  const x=REFS[i];x.arch=!x.arch;
+  toast(x.arch?'Producto archivado':'Producto restaurado',x.r+' · '+x.n+(x.arch?' ya no aparece en precios ni exportaciones.':' vuelve a aparecer en precios y exportaciones.'));
+  rowsProd();rowsExp();rowsLista();
 }
 function borrarProd(i){
   const r=REFS[i].r;
@@ -1468,7 +1513,11 @@ const SB_URL='https://oepsutldxratrvozpulq.supabase.co';
 const SB_KEY='sb_publishable_pHQzXo-l10F1UjEndIc8Nw_ryvvSkMU';
 const SKEY='costos_tempo_sesion';
 let SES=null,ROL='consulta',NOMBRE='',ONLINE=false,lastSent={},syncing=false,pendiente=false;
-const puedeEditar=()=>['admin','planificacion'].includes(ROL);
+const puedeEditar=()=>['admin','planificacion','prearmado'].includes(ROL);
+const puedeEditarCostos=()=>['admin','planificacion'].includes(ROL);
+const puedeCrearMat=()=>['admin','planificacion','prearmado'].includes(ROL);
+const esAdmin=()=>ROL==='admin';
+const soloPrearmado=()=>ROL==='prearmado';
 const hdr=(extra={})=>({apikey:SB_KEY,Authorization:'Bearer '+(SES?SES.access_token:SB_KEY),'Content-Type':'application/json',...extra});
 /* fetch con límite de tiempo: si el servidor no responde no se queda colgado, se trata como fallo para reintentar */
 async function fetchT(url,opts,ms){
@@ -1577,13 +1626,22 @@ async function entrar(){
   }
   $('ovl-login').classList.add('hide');
   rowsCatMat();rowsCentros();rowsCli();rowsProd();rowsExp();draw();
-  if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
+  aplicarRolUI();
+  if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Los precios y márgenes no están disponibles con tu permiso.');go('prod')}
+  else if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
   setInterval(refrescar,45*60*1000);
+}
+function aplicarRolUI(){
+  const oculta=soloPrearmado();
+  ['centros','lista','exp'].forEach(s=>{
+    const el=document.querySelector('.nav-item[data-screen="'+s+'"]');
+    if(el)el.classList.toggle('hide',oculta);
+  });
 }
 function filas(){
   const url=r=>(FOTO[r]&&!FOTO[r].startsWith('data:'))?FOTO[r]:null;
   return {
-    cst_productos:REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r)}})),
+    cst_productos:REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r),arch:!!x.arch}})),
     cst_materiales:CAT.map((m,i)=>({id:m.c,data:{...m,orden:i}})),
     cst_centros:CEN.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_clientes:CLI.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
@@ -1606,7 +1664,7 @@ async function cargarNube(){
     toast('Base inicializada','Se cargaron a la nube los productos, materiales, centros y clientes del archivo.');
     return;
   }
-  REFS.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;REFS.push({r:d.r,n:d.n,marca:d.marca||'',dep:d.dep||'',cat:d.cat,sub:d.sub});if(d.foto)FOTO[d.r]=d.foto;if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca)});
+  REFS.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;REFS.push({r:d.r,n:d.n,marca:d.marca||'',dep:d.dep||'',cat:d.cat,sub:d.sub,arch:!!d.arch});if(d.foto)FOTO[d.r]=d.foto;if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca)});
   CAT.length=0;ma.sort(porOrden).forEach(x=>{const {orden,...m}=x.data;CAT.push(m)});
   if(ce.length){CEN.length=0;ce.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CEN.push(c)})}
   if(cl.length){CLI.length=0;cl.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CLI.push(c)})}
@@ -2005,7 +2063,7 @@ function cerrar(id){$(id).classList.add('hide')}
 let catF='all';
 function agregarMat(){
   const c='NUEVO-'+Date.now().toString(36).toUpperCase();
-  CAT.push({c,d:'Nuevo material',k:'mp',um:'u',p:0,f:hoy()});
+  CAT.push({c,d:'Nuevo material',k:'mp',um:'u',p:0,f:hoy(),fam:''});
   rowsCatMat('all');draw();rowsProd();
   const fila=document.querySelector('#tb-cat tr:last-child input.fld');
   if(fila){fila.scrollIntoView({block:'center'});fila.focus();fila.select&&fila.select()}
@@ -2017,11 +2075,14 @@ function rowsCatMat(f){
     <tr><td class="l"><span class="cod">${x.c}</span></td>
     <td class="l"><input class="fld" style="font-weight:600;width:100%" value="${x.d}" onchange="setMat(${i},'d',this.value)"></td>
     <td class="l"><select class="fld" style="width:auto" onchange="setMat(${i},'k',this.value)">${Object.keys(KN).map(k=>`<option value="${k}" ${k===x.k?'selected':''}>${KN[k][0]}</option>`).join('')}</select></td>
+    <td class="l"><input class="fld" list="dl-fam" style="width:150px" value="${x.fam||''}" placeholder="—" onchange="setMat(${i},'fam',this.value)"></td>
     <td><input class="fld" style="width:76px;text-align:center" value="${x.um}" onchange="setMat(${i},'um',this.value)"></td>
-    <td><input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()"></td>
+    <td>${soloPrearmado()?'<span class="ro">—</span>':`<input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()">`}</td>
     <td class="l ro" id="mf-${i}">${x.f}</td>
-    <td><button class="x" title="Borrar material" onclick="borrarMat(${i})">×</button></td></tr>`).join('');
+    <td>${soloPrearmado()?'':`<button class="x" title="Borrar material" onclick="borrarMat(${i})">×</button>`}</td></tr>`).join('');
   $('nav-mat').textContent=CAT.length;
+  const fams=[...new Set(CAT.map(x=>x.fam).filter(Boolean))].sort();
+  $('dl-fam').innerHTML=fams.map(f=>`<option value="${f}">`).join('');
 }
 
 /* ====== RESUMEN DE LA FÁBRICA ====== */
@@ -2029,7 +2090,7 @@ const REF_NOMINA={corte:0.2252,confeccion:0.1649,empaque:0.3130,bordado:0.1200};
 function resumenFabrica(){
   if(!$('kpis-fab'))return;
   const g=cur;
-  const conj=REFS.filter(x=>FICHAS[x.r].saved);
+  const conj=activos().filter(x=>FICHAS[x.r].saved);
   const base=conj.length?conj:REFS;
   const prov=!conj.length;
   const ac={mp:0,ins:0,dec:0,srv:0,mo:0,moi:0,total:0,sam:0,pvp:0,gan:0,n:0};
@@ -2086,7 +2147,7 @@ async function rowsUsr(){
     const us=await r.json();
     $('tb-usr').innerHTML=us.map(u=>`<tr><td class="l"><b style="font-weight:600">${u.nombre||''}</b></td><td class="l ro">${u.email||''}</td>
       <td class="l"><select class="fld" style="border-color:var(--line);width:auto" onchange="setRol('${u.id}',this.value)" ${u.id===(SES.user&&SES.user.id)?'disabled':''}>
-        ${['admin','planificacion','consulta'].map(x=>`<option value="${x}" ${x===u.rol?'selected':''}>${x==='admin'?'Administrador':x==='planificacion'?'Edita costos':'Solo consulta'}</option>`).join('')}
+        ${['admin','planificacion','prearmado','consulta'].map(x=>`<option value="${x}" ${x===u.rol?'selected':''}>${x==='admin'?'Administrador':x==='planificacion'?'Edita costos':x==='prearmado'?'Prearmado · sin precios':'Solo consulta'}</option>`).join('')}
       </select></td></tr>`).join('');
   }catch(e){$('tb-usr').innerHTML='<tr><td colspan="3" class="empty">No se pudo leer la lista.</td></tr>'}
 }
@@ -2170,7 +2231,7 @@ function rowsLista(){
   $('lp-head').innerHTML='<tr><th class="l" style="width:52px"></th><th class="l">Producto</th>'+
     CLI.map(c=>`<th title="${c.cli} · ${c.zona}">${abbr(c.cli)} USD</th>`).join('')+'</tr>';
   const g=cur;let n=0,vis=0;
-  const list=REFS.filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
+  const list=activos().filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
   const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
   let rows='';
   Object.keys(grupos).sort().forEach(sub=>{
@@ -2199,7 +2260,7 @@ function rowsLista(){
 function pdfListaPrecios(){
   const q=($('lp-q')&&$('lp-q').value||'').toLowerCase();
   const g=cur;
-  const list=REFS.filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
+  const list=activos().filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
   if(!list.length){toast('Nada que exportar','Guarda al menos una ficha de costos.');return}
   const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
   let body='';
@@ -2226,7 +2287,7 @@ function rowsExp(){
   const ci=CLI.findIndex(c=>c.id===cliSel);
   $('exp-t').textContent=CLI[ci].cli+' · '+CLI[ci].zona;
   const g=cur;let n=0,sp=0;
-  $('tb-exp').innerHTML=REFS.map(x=>{
+  $('tb-exp').innerHTML=activos().map(x=>{
     cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
     if(f.saved){n++;sp+=r.pvp}
     return `<tr style="${f.saved?'':'opacity:.5'}">
@@ -2245,7 +2306,7 @@ function pdfCliente(){
   const ci=CLI.findIndex(c=>c.id===cliSel),c=CLI[ci];
   const incl=$('pdf-borr').checked;
   const g=cur;
-  const list=REFS.filter(x=>incl||FICHAS[x.r].saved);
+  const list=activos().filter(x=>incl||FICHAS[x.r].saved);
   if(!list.length){toast('Nada que imprimir','Guarda al menos una ficha, o marca "Incluir borradores".');return}
   const cards=list.map(x=>{cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
     return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:''}</div>
@@ -2259,12 +2320,29 @@ function pdfCliente(){
   toast('Abriendo el PDF','En la ventana de impresión elige "Guardar como PDF".');
   setTimeout(()=>window.print(),250);
 }
+function exportarBOM(){
+  const list=activos().filter(x=>(FICHAS[x.r].lines||[]).length);
+  if(!list.length){toast('Nada que exportar','No hay fichas con materiales cargados.');return}
+  let out='Referencia;Producto;Marca;Departamento;Codigo_material;Material;Tipo;Familia;Consumo;UM\n';
+  list.forEach(x=>{
+    const f=FICHAS[x.r];
+    f.lines.forEach(l=>{
+      const m=byCode(l.c);if(!m)return;
+      out+=[x.r,x.n,x.marca||'',x.dep||'',m.c,m.d,KN[m.k]?KN[m.k][0]:m.k,m.fam||'',(l.q*(1+l.d/100)).toString(),m.um].join(';')+'\n';
+    });
+  });
+  CSVTXT=out;CSVNOM='TEMPO_BOM.csv';
+  $('mo-t').textContent=CSVNOM;
+  $('mo-s').textContent=(CSVTXT.trim().split('\n').length-1)+' líneas';
+  $('mo-b').textContent=CSVTXT;
+  $('ovl').classList.remove('hide');
+}
 function csvDe(ids){
   const g=cur;
   let out='Cliente;Zona;Ref;Producto;Marca;Departamento;Categoria;Tipo;PVP_USD;Version;Fecha\n';
   ids.forEach(id=>{
     const ci=CLI.findIndex(c=>c.id===id),c=CLI[ci];
-    REFS.forEach(x=>{
+    activos().forEach(x=>{
       const f=FICHAS[x.r];if(!f.saved)return;
       cur=x.r;calc();const r=plCalc(ci);
       out+=[c.cli,c.zona,x.r,x.n,x.marca||'',x.dep||'',x.cat,x.sub,r.pvp.toFixed(2),'v'+f.ver,f.fecha].join(';')+'\n';
@@ -2273,7 +2351,7 @@ function csvDe(ids){
   cur=g;calc();return out;
 }
 function exportar(todos){
-  if(!REFS.filter(x=>FICHAS[x.r].saved).length){toast('No hay nada que exportar','Guarda al menos una ficha de costos.');return}
+  if(!activos().filter(x=>FICHAS[x.r].saved).length){toast('No hay nada que exportar','Guarda al menos una ficha de costos.');return}
   const ids=todos?CLI.map(c=>c.id):[cliSel];
   CSVTXT=csvDe(ids);
   CSVNOM='TEMPO_Costos_'+(todos?'TODOS':CLI.find(c=>c.id===cliSel).cli.replace(/ /g,'_'))+'.csv';
