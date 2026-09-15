@@ -512,6 +512,10 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
       <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
     </div>
+    <div class="hint" style="margin-top:10px">Si una ficha que ya habías guardado aparece de golpe como "Borrador" o con costo $0, no está perdida: cada guardado también queda en un historial aparte (cst_versiones) que nada más toca. Este botón reconstruye cada ficha con la última versión de ese historial.</div>
+    <div class="addrow">
+      <button class="btn ghost" onclick="recuperarDesdeVersiones()">Recuperar costos desde el historial</button>
+    </div>
   </div>
   <div class="card">
     <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
@@ -2427,13 +2431,19 @@ async function cargarNube(){
   const R=await Promise.all(T.map(t=>sbGet(t)));
   const [pr,ma,ce,cl,fi,mk]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
-  if(!pr.length&&!ma.length){
-    // primera vez: la nube se siembra con lo que trae el archivo
-    lastSent={};
+  if(!pr.length&&!ma.length&&!fi.length){
+    // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
+    // para no repetir el incidente donde una lectura vacía borró fichas reales.
     ONLINE=true;
-    await subirFotosPendientes();
-    await syncPush();
-    toast('Base inicializada','Se cargaron a la nube los productos, materiales, centros y clientes del archivo.');
+    if(esAdmin()&&confirm('La base de datos en la nube aparece vacía (sin productos, materiales ni fichas).\n\n¿Confirmas que es la PRIMERA VEZ que se usa esta base y quieres subir el catálogo inicial del archivo?\n\nSi no estás seguro, cancela y revisa la conexión antes de continuar — nada se sube hasta que confirmes.')){
+      lastSent={};
+      await subirFotosPendientes();
+      await syncPush();
+      toast('Base inicializada','Se cargaron a la nube los productos, materiales, centros y clientes del archivo.');
+    }else{
+      marcaSave('Nube vacía · nada subido','err');
+      toast('No se subió nada','La nube sigue vacía. No seas el primero en guardar hasta confirmar con soporte que es un problema real y no un error de conexión.');
+    }
     return;
   }
   REFS.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;REFS.push({r:d.r,n:d.n,marca:d.marca||'',dep:d.dep||'',cat:d.cat,sub:d.sub,arch:!!d.arch});if(d.foto)FOTO[d.r]=d.foto;if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca)});
@@ -2489,6 +2499,33 @@ async function syncPush(){
     lastSent[t]=cur_;
   }
   return n;
+}
+async function recuperarDesdeVersiones(){
+  if(!esAdmin()){toast('Solo admin','Esta recuperación solo la puede ejecutar un administrador.');return}
+  if(!confirm('Esto va a reemplazar los consumos, tiempos y estado (guardado/versión) de cada ficha con la ÚLTIMA versión que quedó guardada en el historial de cst_versiones.\n\nÚsalo solo si crees que se perdieron costos que ya habías guardado. ¿Continuar?'))return;
+  toast('Recuperando…','Leyendo el historial de versiones guardadas.');
+  let rows;
+  try{rows=await sbGet('cst_versiones')}catch(e){toast('No se pudo leer cst_versiones',e.message);return}
+  const porRef={};
+  rows.forEach(x=>{
+    const d=x.data;if(!d||!d.ref)return;
+    if(!porRef[d.ref]||d.ver>porRef[d.ref].ver)porRef[d.ref]=d;
+  });
+  let n=0,sinProducto=[];
+  Object.keys(porRef).forEach(ref=>{
+    const v=porRef[ref];
+    if(!FICHAS[ref]){sinProducto.push(ref);return}
+    const f=FICHAS[ref];
+    f.lines=v.lines||[];
+    f.cen=CEN.reduce((o,c)=>{o[c.id]=(v.cen&&v.cen[c.id])?v.cen[c.id]:(f.cen[c.id]||{on:false,val:0});return o},{});
+    f.ver=v.ver;f.saved=true;f.edit=false;f.fecha=v.fecha;f.aprob=null;
+    f.hist=f.hist||[];
+    if(!f.hist.some(h=>h.ver===v.ver))f.hist.push({ver:v.ver,fecha:v.fecha,total:v.total,sam:v.sam,pvp:(v.pvp&&v.pvp[0]&&v.pvp[0].pvp)||0});
+    n++;
+  });
+  draw();rowsProd();rowsExp();
+  try{await syncPush();toast('Recuperación completa',n+' ficha(s) restauradas desde el historial y ya subidas a la nube.'+(sinProducto.length?' No encontré producto para: '+sinProducto.join(', '):''))}
+  catch(e){toast('Restaurado localmente, falta subir','Se restauró en pantalla pero no se pudo guardar en la nube: '+e.message+'. Usa "Guardar avance" en una ficha para reintentar.')}
 }
 async function guardarVersion(ref){
   const f=FICHAS[ref];if(!f||!ONLINE||!puedeEditar())return;
