@@ -385,6 +385,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
               oninput="filterCat(this.value)" onfocus="filterCat(this.value)" onblur="hideCb()">
             <div id="cb-list" class="cblist hide"></div>
           </div>
+          <datalist id="dl-pan"></datalist>
           <button class="btn ghost sm" onmousedown="event.preventDefault()" onclick="atajo('materia prima')">Telas</button>
           <button class="btn ghost sm" onmousedown="event.preventDefault()" onclick="atajo('insumos')">Insumos</button>
           <button class="btn ghost sm" onmousedown="event.preventDefault()" onclick="atajo('decoración')">Decoración</button>
@@ -1210,10 +1211,7 @@ function rowsLines(){
     }
     html+=`<tr>
       <td class="l"><div class="itm">${m.d}</div><span class="cod">${m.c}</span></td>
-      <td>${(m.k==='mp'||m.k==='ins')?`<select class="fld" style="width:130px" ${RO()?'disabled':''} onchange="setLineCol(${i},this.value)">
-          <option value="">${l.pan?'— quitar —':'— color —'}</option>
-          ${PANTONES.map(p=>`<option value="${p.pan}" ${p.pan===l.pan?'selected':''}>${p.pan} ${p.nombre}</option>`).join('')}
-        </select>`:'<span class="ro">—</span>'}</td>
+      <td>${(m.k==='mp'||m.k==='ins')?`<input class="fld" list="dl-pan" style="width:150px" placeholder="Buscar pantón…" value="${l.pan?pantoneNombre(l.pan):''}" ${RO()?'disabled':''} onchange="setLineColTxt(${i},this.value)">`:'<span class="ro">—</span>'}</td>
       <td><span class="um">${m.um}</span></td>
       <td><input class="n" value="${l.q}" ${RO()?'readonly':''} oninput="setV(${i},'q',this.value)"></td>
       <td>${m.k==='srv'
@@ -1223,8 +1221,18 @@ function rowsLines(){
       <td>${RO()?'':`<button class="x" onclick="rm(${i})">×</button>`}</td></tr>`;
   });
   tb.innerHTML=html;
+  const dl=$('dl-pan');
+  if(dl)dl.innerHTML=[...PANTONES].sort((a,b)=>a.pan.localeCompare(b.pan,undefined,{numeric:true})).map(p=>`<option value="${p.pan} ${p.nombre}">`).join('');
 }
 function setLineCol(i,v){F().lines[i].pan=v;autosave();rowsLines()}
+function setLineColTxt(i,txt){
+  txt=(txt||'').trim();
+  if(!txt){setLineCol(i,'');return}
+  let p=PANTONES.find(x=>(x.pan+' '+x.nombre).toLowerCase()===txt.toLowerCase());
+  if(!p)p=PANTONES.find(x=>x.pan.toLowerCase()===txt.toLowerCase());
+  if(!p){toast('Pantón no encontrado','Elige uno de la lista o créalo primero en Materiales → Pantones.');rowsLines();return}
+  setLineCol(i,p.pan);
+}
 function setV(i,f,v){F().lines[i][f]=num(v);draw(f==='p'?false:true)}
 function setPrecio(i,v){
   const x=CAT[i];if(!x)return;
@@ -1258,7 +1266,8 @@ function addLine(code){
 function pantoneNombre(pan){const p=PANTONES.find(x=>x.pan===pan);return p?p.pan+' '+p.nombre:pan}
 function rowsPantones(){
   const tb=$('tb-pan');if(!tb)return;
-  tb.innerHTML=PANTONES.map((p,i)=>`<tr>
+  const orden=PANTONES.map((p,i)=>({p,i})).sort((a,b)=>a.p.pan.localeCompare(b.p.pan,undefined,{numeric:true}));
+  tb.innerHTML=orden.map(({p,i})=>`<tr>
     <td class="l"><input class="fld" style="width:100px" value="${p.pan}" onchange="setPantone(${i},'pan',this.value)"></td>
     <td class="l"><input class="fld" style="width:100%" value="${p.nombre}" onchange="setPantone(${i},'nombre',this.value)"></td>
     <td>${soloPrearmado()?'':`<button class="x" title="Borrar pantón" onclick="borrarPantone(${i})">×</button>`}</td></tr>`).join('')
