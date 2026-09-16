@@ -1035,50 +1035,50 @@ const KN={mp:['Materia prima','mp'],ins:['Insumos','ins'],dec:['Decoración','de
 const COLORS={mp:'#7FB69A',ins:'#BCD292',dec:'#E3A9B0',srv:'#88C0C6',mo:'#D8C186',moi:'#B3BCD9'};
 
 /* ====== TELAS SUGERIDAS POR TIPO DE PRODUCTO ====== */
-const REC_BASE=[['IN-HIL001',0.010,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]];
+const REC_BASE=[['IN-HILOPARACOSE',0.010,0],['IN-SATIN',1,0],['IN-ETIQUETAS',1,0]];
 const RECETAS={
- 'CAMISETAS':{def:[['TJ-JER241',0.200,0],['TJ-CUE001',1,0]],tipos:{
-   'Camiseta ML':[['TJ-JER241',0.240,0],['TJ-CUE001',1,0],['TJ-PUN001',1,0]],
-   'Ranglan ML':[['TJ-JER241',0.235,0],['TJ-RIB2X2',0.030,0],['TJ-PUN001',1,0]],
-   'MC Ranglan':[['TJ-JER241',0.205,0],['TJ-RIB2X2',0.030,0]],
-   'Basica Crop':[['TJ-JERLY',0.150,0],['TJ-RIB2X2',0.020,0]],
-   'Oversize':[['TJ-JER241',0.245,0],['TJ-RIB2X2',0.025,0]],
-   'Camiseta Corte Moda':[['TJ-JERLY',0.185,0],['TJ-RIB2X2',0.020,0]]}},
- 'FITS':{def:[['TJ-RIB2X2',0.140,0],['IN-ELA001',1.10,0]],tipos:{
-   'Bare Top':[['TJ-RIB2X2',0.135,0],['IN-ELA001',1.20,0]],
-   'Bare Tiras':[['TJ-JERLY',0.125,0],['IN-FRA001',1.30,0]],
-   'Yogga':[['TJ-JERLY',0.185,0],['TJ-RIB2X2',0.020,0]],
-   'Fit 6':[['TJ-JERLY',0.175,0],['TJ-RIB2X2',0.020,0]],
-   'Fit 61':[['TJ-JERLY',0.180,0],['TJ-RIB2X2',0.020,0]],
-   'Fit Moda':[['TJ-JERLY',0.180,0],['TJ-RIB1X1',0.025,0]]}},
- 'POLOS':{def:[['TJ-PIQ301',0.230,0],['TJ-CUE001',1,0],['TJ-PUN001',1,0],['IN-BOT001',3,0]]},
- 'FLEECE BASICO':{def:[['TJ-FLE001',0.420,0],['TJ-RIB2X2',0.055,0]]},
- 'FLEECE PESADO':{def:[['TJ-FLE001',0.520,0],['TJ-RIB2X2',0.065,0]],tipos:{
-   'Crew Zip':[['TJ-FLE001',0.520,0],['TJ-RIB2X2',0.065,0],['IN-CIE001',1,0]]}},
- 'HODDIE':{def:[['TJ-FLE001',0.560,0],['TJ-RIB2X2',0.070,0],['IN-COR001',1.40,0]]},
- 'JOGGER':{def:[['TJ-FLE001',0.400,0],['TJ-RIB2X2',0.060,0],['IN-ELA001',0.90,0],['IN-COR001',1.20,0]]},
- 'CHOMPA':{def:[['TJ-FLE001',0.540,0],['TJ-RIB2X2',0.070,0],['IN-CIE001',1,0],['IN-COR001',1.40,0]]},
- 'ENTERIZO':{def:[['TJ-FTE001',0.480,0],['TJ-RIB2X2',0.050,0],['IN-CIE001',1,0]]},
- 'BVD':{def:[['TJ-RIB241',0.130,0],['IN-ELA001',1.00,0]]},
- 'BOMBER':{def:[['TJ-FTE001',0.450,0],['TJ-RIB2X2',0.070,0],['IN-CIE001',1,0]]},
- 'TEJIDOS':{def:[['TJ-GALLE',0.250,0],['TJ-RIB2X2',0.030,0]],tipos:{
-   'Hoodie Tejido':[['TJ-GALLE',0.420,0],['TJ-RIB2X2',0.060,0],['IN-COR001',1.40,0]],
-   'Polo Tejida':[['TJ-GALLE',0.240,0],['TJ-CUE001',1,0],['IN-BOT001',3,0]],
-   'Henley Tejida':[['TJ-GALLE',0.245,0],['IN-BOT001',3,0]]}},
- 'DENIM':{def:[['TJ-DEN001',1.40,0],['IN-CIE001',1,0],['IN-BOT001',1,0]],tipos:{
-   'Short Denim':[['TJ-DEN001',0.95,0],['IN-CIE001',1,0],['IN-BOT001',1,0]]}},
- 'HENLEY':{def:[['TJ-JER241',0.215,0],['TJ-RIB2X2',0.020,0],['IN-BOT001',3,0]],tipos:{
-   'Henley ML':[['TJ-JER241',0.250,0],['TJ-RIB2X2',0.020,0],['TJ-PUN001',1,0],['IN-BOT001',3,0]]}},
- 'BODY':{def:[['TJ-JERLY',0.150,0],['IN-ELA001',1.30,0],['IN-BRO001',3,0]]},
- 'PANTALONES PLANOS':{def:[['TJ-PLA001',1.35,0],['IN-CIE001',1,0],['IN-BOT001',1,0]]},
- 'BOXER':{def:[['TJ-JER241',0.120,0],['IN-ELA001',0.85,0]]},
- 'FALDAS':{def:[['TJ-PLA001',0.85,0],['IN-CIE001',1,0]]},
- 'CHALECOS':{def:[['TJ-FLE001',0.360,0],['TJ-RIB2X2',0.040,0],['IN-CIE001',1,0]]},
- 'CAMISAS':{def:[['TJ-PLA001',1.55,0],['IN-BOT001',9,0]],tipos:{
-   'Camisas MC':[['TJ-PLA001',1.30,0],['IN-BOT001',8,0]]}},
- 'SHORT PLANOS':{def:[['TJ-PLA001',0.90,0],['IN-CIE001',1,0],['IN-BOT001',1,0]]},
- 'SHORT FLEECE':{def:[['TJ-FLE001',0.280,0],['TJ-RIB2X2',0.030,0],['IN-ELA001',0.90,0]]},
- 'VESTIDOS':{def:[['TJ-JERLY',0.280,0],['IN-ELA001',1.10,0]]},
+ 'CAMISETAS':{def:[['MP-JERSEY241',0.200,0],['MP-CUELLOSTEJID',1,0]],tipos:{
+   'Camiseta ML':[['MP-JERSEY241',0.240,0],['MP-CUELLOSTEJID',1,0],['MP-PUOSTEJIDOS',1,0]],
+   'Ranglan ML':[['MP-JERSEY241',0.235,0],['MP-RIBB2X2LIVIA',0.030,0],['MP-PUOSTEJIDOS',1,0]],
+   'MC Ranglan':[['MP-JERSEY241',0.205,0],['MP-RIBB2X2LIVIA',0.030,0]],
+   'Basica Crop':[['MP-JERSEYLYCRA',0.150,0],['MP-RIBB2X2LIVIA',0.020,0]],
+   'Oversize':[['MP-JERSEY241',0.245,0],['MP-RIBB2X2LIVIA',0.025,0]],
+   'Camiseta Corte Moda':[['MP-JERSEYLYCRA',0.185,0],['MP-RIBB2X2LIVIA',0.020,0]]}},
+ 'FITS':{def:[['MP-RIBB2X2LIVIA',0.140,0],['IN-ELASTICO',1.10,0]],tipos:{
+   'Bare Top':[['MP-RIBB2X2LIVIA',0.135,0],['IN-ELASTICO',1.20,0]],
+   'Bare Tiras':[['MP-JERSEYLYCRA',0.125,0]],
+   'Yogga':[['MP-JERSEYLYCRA',0.185,0],['MP-RIBB2X2LIVIA',0.020,0]],
+   'Fit 6':[['MP-JERSEYLYCRA',0.175,0],['MP-RIBB2X2LIVIA',0.020,0]],
+   'Fit 61':[['MP-JERSEYLYCRA',0.180,0],['MP-RIBB2X2LIVIA',0.020,0]],
+   'Fit Moda':[['MP-JERSEYLYCRA',0.180,0],['MP-MICROFIBRACO',0.025,0]]}},
+ 'POLOS':{def:[['MP-PIQUE',0.230,0],['MP-CUELLOSTEJID',1,0],['MP-PUOSTEJIDOS',1,0],['IN-BOTONES',3,0]]},
+ 'FLEECE BASICO':{def:[['MP-FLEECEPERCHA',0.420,0],['MP-RIBB2X2LIVIA',0.055,0]]},
+ 'FLEECE PESADO':{def:[['MP-FLEECEPERCHA',0.520,0],['MP-RIBB2X2LIVIA',0.065,0]],tipos:{
+   'Crew Zip':[['MP-FLEECEPERCHA',0.520,0],['MP-RIBB2X2LIVIA',0.065,0],['IN-CIERRENYLON',1,0]]}},
+ 'HODDIE':{def:[['MP-FLEECEPERCHA',0.560,0],['MP-RIBB2X2LIVIA',0.070,0],['IN-CORDONREDOND',1.40,0]]},
+ 'JOGGER':{def:[['MP-FLEECEPERCHA',0.400,0],['MP-RIBB2X2LIVIA',0.060,0],['IN-ELASTICO',0.90,0],['IN-CORDONREDOND',1.20,0]]},
+ 'CHOMPA':{def:[['MP-FLEECEPERCHA',0.540,0],['MP-RIBB2X2LIVIA',0.070,0],['IN-CIERRENYLON',1,0],['IN-CORDONREDOND',1.40,0]]},
+ 'ENTERIZO':{def:[['MP-FRENCHTERRY',0.480,0],['MP-RIBB2X2LIVIA',0.050,0],['IN-CIERRENYLON',1,0]]},
+ 'BVD':{def:[['MP-RIBB241',0.130,0],['IN-ELASTICO',1.00,0]]},
+ 'BOMBER':{def:[['MP-FRENCHTERRY',0.450,0],['MP-RIBB2X2LIVIA',0.070,0],['IN-CIERRENYLON',1,0]]},
+ 'TEJIDOS':{def:[['MP-GALLETA',0.250,0],['MP-RIBB2X2LIVIA',0.030,0]],tipos:{
+   'Hoodie Tejido':[['MP-GALLETA',0.420,0],['MP-RIBB2X2LIVIA',0.060,0],['IN-CORDONREDOND',1.40,0]],
+   'Polo Tejida':[['MP-GALLETA',0.240,0],['MP-CUELLOSTEJID',1,0],['IN-BOTONES',3,0]],
+   'Henley Tejida':[['MP-GALLETA',0.245,0],['IN-BOTONES',3,0]]}},
+ 'DENIM':{def:[['IN-CIERRENYLON',1,0],['IN-BOTONES',1,0]],tipos:{
+   'Short Denim':[['IN-CIERRENYLON',1,0],['IN-BOTONES',1,0]]}}, // sin tela de mezclilla en el catálogo importado: agrégala en Materiales y ponla aquí
+ 'HENLEY':{def:[['MP-JERSEY241',0.215,0],['MP-RIBB2X2LIVIA',0.020,0],['IN-BOTONES',3,0]],tipos:{
+   'Henley ML':[['MP-JERSEY241',0.250,0],['MP-RIBB2X2LIVIA',0.020,0],['MP-PUOSTEJIDOS',1,0],['IN-BOTONES',3,0]]}},
+ 'BODY':{def:[['MP-JERSEYLYCRA',0.150,0],['IN-ELASTICO',1.30,0],['IN-BROCHE',3,0]]},
+ 'PANTALONES PLANOS':{def:[['MP-PLANA',1.35,0],['IN-CIERRENYLON',1,0],['IN-BOTONES',1,0]]},
+ 'BOXER':{def:[['MP-JERSEY241',0.120,0],['IN-ELASTICO',0.85,0]]},
+ 'FALDAS':{def:[['MP-PLANA',0.85,0],['IN-CIERRENYLON',1,0]]},
+ 'CHALECOS':{def:[['MP-FLEECEPERCHA',0.360,0],['MP-RIBB2X2LIVIA',0.040,0],['IN-CIERRENYLON',1,0]]},
+ 'CAMISAS':{def:[['MP-PLANA',1.55,0],['IN-BOTONES',9,0]],tipos:{
+   'Camisas MC':[['MP-PLANA',1.30,0],['IN-BOTONES',8,0]]}},
+ 'SHORT PLANOS':{def:[['MP-PLANA',0.90,0],['IN-CIERRENYLON',1,0],['IN-BOTONES',1,0]]},
+ 'SHORT FLEECE':{def:[['MP-FLEECEPERCHA',0.280,0],['MP-RIBB2X2LIVIA',0.030,0],['IN-ELASTICO',0.90,0]]},
+ 'VESTIDOS':{def:[['MP-JERSEYLYCRA',0.280,0],['IN-ELASTICO',1.10,0]]},
  'ACCESORIOS':{def:[]}
 };
 function recetaDe(cat,sub){
@@ -1137,14 +1137,14 @@ function nuevaFicha(pre){
   };
 }
 const PRE={
- '4823':{lines:[['TJ-RIB2X2',0.245,0],['IN-HIL001',0.014,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.95,confeccion:9.80,empaque:1.25}},
- '4824':{lines:[['TJ-GALLE',0.265,0],['IN-HIL001',0.014,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.95,confeccion:10.40,empaque:1.25}},
- '4825':{lines:[['TJ-RIB241',0.185,0],['IN-HIL001',0.010,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.80,confeccion:7.60,empaque:1.20}},
- '4826':{lines:[['TJ-JERLY',0.190,0],['IN-HIL001',0.009,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.75,confeccion:6.90,empaque:1.20}},
- '4827':{lines:[['TJ-RIB241',0.140,0],['IN-HIL001',0.008,0],['IN-ELA001',1.10,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.70,confeccion:6.40,empaque:1.15}},
- '4828':{lines:[['TJ-RIB2X2',0.135,0],['IN-HIL001',0.008,0],['IN-ELA001',1.20,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.70,confeccion:6.80,empaque:1.15}},
- '4829':{lines:[['TJ-JERLY',0.125,0],['IN-HIL001',0.007,0],['IN-FRA001',1.30,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.65,confeccion:7.20,empaque:1.15}},
- '4830':{lines:[['TJ-RIB2X2',0.150,0],['IN-HIL001',0.008,0],['IN-ELA001',1.00,0],['IN-ETQ010',1,0],['IN-INS001',1,0],['IN-FUN001',1,0],['SV-TIN001',0,0]],cen:{corte:0.70,confeccion:6.60,empaque:1.15}}
+ '4823':{lines:[['MP-RIBB2X2LIVIA',0.245,0],['IN-HILOPARACOSE',0.014,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.95,confeccion:9.80,empaque:1.25}},
+ '4824':{lines:[['MP-GALLETA',0.265,0],['IN-HILOPARACOSE',0.014,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.95,confeccion:10.40,empaque:1.25}},
+ '4825':{lines:[['MP-RIBB241',0.185,0],['IN-HILOPARACOSE',0.010,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.80,confeccion:7.60,empaque:1.20}},
+ '4826':{lines:[['MP-JERSEYLYCRA',0.190,0],['IN-HILOPARACOSE',0.009,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.75,confeccion:6.90,empaque:1.20}},
+ '4827':{lines:[['MP-RIBB241',0.140,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.10,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.40,empaque:1.15}},
+ '4828':{lines:[['MP-RIBB2X2LIVIA',0.135,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.20,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.80,empaque:1.15}},
+ '4829':{lines:[['MP-JERSEYLYCRA',0.125,0],['IN-HILOPARACOSE',0.007,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.65,confeccion:7.20,empaque:1.15}},
+ '4830':{lines:[['MP-RIBB2X2LIVIA',0.150,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.00,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.60,empaque:1.15}}
 };
 REFS.forEach(x=>FICHAS[x.r]=nuevaFicha(PRE[x.r]||recetaDe(x.cat,x.sub)));
 
