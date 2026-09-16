@@ -176,7 +176,7 @@ input.n:focus{border-color:var(--orange);outline:none}
 .save p{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
 
 /* productos */
-.prow{display:grid;grid-template-columns:22px 56px 88px minmax(160px,1fr) 150px 120px 178px 178px 110px 34px;gap:10px;align-items:center;
+.prow{display:grid;grid-template-columns:22px 56px 88px minmax(160px,1fr) 150px 120px 70px 130px 178px 178px 110px 34px;gap:10px;align-items:center;
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 .prow:hover{background:#FBFDFB}
 .mth{position:relative;cursor:pointer}
@@ -462,7 +462,7 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
       <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
     </div>
-    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
+    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
     <div id="pr-rows"></div>
     <div class="addrow">
       <button class="btn org" onclick="guardarProductos()">Guardar productos</button>
@@ -546,6 +546,18 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
     <div class="hint" style="margin-top:10px">Si una ficha que ya habías guardado aparece de golpe como "Borrador" o con costo $0, no está perdida: cada guardado también queda en un historial aparte (cst_versiones) que nada más toca. Este botón reconstruye cada ficha con la última versión de ese historial.</div>
     <div class="addrow">
       <button class="btn ghost" onclick="recuperarDesdeVersiones()">Recuperar costos desde el historial</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Configuración</h2><div class="sub" id="temp-sub"></div></div>
+    <div class="hint">Temporadas disponibles para asignar a cada producto (en Productos, junto a Marca y Departamento).</div>
+    <table>
+      <thead><tr><th class="l">Temporada</th><th></th></tr></thead>
+      <tbody id="tb-temp"></tbody>
+    </table>
+    <div class="addrow">
+      <input id="nt-nombre" class="fld" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la temporada nueva">
+      <button class="btn ghost" onclick="agregarTemporada()">+ Crear temporada</button>
     </div>
   </div>
   <div class="card">
@@ -729,6 +741,7 @@ const FOTO = {"4823": "data:image/webp;base64,UklGRvoMAABXRUJQVlA4IO4MAAAwaQCdAS
 /* ====== ÁRBOL DE CATEGORÍAS ====== */
 const DEPS=['Hombre','Mujer','Niño'];
 let MARCAS=['Aeropostale'];
+let TEMPORADAS=['Spring','Summer','Fall','Winter'];
 const CATEG={
  'CAMISETAS':['Camiseta CV','Camiseta CR','Camiseta Bolsillo','Level 1','Level 2','Fashion Graphics','Camiseta ML','Basica Crop','Oversize','MC Ranglan','Camiseta Corte Moda','Ranglan ML'],
  'FITS':['Bare BVD','Bare Top','Fit 6','Fit 61','Yogga','Bare Tiras','Fit Moda'],
@@ -1603,6 +1616,11 @@ function filaProd({x,i}){
       <div><select class="fld" onchange="setP(${i},'dep',this.value)" style="${x.dep?'':'color:var(--ink-3)'}">
         <option value="" ${x.dep?'':'selected'}>— elegir —</option>
         ${DEPS.map(d=>`<option ${d===x.dep?'selected':''}>${d}</option>`).join('')}</select></div>
+      <div><input class="fld" style="width:100%;text-align:center" value="${x.anio||''}" placeholder="—" oninput="setP(${i},'anio',this.value)"></div>
+      <div><select class="fld" onchange="temporadaSel(${i},this)" style="${x.temporada?'':'color:var(--ink-3)'}">
+        <option value="" ${x.temporada?'':'selected'}>— elegir —</option>
+        ${TEMPORADAS.map(t=>`<option ${t===x.temporada?'selected':''}>${t}</option>`).join('')}
+        <option value="__nueva__">+ Nueva temporada…</option></select></div>
       <div><select class="fld" onchange="setP(${i},'cat',this.value)">
         ${Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div>
       <div><select class="fld" onchange="setP(${i},'sub',this.value)">
@@ -1648,6 +1666,14 @@ function marcaSel(i,sel){
     if(!MARCAS.some(m=>m.toLowerCase()===n.toLowerCase()))MARCAS.push(n);
     setP(i,'marca',n);rowsProd();
   }else setP(i,'marca',sel.value);
+}
+function temporadaSel(i,sel){
+  if(sel.value==='__nueva__'){
+    const n=(prompt('Nombre de la temporada nueva:')||'').trim();
+    if(!n){sel.value=REFS[i].temporada||'';return}
+    if(!TEMPORADAS.some(t=>t.toLowerCase()===n.toLowerCase()))TEMPORADAS.push(n);
+    setP(i,'temporada',n);rowsProd();
+  }else setP(i,'temporada',sel.value);
 }
 function setCatHead(f,v){
   const i=REFS.findIndex(r=>r.r===cur);if(i<0)return;
@@ -1843,20 +1869,21 @@ function aplicarRolUI(){
 function filas(){
   const url=r=>(FOTO[r]&&!FOTO[r].startsWith('data:'))?FOTO[r]:null;
   return {
-    cst_productos:REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r),arch:!!x.arch}})),
+    cst_productos:REFS.map((x,i)=>({id:x.r,data:{r:x.r,n:x.n,marca:x.marca||'',dep:x.dep||'',anio:x.anio||'',temporada:x.temporada||'',cat:x.cat,sub:x.sub,orden:i,foto:url(x.r),arch:!!x.arch}})),
     cst_materiales:CAT.map((m,i)=>({id:m.c,data:{...m,orden:i}})),
     cst_centros:CEN.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_clientes:CLI.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_fichas:REFS.filter(x=>FICHAS[x.r]).map(x=>({id:x.r,data:FICHAS[x.r]})),
     cst_marcas:MARCAS.map((m,i)=>({id:m.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:m,orden:i}})),
-    cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{pan:p.pan,nombre:p.nombre,orden:i}}))
+    cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{pan:p.pan,nombre:p.nombre,orden:i}})),
+    cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}}))
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
 async function cargarNube(){
-  const T=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones'];
+  const T=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas'];
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk,pt]=R;
+  const [pr,ma,ce,cl,fi,mk,pt,tp]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -1873,7 +1900,7 @@ async function cargarNube(){
     }
     return;
   }
-  REFS.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;REFS.push({r:d.r,n:d.n,marca:d.marca||'',dep:d.dep||'',cat:d.cat,sub:d.sub,arch:!!d.arch});if(d.foto)FOTO[d.r]=d.foto;if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca)});
+  REFS.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;REFS.push({r:d.r,n:d.n,marca:d.marca||'',dep:d.dep||'',anio:d.anio||'',temporada:d.temporada||'',cat:d.cat,sub:d.sub,arch:!!d.arch});if(d.foto)FOTO[d.r]=d.foto;if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca);if(d.temporada&&!TEMPORADAS.some(t=>t===d.temporada))TEMPORADAS.push(d.temporada)});
   CAT.length=0;ma.sort(porOrden).forEach(x=>{const {orden,...m}=x.data;CAT.push(m)});
   if(ce.length){CEN.length=0;ce.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CEN.push(c)})}
   if(cl.length){CLI.length=0;cl.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CLI.push(c)})}
@@ -1881,6 +1908,7 @@ async function cargarNube(){
   fi.forEach(x=>FICHAS[x.id]=x.data);
   if(mk&&mk.length){MARCAS=mk.sort(porOrden).map(x=>x.data.nombre)}
   if(pt&&pt.length){PANTONES=pt.sort(porOrden).map(x=>({pan:x.data.pan,nombre:x.data.nombre}))}
+  if(tp&&tp.length){TEMPORADAS=tp.sort(porOrden).map(x=>x.data.nombre)}
   // fotos del archivo que la nube no tiene
   Object.keys(FOTO).forEach(k=>{if(pr.some(x=>x.data.r===k&&x.data.foto)&&FOTO[k].startsWith('data:'))delete FOTO[k]});
   cur=(FICHAS[cur]?cur:(REFS[0]&&REFS[0].r));
@@ -2489,6 +2517,39 @@ function rowsCentros(){
     <td class="tot" id="tt-${i}">${fmt4(c.tD+c.tI)} <span class="cod">/${c.base==='min'?'min':'mil'}</span></td>
     <td class="l ro">${c.desde}</td>
     <td><button class="x" title="Borrar centro" onclick="borrarCen(${i})">×</button></td></tr>`).join('');
+  rowsTemporadas();
+}
+function rowsTemporadas(){
+  const tb=$('tb-temp');if(!tb)return;
+  tb.innerHTML=TEMPORADAS.map((t,i)=>`<tr>
+    <td class="l"><input class="fld" style="width:100%" value="${t}" onchange="setTemporada(${i},this.value)"></td>
+    <td>${soloPrearmado()?'':`<button class="x" title="Borrar temporada" onclick="borrarTemporada(${i})">×</button>`}</td></tr>`).join('')
+    ||'<tr><td colspan="2" class="empty">Sin temporadas todavía.</td></tr>';
+  $('temp-sub').textContent=TEMPORADAS.length+' temporada'+(TEMPORADAS.length===1?'':'s');
+}
+function setTemporada(i,v){
+  const old=TEMPORADAS[i];v=v.trim();if(!v)return;
+  TEMPORADAS[i]=v;
+  REFS.forEach(r=>{if(r.temporada===old)r.temporada=v});
+  rowsTemporadas();rowsProd();autosave();
+}
+function agregarTemporada(){
+  const n=($('nt-nombre').value||'').trim();
+  if(!n){toast('Falta el nombre','Escribe el nombre de la temporada.');return}
+  if(TEMPORADAS.some(t=>t.toLowerCase()===n.toLowerCase())){toast('Ya existe','Esa temporada ya está en la lista.');return}
+  TEMPORADAS.push(n);
+  $('nt-nombre').value='';
+  rowsTemporadas();autosave();
+  toast('Temporada creada',n+' ya está disponible para asignar a productos.');
+}
+function borrarTemporada(i){
+  const t=TEMPORADAS[i];if(!t)return;
+  let usos=0;REFS.forEach(r=>{if(r.temporada===t)usos++});
+  if(!confirm('¿Borrar la temporada "'+t+'"?'+(usos?' Se usa en '+usos+' producto(s); quedarán sin temporada asignada.':'')))return;
+  TEMPORADAS.splice(i,1);
+  REFS.forEach(r=>{if(r.temporada===t)r.temporada=''});
+  rowsTemporadas();rowsProd();autosave();
+  toast('Temporada borrada',t+' se quitó de la lista.');
 }
 function setTar(i,f,v){
   CEN[i][f]=num(v);CEN[i].desde=hoy();resumenFabrica();
