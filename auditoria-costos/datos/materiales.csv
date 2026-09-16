@@ -1,0 +1,141 @@
+﻿codigo;descripcion;tipo;unidad_medida;costo_unitario_usd;fecha_costo;familia;origen
+SG-PLAS-S;Serigrafía Plastisol · sello;dec;color;0.15;8-sep-2026;;catalogo_interno
+SG-PLAS-M;Serigrafía Plastisol · mediano hasta 18 cm;dec;color;0.2;8-sep-2026;;catalogo_interno
+SG-PLAS-G;Serigrafía Plastisol · grande hasta 40 cm;dec;color;0.25;8-sep-2026;;catalogo_interno
+SG-PLAS-E;Serigrafía Plastisol · especial más de 40 cm;dec;color;0.32;8-sep-2026;;catalogo_interno
+SG-ACUS-S;Serigrafía Acusoft · sello;dec;color;0.15;8-sep-2026;;catalogo_interno
+SG-ACUS-M;Serigrafía Acusoft · mediano hasta 18 cm;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-ACUS-G;Serigrafía Acusoft · grande hasta 40 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-ACUS-E;Serigrafía Acusoft · especial más de 40 cm;dec;color;0.4;8-sep-2026;;catalogo_interno
+SG-AGUA-S;Serigrafía Base agua textil · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-AGUA-M;Serigrafía Base agua textil · mediano hasta 18 cm;dec;color;0.25;8-sep-2026;;catalogo_interno
+SG-AGUA-G;Serigrafía Base agua textil · grande hasta 40 cm;dec;color;0.4;8-sep-2026;;catalogo_interno
+SG-AGUA-E;Serigrafía Base agua textil · especial más de 40 cm;dec;color;0.55;8-sep-2026;;catalogo_interno
+SG-BLCU-S;Serigrafía Blanco cubriente · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-BLCU-M;Serigrafía Blanco cubriente · mediano hasta 18 cm;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-BLCU-G;Serigrafía Blanco cubriente · grande hasta 40 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-BLCU-E;Serigrafía Blanco cubriente · especial más de 40 cm;dec;color;0.37;8-sep-2026;;catalogo_interno
+SG-NEON-S;Serigrafía Neones · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-NEON-M;Serigrafía Neones · mediano hasta 18 cm;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-NEON-G;Serigrafía Neones · grande hasta 40 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-NEON-E;Serigrafía Neones · especial más de 40 cm;dec;color;0.37;8-sep-2026;;catalogo_interno
+SG-BESP-S;Serigrafía Bases especiales · sello;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-BESP-M;Serigrafía Bases especiales · mediano hasta 18 cm;dec;color;0.28;8-sep-2026;;catalogo_interno
+SG-BESP-G;Serigrafía Bases especiales · grande hasta 40 cm;dec;color;0.35;8-sep-2026;;catalogo_interno
+SG-BESP-E;Serigrafía Bases especiales · especial más de 40 cm;dec;color;0.5;8-sep-2026;;catalogo_interno
+SG-SHIM-S;Serigrafía Shimer · sello;dec;color;0.15;8-sep-2026;;catalogo_interno
+SG-SHIM-M;Serigrafía Shimer · mediano hasta 18 cm;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-SHIM-G;Serigrafía Shimer · grande hasta 40 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-SHIM-E;Serigrafía Shimer · especial más de 40 cm;dec;color;0.4;8-sep-2026;;catalogo_interno
+SG-ESPE-S;Serigrafía Base espejo · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-ESPE-M;Serigrafía Base espejo · mediano hasta 18 cm;dec;color;0.35;8-sep-2026;;catalogo_interno
+SG-ESPE-G;Serigrafía Base espejo · grande hasta 40 cm;dec;color;0.45;8-sep-2026;;catalogo_interno
+SG-ESPE-E;Serigrafía Base espejo · especial más de 40 cm;dec;color;0.6;8-sep-2026;;catalogo_interno
+SG-ALTD-S;Serigrafía Alta densidad · sello;dec;color;0.25;8-sep-2026;;catalogo_interno
+SG-ALTD-M;Serigrafía Alta densidad · mediano hasta 18 cm;dec;color;0.35;8-sep-2026;;catalogo_interno
+SG-ALTD-G;Serigrafía Alta densidad · grande hasta 40 cm;dec;color;0.45;8-sep-2026;;catalogo_interno
+SG-ALTD-E;Serigrafía Alta densidad · especial más de 40 cm;dec;color;0.6;8-sep-2026;;catalogo_interno
+SG-PUFF-S;Serigrafía Base puff · sello;dec;color;0.2;8-sep-2026;;catalogo_interno
+SG-PUFF-M;Serigrafía Base puff · mediano hasta 18 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-PUFF-G;Serigrafía Base puff · grande hasta 40 cm;dec;color;0.4;8-sep-2026;;catalogo_interno
+SG-PUFF-E;Serigrafía Base puff · especial más de 40 cm;dec;color;0.65;8-sep-2026;;catalogo_interno
+SG-ECOC-S;Serigrafía Base ecochear · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-ECOC-M;Serigrafía Base ecochear · mediano hasta 18 cm;dec;color;0.28;8-sep-2026;;catalogo_interno
+SG-ECOC-G;Serigrafía Base ecochear · grande hasta 40 cm;dec;color;0.38;8-sep-2026;;catalogo_interno
+SG-ECOC-E;Serigrafía Base ecochear · especial más de 40 cm;dec;color;0.6;8-sep-2026;;catalogo_interno
+SG-FLOC-S;Serigrafía Flock · sello;dec;color;0.7;8-sep-2026;;catalogo_interno
+SG-FLOC-M;Serigrafía Flock · mediano hasta 18 cm;dec;color;0.9;8-sep-2026;;catalogo_interno
+SG-FLOC-G;Serigrafía Flock · grande hasta 40 cm;dec;color;1.35;8-sep-2026;;catalogo_interno
+SG-FLOC-E;Serigrafía Flock · especial más de 40 cm;dec;color;1.95;8-sep-2026;;catalogo_interno
+SG-FOIL-S;Serigrafía Foil · sello;dec;color;0.48;8-sep-2026;;catalogo_interno
+SG-FOIL-M;Serigrafía Foil · mediano hasta 18 cm;dec;color;0.72;8-sep-2026;;catalogo_interno
+SG-FOIL-G;Serigrafía Foil · grande hasta 40 cm;dec;color;0.92;8-sep-2026;;catalogo_interno
+SG-FOIL-E;Serigrafía Foil · especial más de 40 cm;dec;color;1.2;8-sep-2026;;catalogo_interno
+SG-DFOI-S;Serigrafía Destellos foil · sello;dec;color;0.18;8-sep-2026;;catalogo_interno
+SG-DFOI-M;Serigrafía Destellos foil · mediano hasta 18 cm;dec;color;0.22;8-sep-2026;;catalogo_interno
+SG-DFOI-G;Serigrafía Destellos foil · grande hasta 40 cm;dec;color;0.3;8-sep-2026;;catalogo_interno
+SG-DFOI-E;Serigrafía Destellos foil · especial más de 40 cm;dec;color;0.37;8-sep-2026;;catalogo_interno
+SG-GLIT-S;Serigrafía Glitter · sello;dec;color;0.25;8-sep-2026;;catalogo_interno
+SG-GLIT-M;Serigrafía Glitter · mediano hasta 18 cm;dec;color;0.35;8-sep-2026;;catalogo_interno
+SG-GLIT-G;Serigrafía Glitter · grande hasta 40 cm;dec;color;0.6;8-sep-2026;;catalogo_interno
+SG-GLIT-E;Serigrafía Glitter · especial más de 40 cm;dec;color;0.75;8-sep-2026;;catalogo_interno
+DC-DTF;Transfer DTF;dec;prenda;0.7;provisional;;catalogo_interno
+DC-SUBLI;Sublimado;dec;prenda;0.45;provisional;;catalogo_interno
+DC-VINIL;Vinil textil;dec;prenda;0.5;provisional;;catalogo_interno
+DC-BORD;Bordado plano;dec;mil punt;0.12;provisional;;catalogo_interno
+DC-B3D;Bordado 3D / foam;dec;mil punt;0.18;provisional;;catalogo_interno
+DC-BAPL;Aplique textil bordado;dec;u;0.35;provisional;;catalogo_interno
+DC-BPAS;Pasadas adicionales;dec;u;0.05;provisional;;catalogo_interno
+DC-BPAR;Parche bordado;dec;u;0.45;provisional;;catalogo_interno
+SV-TIN001;Tinturado de la tela;srv;prenda;0.48;12-ago-2026;;catalogo_interno
+SV-LAV001;Lavado + suavizado;srv;prenda;0.18;12-ago-2026;;catalogo_interno
+SV-LAV002;Lavado stone wash;srv;prenda;0.65;12-ago-2026;;catalogo_interno
+IN-ADHESIVOS;ADHESIVOS;ins;u;0;15-sep-2026;ADHESIVOS;odoo_cate.xlsx_MP-IN
+MP-AMORELA;AMORELA;mp;u;0;15-sep-2026;AMORELA;odoo_cate.xlsx_MP-IN
+MP-AMOROSALIVIA;AMOROSA LIVIANA;mp;u;0;15-sep-2026;AMOROSA LIVIANA;odoo_cate.xlsx_MP-IN
+MP-AMOROSAPESAD;AMOROSA PESADA;mp;u;0;15-sep-2026;AMOROSA PESADA;odoo_cate.xlsx_MP-IN
+IN-APLIQUES;APLIQUES;ins;u;0;15-sep-2026;APLIQUES;odoo_cate.xlsx_MP-IN
+MP-ARBOLEDA;ARBOLEDA;mp;u;0;15-sep-2026;ARBOLEDA;odoo_cate.xlsx_MP-IN
+IN-BANDERA;BANDERA;ins;u;0;15-sep-2026;BANDERA;odoo_cate.xlsx_MP-IN
+IN-BOTONES;BOTONES;ins;u;0;15-sep-2026;BOTONES;odoo_cate.xlsx_MP-IN
+IN-BROCHE;BROCHE;ins;u;0;15-sep-2026;BROCHE;odoo_cate.xlsx_MP-IN
+IN-CARTONERIA;CARTONERIA;ins;u;0;15-sep-2026;CARTONERIA;odoo_cate.xlsx_MP-IN
+IN-CIERREMETALI;CIERRE METALICO;ins;u;0;15-sep-2026;CIERRE METALICO;odoo_cate.xlsx_MP-IN
+IN-CIERRENIQUEL;CIERRE NIQUELADO;ins;u;0;15-sep-2026;CIERRE NIQUELADO;odoo_cate.xlsx_MP-IN
+IN-CIERRENYLON;CIERRE NYLON;ins;u;0;15-sep-2026;CIERRE NYLON;odoo_cate.xlsx_MP-IN
+IN-CINTATWILL;CINTA TWILL;ins;u;0;15-sep-2026;CINTA TWILL;odoo_cate.xlsx_MP-IN
+IN-CORDONPLANO;CORDON PLANO;ins;u;0;15-sep-2026;CORDON PLANO;odoo_cate.xlsx_MP-IN
+IN-CORDONPUNTAM;CORDON PUNTA METALICO;ins;u;0;15-sep-2026;CORDON PUNTA METALICO;odoo_cate.xlsx_MP-IN
+IN-CORDONREDOND;CORDON REDONDO;ins;u;0;15-sep-2026;CORDON REDONDO;odoo_cate.xlsx_MP-IN
+MP-CUELLOSFANTA;CUELLOS FANTASIA;mp;u;0;15-sep-2026;CUELLOS FANTASIA;odoo_cate.xlsx_MP-IN
+MP-CUELLOSTEJID;CUELLOS TEJIDOS;mp;u;0;15-sep-2026;CUELLOS TEJIDOS;odoo_cate.xlsx_MP-IN
+MP-CUELLOSTEJID2;CUELLOS TEJIDOS COMBINADOS;mp;u;0;15-sep-2026;CUELLOS TEJIDOS COMBINADOS;odoo_cate.xlsx_MP-IN
+IN-ELASTICO;ELASTICO;ins;u;0;15-sep-2026;ELASTICO;odoo_cate.xlsx_MP-IN
+IN-ETIQUETATRAN;ETIQUETA TRANSFER;ins;u;0;15-sep-2026;ETIQUETA TRANSFER;odoo_cate.xlsx_MP-IN
+IN-ETIQUETAS;ETIQUETAS;ins;u;0;15-sep-2026;ETIQUETAS;odoo_cate.xlsx_MP-IN
+MP-FAJASTEJIDOS;FAJAS TEJIDOS;mp;u;0;15-sep-2026;FAJAS TEJIDOS;odoo_cate.xlsx_MP-IN
+MP-FAJASTEJIDOS2;FAJAS TEJIDOS COMBINADO;mp;u;0;15-sep-2026;FAJAS TEJIDOS COMBINADO;odoo_cate.xlsx_MP-IN
+MP-FLEECEPERCHA;FLEECE PERCHADO;mp;u;0;15-sep-2026;FLEECE PERCHADO;odoo_cate.xlsx_MP-IN
+MP-FLEECEPERCHA2;FLEECE PERCHADO ARCOIRIS;mp;u;0;15-sep-2026;FLEECE PERCHADO ARCOIRIS;odoo_cate.xlsx_MP-IN
+MP-FRENCHTERRY;FRENCH TERRY;mp;u;0;15-sep-2026;FRENCH TERRY;odoo_cate.xlsx_MP-IN
+MP-GALLETA;GALLETA;mp;u;0;15-sep-2026;GALLETA;odoo_cate.xlsx_MP-IN
+IN-HILOPARABORD;HILO PARA BORDAR;ins;u;0;15-sep-2026;HILO PARA BORDAR;odoo_cate.xlsx_MP-IN
+IN-HILOPARACOSE;HILO PARA COSER;ins;u;0;15-sep-2026;HILO PARA COSER;odoo_cate.xlsx_MP-IN
+IN-HILOSJEANS;HILOS JEANS;ins;u;0;15-sep-2026;HILOS JEANS;odoo_cate.xlsx_MP-IN
+MP-JERSEY241;JERSEY 24/1;mp;u;0;15-sep-2026;JERSEY 24/1;odoo_cate.xlsx_MP-IN
+MP-JERSEYALGODO;JERSEY ALGODON MEDIANO;mp;u;0;15-sep-2026;JERSEY ALGODON MEDIANO;odoo_cate.xlsx_MP-IN
+MP-JERSEYALGODO2;JERSEY ALGODON PESADO;mp;u;0;15-sep-2026;JERSEY ALGODON PESADO;odoo_cate.xlsx_MP-IN
+MP-JERSEYESPECI;JERSEY ESPECIAL;mp;u;0;15-sep-2026;JERSEY ESPECIAL;odoo_cate.xlsx_MP-IN
+MP-JERSEYLICRAI;JERSEY LICRA IMPACTO;mp;u;0;15-sep-2026;JERSEY LICRA IMPACTO;odoo_cate.xlsx_MP-IN
+MP-JERSEYLISTAD;JERSEY LISTADO;mp;u;0;15-sep-2026;JERSEY LISTADO;odoo_cate.xlsx_MP-IN
+MP-JERSEYLYCRA;JERSEY LYCRA;mp;u;0;15-sep-2026;JERSEY LYCRA;odoo_cate.xlsx_MP-IN
+MP-JERSEYLINETE;JERSEYLINE TEJIDO;mp;u;0;15-sep-2026;JERSEYLINE TEJIDO;odoo_cate.xlsx_MP-IN
+MP-LICRALATINA;LICRA LATINA;mp;u;0;15-sep-2026;LICRA LATINA;odoo_cate.xlsx_MP-IN
+MP-LYCRA;LYCRA;mp;u;0;15-sep-2026;LYCRA;odoo_cate.xlsx_MP-IN
+IN-MATERIALESDE;MATERIALES DE BORDADO;ins;u;0;15-sep-2026;MATERIALES DE BORDADO;odoo_cate.xlsx_MP-IN
+MP-MICROFIBRACO;MICROFIBRA COMPACTADA;mp;u;0;15-sep-2026;MICROFIBRA COMPACTADA;odoo_cate.xlsx_MP-IN
+IN-OJALILLO;OJALILLO;ins;u;0;15-sep-2026;OJALILLO;odoo_cate.xlsx_MP-IN
+MP-OXFORD;OXFORD;mp;u;0;15-sep-2026;OXFORD;odoo_cate.xlsx_MP-IN
+MP-PIQUE;PIQUE;mp;u;0;15-sep-2026;PIQUE;odoo_cate.xlsx_MP-IN
+MP-PIQUEDOBLE;PIQUE DOBLE;mp;u;0;15-sep-2026;PIQUE DOBLE;odoo_cate.xlsx_MP-IN
+MP-PIQUEFANTASI;PIQUE FANTASIA;mp;u;0;15-sep-2026;PIQUE FANTASIA;odoo_cate.xlsx_MP-IN
+MP-PIQUELYCRA;PIQUE LYCRA;mp;u;0;15-sep-2026;PIQUE LYCRA;odoo_cate.xlsx_MP-IN
+MP-PLANA;PLANA;mp;u;0;15-sep-2026;PLANA;odoo_cate.xlsx_MP-IN
+MP-PLANAIMPORTA;PLANA IMPORTACION;mp;u;0;15-sep-2026;PLANA IMPORTACION;odoo_cate.xlsx_MP-IN
+MP-PUOSTEJIDOS;PUÑOS TEJIDOS;mp;u;0;15-sep-2026;PUÑOS TEJIDOS;odoo_cate.xlsx_MP-IN
+MP-PUOSTEJIDOSC;PUÑOS TEJIDOS COMBINADOS;mp;u;0;15-sep-2026;PUÑOS TEJIDOS COMBINADOS;odoo_cate.xlsx_MP-IN
+IN-QUICKSTRETCH;QUICK STRETCH;ins;u;0;15-sep-2026;QUICK STRETCH;odoo_cate.xlsx_MP-IN
+IN-REATA;REATA;ins;u;0;15-sep-2026;REATA;odoo_cate.xlsx_MP-IN
+IN-REMACHESMETA;REMACHES METALICO;ins;u;0;15-sep-2026;REMACHES METALICO;odoo_cate.xlsx_MP-IN
+MP-RIBB241;RIBB 24/1;mp;u;0;15-sep-2026;RIBB 24/1;odoo_cate.xlsx_MP-IN
+MP-RIBB2X2ARCOI;RIBB 2X2 ARCOIRIS;mp;u;0;15-sep-2026;RIBB 2X2 ARCOIRIS;odoo_cate.xlsx_MP-IN
+MP-RIBB2X2GRUES;RIBB 2X2 GRUESO;mp;u;0;15-sep-2026;RIBB 2X2 GRUESO;odoo_cate.xlsx_MP-IN
+MP-RIBB2X2LIVIA;RIBB 2X2 LIVIANO;mp;u;0;15-sep-2026;RIBB 2X2 LIVIANO;odoo_cate.xlsx_MP-IN
+MP-RIBB6X6;RIBB 6X6;mp;u;0;15-sep-2026;RIBB 6X6;odoo_cate.xlsx_MP-IN
+MP-RIBBALGODON;RIBB ALGODON;mp;u;0;15-sep-2026;RIBB ALGODON;odoo_cate.xlsx_MP-IN
+MP-RIBBRAYADO;RIBB RAYADO;mp;u;0;15-sep-2026;RIBB RAYADO;odoo_cate.xlsx_MP-IN
+IN-SATIN;SATIN;ins;u;0;15-sep-2026;SATIN;odoo_cate.xlsx_MP-IN
+MP-SOFTWAFFLETE;SOFTWAFFLE TEJIDO;mp;u;0;15-sep-2026;SOFTWAFFLE TEJIDO;odoo_cate.xlsx_MP-IN
+MP-TELAIMPORTAD;TELA IMPORTADA TINTURADA;mp;u;0;15-sep-2026;TELA IMPORTADA TINTURADA;odoo_cate.xlsx_MP-IN
+SV-TINTURADOIND;TINTURADO INDUSTRIAL;srv;u;0;15-sep-2026;TINTURADO INDUSTRIAL;odoo_cate.xlsx_MP-IN
+IN-FRAMILON;FRAMILON;ins;u;0;15-sep-2026;FRAMILON;odoo_cate.xlsx_MP-IN

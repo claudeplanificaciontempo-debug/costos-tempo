@@ -1,0 +1,191 @@
+﻿referencia;centro_id;centro;activo;valor_min_o_puntadas;base;tarifa_mod;tarifa_moi;costo_mod_usd;costo_moi_usd
+4823;corte;Corte;si;0.95;min;0.2252;0.0680;0.213940;0.064600
+4823;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4823;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4823;confeccion;Confección;si;9.8;min;0.1649;0.0495;1.616020;0.485100
+4823;empaque;Empaque;si;1.25;min;0.3130;0.0940;0.391250;0.117500
+4824;corte;Corte;si;0.95;min;0.2252;0.0680;0.213940;0.064600
+4824;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4824;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4824;confeccion;Confección;si;10.4;min;0.1649;0.0495;1.714960;0.514800
+4824;empaque;Empaque;si;1.25;min;0.3130;0.0940;0.391250;0.117500
+4825;corte;Corte;si;0.8;min;0.2252;0.0680;0.180160;0.054400
+4825;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4825;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4825;confeccion;Confección;si;7.6;min;0.1649;0.0495;1.253240;0.376200
+4825;empaque;Empaque;si;1.2;min;0.3130;0.0940;0.375600;0.112800
+4826;corte;Corte;si;0.75;min;0.2252;0.0680;0.168900;0.051000
+4826;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4826;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4826;confeccion;Confección;si;6.9;min;0.1649;0.0495;1.137810;0.341550
+4826;empaque;Empaque;si;1.2;min;0.3130;0.0940;0.375600;0.112800
+4827;corte;Corte;si;0.7;min;0.2252;0.0680;0.157640;0.047600
+4827;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4827;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4827;confeccion;Confección;si;6.4;min;0.1649;0.0495;1.055360;0.316800
+4827;empaque;Empaque;si;1.15;min;0.3130;0.0940;0.359950;0.108100
+4828;corte;Corte;si;0.7;min;0.2252;0.0680;0.157640;0.047600
+4828;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4828;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4828;confeccion;Confección;si;6.8;min;0.1649;0.0495;1.121320;0.336600
+4828;empaque;Empaque;si;1.15;min;0.3130;0.0940;0.359950;0.108100
+4829;corte;Corte;si;0.65;min;0.2252;0.0680;0.146380;0.044200
+4829;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4829;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4829;confeccion;Confección;si;7.2;min;0.1649;0.0495;1.187280;0.356400
+4829;empaque;Empaque;si;1.15;min;0.3130;0.0940;0.359950;0.108100
+4830;corte;Corte;si;0.7;min;0.2252;0.0680;0.157640;0.047600
+4830;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4830;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4830;confeccion;Confección;si;6.6;min;0.1649;0.0495;1.088340;0.326700
+4830;empaque;Empaque;si;1.15;min;0.3130;0.0940;0.359950;0.108100
+4526;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4526;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4526;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4526;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4526;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4527;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4527;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4527;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4527;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4527;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4528;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4528;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4528;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4528;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4528;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4529;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4529;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4529;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4529;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4529;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4530;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4530;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4530;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4530;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4530;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4531;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4531;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4531;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4531;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4531;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4532;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4532;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4532;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4532;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4532;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4533;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4533;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4533;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4533;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4533;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4534;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4534;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4534;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4534;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4534;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4535;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4535;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4535;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4535;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4535;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4536;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4536;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4536;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4536;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4536;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4537;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4537;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4537;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4537;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4537;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4538;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4538;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4538;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4538;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4538;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4539;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4539;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4539;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4539;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4539;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4540;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4540;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4540;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4540;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4540;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4541;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4541;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4541;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4541;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4541;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4542;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4542;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4542;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4542;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4542;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4543;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4543;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4543;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4543;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4543;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4544;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4544;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4544;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4544;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4544;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4545;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4545;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4545;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4545;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4545;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4546;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4546;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4546;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4546;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4546;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4547;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4547;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4547;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4547;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4547;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4548;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4548;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4548;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4548;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4548;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4549;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4549;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4549;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4549;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4549;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4550;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4550;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4550;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4550;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4550;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4816;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4816;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4816;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4816;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4816;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4817;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4817;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4817;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4817;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4817;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4818;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4818;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4818;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4818;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4818;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4821;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4821;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4821;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4821;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4821;empaque;Empaque;no;0;min;0.3130;0.0940;0;0
+4822;corte;Corte;no;0;min;0.2252;0.0680;0;0
+4822;estampado;Estampado / Serigrafía;no;0;min;0.1980;0.0600;0;0
+4822;bordado;Bordado;no;0;punt;0.1200;0.0000;0;0
+4822;confeccion;Confección;no;0;min;0.1649;0.0495;0;0
+4822;empaque;Empaque;no;0;min;0.3130;0.0940;0;0

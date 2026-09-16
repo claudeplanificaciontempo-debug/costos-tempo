@@ -1,0 +1,6 @@
+﻿id;cliente;zona;meta_margen_pct;es_base;vinculado_a;mas_pct;modo
+fc;Fashion Club;Ecuador;30;si;;;margen_propio
+ad;Aero Dep;Ecuador;35;no;fc;5;sobrebase
+jl;JL Fashion Club;Colombia;15;no;;;margen_propio
+pr;Price;Ecuador;20;no;;;margen_propio
+ot;Otros clientes;Ecuador;40;no;;;margen_propio

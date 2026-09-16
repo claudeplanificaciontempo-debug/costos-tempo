@@ -1,0 +1,6 @@
+﻿id;nombre;base_calculo;tarifa_mod_usd;tarifa_moi_usd;tarifa_total_usd;vigente_desde
+corte;Corte;min;0.2252;0.0680;0.2932;01-ago-2026
+estampado;Estampado / Serigrafía;min;0.1980;0.0600;0.2580;01-ago-2026
+bordado;Bordado;punt;0.1200;0.0000;0.1200;01-ago-2026
+confeccion;Confección;min;0.1649;0.0495;0.2144;01-ago-2026
+empaque;Empaque;min;0.3130;0.0940;0.4070;01-ago-2026
