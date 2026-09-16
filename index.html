@@ -962,6 +962,7 @@ const CAT_ODOO=[
  {c:'MP-SOFTWAFFLETE',d:'SOFTWAFFLE TEJIDO',k:'mp',um:'u',p:0,f:'15-sep-2026',fam:'SOFTWAFFLE TEJIDO'},
  {c:'MP-TELAIMPORTAD',d:'TELA IMPORTADA TINTURADA',k:'mp',um:'u',p:0,f:'15-sep-2026',fam:'TELA IMPORTADA TINTURADA'},
  {c:'SV-TINTURADOIND',d:'TINTURADO INDUSTRIAL',k:'srv',um:'u',p:0,f:'15-sep-2026',fam:'TINTURADO INDUSTRIAL'},
+ {c:'IN-FRAMILON',d:'FRAMILON',k:'ins',um:'u',p:0,f:'15-sep-2026',fam:'FRAMILON'},
 ];
 CAT.push(...CAT_ODOO);
 /* Paleta de pantones (hoja Pantones de cate.xlsx) — se elige por línea de material. */
@@ -1046,7 +1047,7 @@ const RECETAS={
    'Camiseta Corte Moda':[['MP-JERSEYLYCRA',0.185,0],['MP-RIBB2X2LIVIA',0.020,0]]}},
  'FITS':{def:[['MP-RIBB2X2LIVIA',0.140,0],['IN-ELASTICO',1.10,0]],tipos:{
    'Bare Top':[['MP-RIBB2X2LIVIA',0.135,0],['IN-ELASTICO',1.20,0]],
-   'Bare Tiras':[['MP-JERSEYLYCRA',0.125,0]],
+   'Bare Tiras':[['MP-JERSEYLYCRA',0.125,0],['IN-FRAMILON',1.30,0]],
    'Yogga':[['MP-JERSEYLYCRA',0.185,0],['MP-RIBB2X2LIVIA',0.020,0]],
    'Fit 6':[['MP-JERSEYLYCRA',0.175,0],['MP-RIBB2X2LIVIA',0.020,0]],
    'Fit 61':[['MP-JERSEYLYCRA',0.180,0],['MP-RIBB2X2LIVIA',0.020,0]],
@@ -1143,7 +1144,7 @@ const PRE={
  '4826':{lines:[['MP-JERSEYLYCRA',0.190,0],['IN-HILOPARACOSE',0.009,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.75,confeccion:6.90,empaque:1.20}},
  '4827':{lines:[['MP-RIBB241',0.140,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.10,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.40,empaque:1.15}},
  '4828':{lines:[['MP-RIBB2X2LIVIA',0.135,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.20,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.80,empaque:1.15}},
- '4829':{lines:[['MP-JERSEYLYCRA',0.125,0],['IN-HILOPARACOSE',0.007,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.65,confeccion:7.20,empaque:1.15}},
+ '4829':{lines:[['MP-JERSEYLYCRA',0.125,0],['IN-FRAMILON',1.30,0],['IN-HILOPARACOSE',0.007,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.65,confeccion:7.20,empaque:1.15}},
  '4830':{lines:[['MP-RIBB2X2LIVIA',0.150,0],['IN-HILOPARACOSE',0.008,0],['IN-ELASTICO',1.00,0],['IN-ETIQUETAS',1,0],['IN-SATIN',1,0],['SV-TINTURADOIND',0,0]],cen:{corte:0.70,confeccion:6.60,empaque:1.15}}
 };
 REFS.forEach(x=>FICHAS[x.r]=nuevaFicha(PRE[x.r]||recetaDe(x.cat,x.sub)));
