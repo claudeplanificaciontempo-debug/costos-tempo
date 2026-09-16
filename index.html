@@ -446,7 +446,14 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   <div class="kpis" id="kpis-prod"></div>
   <div class="hint"><b>Aquí se editan los productos: referencia, nombre, categoría, tipo y foto.</b> Con <b>Carga masiva</b> se pegan varios de una vez desde Excel y se suben las fotos en lote. Clic en la foto o en el nombre para abrir su ficha de costos; el lápiz sobre la foto la reemplaza.</div>
   <div class="card">
-    <div class="card-h"><h2>Productos</h2><div class="sub" id="prod-sub"></div></div>
+    <div class="card-h"><h2>Productos</h2>
+      <div class="mini" style="margin:0 0 0 14px">Agrupar por</div>
+      <div class="tabs" id="tabs-agrupa-prod" style="margin:0 14px 0 6px">
+        <button class="tab on" onclick="agruparProd('')">Ninguno</button>
+        <button class="tab" onclick="agruparProd('cat')">Categoría</button>
+        <button class="tab" onclick="agruparProd('sub')">Tipo</button>
+      </div>
+      <div class="sub" id="prod-sub"></div></div>
     <div id="bulk-prod" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--orange-soft);border-radius:10px;margin:0 14px 10px">
       <b id="bulk-n" style="white-space:nowrap"></b>
       <select id="bulk-marca" class="fld" style="width:170px"><option value="">Marca…</option></select>
@@ -605,7 +612,14 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   <div class="hint"><b>Esta es la vista para el cliente: foto, referencia y precio.</b> Solo salen las referencias con la ficha guardada; las que están en borrador se ven en gris. Los costos y márgenes se consultan en la ficha y en Productos.</div>
   <div class="tabs" id="tabs-cli"></div>
   <div class="card">
-    <div class="card-h"><h2 id="exp-t"></h2><div class="sub" id="exp-s"></div></div>
+    <div class="card-h"><h2 id="exp-t"></h2>
+      <div class="mini" style="margin:0 0 0 14px">Agrupar por</div>
+      <div class="tabs" id="tabs-agrupa-exp" style="margin:0 14px 0 6px">
+        <button class="tab on" onclick="agruparExp('')">Ninguno</button>
+        <button class="tab" onclick="agruparExp('cat')">Categoría</button>
+        <button class="tab" onclick="agruparExp('sub')">Tipo</button>
+      </div>
+      <div class="sub" id="exp-s"></div></div>
     <table>
       <thead><tr><th class="l" style="width:52px">Foto</th><th class="l">Ref</th><th class="l">Producto</th><th class="l">Marca</th><th class="l">Depto.</th><th class="l">Categoría</th><th class="l">Tipo</th><th>PVP</th><th class="l">Estado</th></tr></thead>
       <tbody id="tb-exp"></tbody>
@@ -1596,13 +1610,17 @@ function kpis(){
     `<button class="kpi ok" onclick="go('prod');filtrarProd('ok')"><div class="k">Con precio cerrado</div><div class="v">${ok}</div><div class="h">${pct}% del catálogo</div></button>`+
     `<button class="kpi pend" onclick="go('prod');filtrarProd('pend')"><div class="k">Pendientes</div><div class="v">${pen}</div><div class="h">${pen?'clic para terminarlos':'nada por llenar'}</div></button>`;
 }
-function rowsProd(){
-  kpis();
-  const lista=prodLista();
-  SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
-  $('pr-rows').innerHTML=lista.map(({x,i})=>{
-    const f=FICHAS[x.r],t=totRef(x.r);
-    return `<div class="prow">
+let prodAgrupa='';
+function agruparProd(campo){
+  prodAgrupa=campo;
+  document.querySelectorAll('#tabs-agrupa-prod .tab').forEach(b=>b.classList.remove('on'));
+  const btn=[...document.querySelectorAll('#tabs-agrupa-prod .tab')].find(b=>b.getAttribute('onclick')===`agruparProd('${campo}')`);
+  if(btn)btn.classList.add('on');
+  rowsProd();
+}
+function filaProd({x,i}){
+  const f=FICHAS[x.r],t=totRef(x.r);
+  return `<div class="prow">
       <div><input type="checkbox" class="prsel" ${SELP.has(x.r)?'checked':''} onchange="toggleProd('${x.r}',this.checked)"></div>
       <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
@@ -1629,7 +1647,22 @@ function rowsProd(){
         <button class="x" title="Borrar" onclick="borrarProd(${i})">×</button>
       </div>
     </div>`;
-  }).join('')||`<div class="empty">${prodF==='todos'?'Sin productos. Usa Carga masiva.':'Ninguna referencia en este estado. <button class="btn ghost sm" onclick="filtrarProd(\'todos\')">Ver todas</button>'}</div>`;
+}
+function rowsProd(){
+  kpis();
+  const lista=prodLista();
+  SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
+  let html;
+  if(prodAgrupa){
+    const grupos={};lista.forEach(item=>{const k=item.x[prodAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(item)});
+    html=Object.keys(grupos).sort().map(k=>
+      `<div style="padding:9px 14px;background:var(--line-soft);font-weight:800;font-size:12.5px">${k} <span class="mini" style="margin:0;font-weight:600">· ${grupos[k].length}</span></div>`
+      +grupos[k].map(filaProd).join('')
+    ).join('');
+  }else{
+    html=lista.map(filaProd).join('');
+  }
+  $('pr-rows').innerHTML=html||`<div class="empty">${prodF==='todos'?'Sin productos. Usa Carga masiva.':'Ninguna referencia en este estado. <button class="btn ghost sm" onclick="filtrarProd(\'todos\')">Ver todas</button>'}</div>`;
   autosave();
   $('prod-sub').innerHTML=(prodF==='pend'
       ?`<b>Pendientes</b> · ${lista.length} de ${REFS.length} <button class="btn ghost sm" style="margin-left:8px" onclick="siguientePend()">Terminar el siguiente</button> <button class="btn ghost sm" onclick="filtrarProd('todos')">Ver todas</button>`
@@ -2585,13 +2618,21 @@ function pdfListaPrecios(){
   toast('Abriendo el PDF','En la ventana de impresión elige "Guardar como PDF".');
   setTimeout(()=>window.print(),250);
 }
+let expAgrupa='';
+function agruparExp(campo){
+  expAgrupa=campo;
+  document.querySelectorAll('#tabs-agrupa-exp .tab').forEach(b=>b.classList.remove('on'));
+  const btn=[...document.querySelectorAll('#tabs-agrupa-exp .tab')].find(b=>b.getAttribute('onclick')===`agruparExp('${campo}')`);
+  if(btn)btn.classList.add('on');
+  rowsExp();
+}
 function rowsExp(){
   $('tabs-cli').innerHTML=CLI.map(c=>
     `<button class="tab ${c.id===cliSel?'on':''}" onclick="cliSel='${c.id}';rowsExp()">${c.cli} · ${c.zona}</button>`).join('');
   const ci=CLI.findIndex(c=>c.id===cliSel);
   $('exp-t').textContent=CLI[ci].cli+' · '+CLI[ci].zona;
   const g=cur;let n=0,sp=0;
-  $('tb-exp').innerHTML=activos().map(x=>{
+  const filaExp=x=>{
     cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
     if(f.saved){n++;sp+=r.pvp}
     return `<tr style="${f.saved?'':'opacity:.5'}">
@@ -2601,7 +2642,19 @@ function rowsExp(){
       <td class="l ro">${x.marca||'—'}</td><td class="l ro">${x.dep||'—'}</td><td class="l ro">${x.cat}</td><td class="l ro">${x.sub}</td>
       <td><span class="lppx">${fmt(r.pvp)}</span></td>
       <td class="l"><span class="pill ${f.saved?'ok':''}">${f.saved?'v'+f.ver:'Borrador'}</span></td></tr>`;
-  }).join('');
+  };
+  const list=activos();
+  let html;
+  if(expAgrupa){
+    const grupos={};list.forEach(x=>{const k=x[expAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(x)});
+    html=Object.keys(grupos).sort().map(k=>
+      `<tr><td colspan="9" style="background:var(--line-soft);font-weight:800;font-size:12.5px;padding:9px 12px">${k}</td></tr>`
+      +grupos[k].map(filaExp).join('')
+    ).join('');
+  }else{
+    html=list.map(filaExp).join('');
+  }
+  $('tb-exp').innerHTML=html;
   cur=g;calc();
   $('exp-s').textContent=n+' de '+REFS.length+' referencias con precio cerrado';
   $('tf-exp').innerHTML=n?`<tr><td class="l" colspan="7">${n} referencias · PVP promedio</td><td>${fmt(sp/n)}</td><td></td></tr>`:'';
@@ -2612,10 +2665,20 @@ function pdfCliente(){
   const g=cur;
   const list=activos().filter(x=>incl||FICHAS[x.r].saved);
   if(!list.length){toast('Nada que imprimir','Guarda al menos una ficha, o marca "Incluir borradores".');return}
-  const cards=list.map(x=>{cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
+  const cardHtml=x=>{cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
     return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:''}</div>
       <div class="pdf-b"><div class="r">${x.marca?x.marca.toUpperCase()+' · ':''}REF ${x.r}${x.dep?' · '+x.dep.toUpperCase():''}</div><div class="n">${x.n}</div>
-      <div class="p">${fmt(r.pvp)}<small>USD</small></div>${f.saved?'':'<span class="b">PROVISIONAL</span>'}</div></div>`}).join('');
+      <div class="p">${fmt(r.pvp)}<small>USD</small></div>${f.saved?'':'<span class="b">PROVISIONAL</span>'}</div></div>`};
+  let cards;
+  if(expAgrupa){
+    const grupos={};list.forEach(x=>{const k=x[expAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(x)});
+    cards=Object.keys(grupos).sort().map(k=>
+      `<div style="grid-column:1/-1;font-weight:800;font-size:13px;margin-top:6px;border-bottom:1px solid #ddd;padding-bottom:4px">${k}</div>`
+      +grupos[k].map(cardHtml).join('')
+    ).join('');
+  }else{
+    cards=list.map(cardHtml).join('');
+  }
   cur=g;calc();
   $('print-area').innerHTML=`<div class="pdf-h"><h1>Lista de precios · TEMPO</h1><span class="c">${c.cli} · ${c.zona}</span>
     <span class="d">${hoy()} · ${list.length} referencias</span></div>
