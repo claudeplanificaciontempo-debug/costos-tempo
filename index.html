@@ -1210,7 +1210,7 @@ function rowsLines(){
     }
     html+=`<tr>
       <td class="l"><div class="itm">${m.d}</div><span class="cod">${m.c}</span></td>
-      <td>${m.fam?`<select class="fld" style="width:130px" ${RO()?'disabled':''} onchange="setLineCol(${i},this.value)">
+      <td>${(m.k==='mp'||m.k==='ins')?`<select class="fld" style="width:130px" ${RO()?'disabled':''} onchange="setLineCol(${i},this.value)">
           <option value="">${l.pan?'— quitar —':'— color —'}</option>
           ${PANTONES.map(p=>`<option value="${p.pan}" ${p.pan===l.pan?'selected':''}>${p.pan} ${p.nombre}</option>`).join('')}
         </select>`:'<span class="ro">—</span>'}</td>
