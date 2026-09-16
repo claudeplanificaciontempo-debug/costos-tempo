@@ -1,6 +1,6 @@
 # VALORES FIJOS — Constantes en el código, defaults silenciosos y clasificación por texto
 
-Estado auditado: tag `pre-auditoria-costos` (commit `2e4ef99`). Todo es `index.html`.
+Estado auditado: rama `pre-auditoria-costos` (commit `54a62eb`). Todo es `index.html`.
 
 Tres secciones:
 - **A.** Constantes, porcentajes, factores y mapeos escritos directamente en el código.

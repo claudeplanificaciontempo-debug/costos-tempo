@@ -1,6 +1,6 @@
 # PERSISTENCIA — Qué se guarda, qué se recalcula, y dónde se pueden perder cambios
 
-Estado auditado: tag `pre-auditoria-costos` (commit `2e4ef99`). Todo es `index.html`.
+Estado auditado: rama `pre-auditoria-costos` (commit `54a62eb`). Todo es `index.html`.
 
 ---
 

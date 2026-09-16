@@ -1,6 +1,6 @@
 # SUPUESTOS — Lo que tuve que suponer o interpretar
 
-Estado auditado: tag `pre-auditoria-costos` (commit `2e4ef99`).
+Estado auditado: rama `pre-auditoria-costos` (commit `54a62eb`).
 
 Todo lo que sigue es una decisión mía, no algo que estuviera definido. Lo separo del resto
 de la auditoría para que se pueda discutir o corregir sin tocar los hallazgos.

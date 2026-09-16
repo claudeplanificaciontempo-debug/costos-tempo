@@ -2,8 +2,8 @@
 -- ESQUEMA.sql — Costos TEMPO
 -- Estructura completa que usa el sistema, lista para crear en una base local.
 --
--- Auditoría del estado congelado en el tag `pre-auditoria-costos`
--- (commit 2e4ef99, sobre 54a62eb). Referencias `index.html:NNN`.
+-- Auditoría del estado congelado en la rama `pre-auditoria-costos`
+-- (= commit 54a62eb). Referencias `index.html:NNN`.
 --
 -- Motor objetivo: PostgreSQL 14 o superior (es el mismo motor que usa
 -- Supabase hoy, así que la migración no cambia de tecnología).

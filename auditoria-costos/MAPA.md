@@ -1,7 +1,7 @@
 # MAPA — De dónde viene cada dato y cómo se calcula el costo
 
 Auditoría del sistema **Costos TEMPO**.
-Estado congelado en el tag `pre-auditoria-costos` (commit `2e4ef99`, sobre `54a62eb`).
+Estado congelado en la rama `pre-auditoria-costos` (commit `54a62eb`).
 Todas las referencias `index.html:NNN` apuntan a ese estado exacto.
 
 ---

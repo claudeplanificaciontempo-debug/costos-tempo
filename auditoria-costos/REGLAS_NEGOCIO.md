@@ -1,6 +1,6 @@
 # REGLAS DE NEGOCIO — Verificación contra el código
 
-Estado auditado: tag `pre-auditoria-costos` (commit `2e4ef99`). Todo es `index.html`.
+Estado auditado: rama `pre-auditoria-costos` (commit `54a62eb`). Todo es `index.html`.
 **No se corrigió nada.** Esto es solo el dictamen con su evidencia.
 
 ---

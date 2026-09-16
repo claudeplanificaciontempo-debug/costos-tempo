@@ -1,6 +1,6 @@
 # /datos — Qué contiene cada archivo
 
-Exportación del estado del sistema en el tag `pre-auditoria-costos` (commit `2e4ef99`).
+Exportación del estado del sistema en la rama `pre-auditoria-costos` (commit `54a62eb`).
 
 **Formato de todos los CSV:** UTF-8 con BOM, separador `;`, encabezado en la primera fila.
 Se abren directo en Excel y se cargan con los `\copy` de `../ESQUEMA.sql`, PARTE 3.

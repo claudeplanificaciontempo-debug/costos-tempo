@@ -3,7 +3,10 @@
 Auditoría previa a la migración a una base de datos local.
 **No se modificó código ni datos.** Todo lo que hay aquí es documentación y exportación.
 
-- **Estado auditado:** tag `pre-auditoria-costos` → commit `2e4ef99`, sobre `54a62eb`
+- **Estado auditado:** rama `pre-auditoria-costos` → commit `54a62eb`
+  (existe además el tag anotado `pre-auditoria-costos` en local; **no se pudo publicar**
+  porque las credenciales de esta sesión no tienen permiso para empujar tags — la rama
+  cumple la misma función y sí está publicada)
   (rama `claude/lucid-maxwell-xix1ec`)
 - **Alcance:** `index.html` — 2.784 líneas, un único archivo con todo el sistema
 - **Fecha:** 16-sep-2026

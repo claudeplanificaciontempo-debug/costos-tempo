@@ -1,6 +1,6 @@
 # INSTALACIÓN LOCAL — Cómo correr Costos TEMPO contra una base propia
 
-Estado auditado: tag `pre-auditoria-costos` (commit `2e4ef99`).
+Estado auditado: rama `pre-auditoria-costos` (commit `54a62eb`).
 
 > Esta guía **no modifica el sistema**. Describe qué hace falta y en qué orden.
 > El paso 5 (apuntar la aplicación a la base local) **sí requiere tocar código** y queda
