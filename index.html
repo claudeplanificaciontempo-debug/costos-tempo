@@ -679,17 +679,14 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
   <div class="modal" style="width:min(380px,100%)">
     <div class="modal-h"><div class="logo">$</div><h2>Costos · TEMPO</h2></div>
     <div class="modal-b">
-      <div class="mini" style="margin-bottom:12px" id="lg-hint">Entra con tu correo y contraseña.</div>
-      <div id="lg-nombre-w" class="hide"><label class="mini">Nombre</label>
-      <input id="lg-nombre" class="fld" style="border-color:var(--line);margin-bottom:10px" type="text" placeholder="Tu nombre"></div>
+      <div class="mini" style="margin-bottom:12px" id="lg-hint">Entra con tu correo y contraseña. Si necesitas una cuenta, pídesela al administrador.</div>
       <label class="mini">Correo</label>
       <input id="lg-email" class="fld" style="border-color:var(--line);margin-bottom:10px" type="email" autocomplete="username" placeholder="usuario@tempo.com">
       <label class="mini">Contraseña</label>
       <input id="lg-pass" class="fld" style="border-color:var(--line)" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')hacerLogin()">
       <div id="lg-err" class="mini" style="color:#A6543F;margin-top:8px;min-height:16px"></div>
     </div>
-    <div class="modal-f" style="justify-content:space-between;align-items:center">
-      <a href="javascript:void(0)" id="lg-toggle" class="mini" style="text-decoration:underline;cursor:pointer" onclick="modoLogin(!lgNuevo)">¿No tienes cuenta? Crear una</a>
+    <div class="modal-f" style="justify-content:flex-end;align-items:center">
       <button class="btn org" id="lg-btn" onclick="hacerLogin()">Entrar</button>
     </div>
   </div>
@@ -1773,30 +1770,14 @@ function mostrarLogin(msg){
   $('ovl-login').classList.remove('hide');$('lg-err').textContent=msg||'';
   setTimeout(()=>$('lg-email').focus(),50);
 }
-let lgNuevo=false;
-function modoLogin(nuevo){
-  lgNuevo=nuevo;
-  $('lg-nombre-w').classList.toggle('hide',!nuevo);
-  $('lg-btn').textContent=nuevo?'Crear cuenta':'Entrar';
-  $('lg-hint').textContent=nuevo?'La primera cuenta que se crea queda como administrador. Las siguientes entran en modo consulta hasta que el administrador les dé permiso.':'Entra con tu correo y contraseña.';
-  $('lg-toggle').textContent=nuevo?'¿Ya tienes cuenta? Entrar':'¿No tienes cuenta? Crear una';
-  $('lg-err').textContent='';
-}
 async function hacerLogin(){
   const b=$('lg-btn');b.disabled=true;b.textContent='Entrando…';$('lg-err').textContent='';
   try{
     const email=$('lg-email').value.trim(),password=$('lg-pass').value;
-    if(lgNuevo){
-      if(password.length<6)throw new Error('La contraseña debe tener al menos 6 caracteres.');
-      const j=await sbAuth('signup',{email,password,data:{nombre:$('lg-nombre').value.trim()}});
-      if(!j.access_token){$('lg-err').textContent='Cuenta creada. Revisa tu correo y confirma el enlace; luego entra aquí.';modoLogin(false);b.disabled=false;b.textContent='Entrar';return}
-      SES=j;
-    }else{
-      SES=await sbAuth('token?grant_type=password',{email,password});
-    }
+    SES=await sbAuth('token?grant_type=password',{email,password});
     localStorage.setItem(SKEY,JSON.stringify(SES));
     await entrar();
-  }catch(e){$('lg-err').textContent=/invalid login/i.test(e.message)?'Correo o contraseña incorrectos.':(/already/i.test(e.message)?'Ese correo ya tiene cuenta.':e.message)}
+  }catch(e){$('lg-err').textContent=/invalid login/i.test(e.message)?'Correo o contraseña incorrectos.':e.message}
   b.disabled=false;b.textContent='Entrar';
 }
 async function cambiarClave(){
