@@ -500,6 +500,18 @@ textarea.ta:focus{border-color:var(--orange);outline:none}
     <div class="addrow"><button class="btn" onclick="abrirMasivaMat()">Carga masiva</button><button class="btn ghost" onclick="agregarMat()">Agregar ítem</button>
       <button class="btn ghost" style="margin-left:auto" onclick="limpiarMPeIns()">Restablecer Materia prima e Insumos</button></div>
   </div>
+  <div class="card">
+    <div class="card-h"><h2>Pantones</h2><div class="sub" id="pan-sub"></div></div>
+    <table>
+      <thead><tr><th class="l" style="width:120px">Código</th><th class="l">Nombre del color</th><th></th></tr></thead>
+      <tbody id="tb-pan"></tbody>
+    </table>
+    <div class="addrow">
+      <input id="np-pan" class="fld" style="width:120px" type="text" placeholder="Código, p. ej. 19-4025">
+      <input id="np-nombre" class="fld" style="flex:1;min-width:160px" type="text" placeholder="Nombre del color, p. ej. CADET NAVY">
+      <button class="btn ghost" onclick="agregarPantone()">+ Crear pantón</button>
+    </div>
+  </div>
 </section>
 
 <!-- ============ CENTROS ============ -->
@@ -952,7 +964,7 @@ const CAT_ODOO=[
 ];
 CAT.push(...CAT_ODOO);
 /* Paleta de pantones (hoja Pantones de cate.xlsx) — se elige por línea de material. */
-const PANTONES=[
+let PANTONES=[
  {pan:'19-0303',nombre:'DARK BLACK'},
  {pan:'11-0700',nombre:'BLEACH'},
  {pan:'11-0601',nombre:'BIRCH'},
@@ -1200,7 +1212,7 @@ function rowsLines(){
       <td class="l"><div class="itm">${m.d}</div><span class="cod">${m.c}</span></td>
       <td>${m.fam?`<select class="fld" style="width:130px" ${RO()?'disabled':''} onchange="setLineCol(${i},this.value)">
           <option value="">${l.pan?'— quitar —':'— color —'}</option>
-          ${PANTONES.map(p=>`<option value="${p.pan}" ${p.pan===l.pan?'selected':''}>${p.nombre}</option>`).join('')}
+          ${PANTONES.map(p=>`<option value="${p.pan}" ${p.pan===l.pan?'selected':''}>${p.pan} ${p.nombre}</option>`).join('')}
         </select>`:'<span class="ro">—</span>'}</td>
       <td><span class="um">${m.um}</span></td>
       <td><input class="n" value="${l.q}" ${RO()?'readonly':''} oninput="setV(${i},'q',this.value)"></td>
@@ -1243,7 +1255,39 @@ function addLine(code){
   F().lines.push({c:code,q:m.k==='mp'?0.100:1,d:0,pan:''});
   $('q-all').value='';$('cb-list').classList.add('hide');draw();
 }
-function pantoneNombre(pan){const p=PANTONES.find(x=>x.pan===pan);return p?p.nombre:pan}
+function pantoneNombre(pan){const p=PANTONES.find(x=>x.pan===pan);return p?p.pan+' '+p.nombre:pan}
+function rowsPantones(){
+  const tb=$('tb-pan');if(!tb)return;
+  tb.innerHTML=PANTONES.map((p,i)=>`<tr>
+    <td class="l"><input class="fld" style="width:100px" value="${p.pan}" onchange="setPantone(${i},'pan',this.value)"></td>
+    <td class="l"><input class="fld" style="width:100%" value="${p.nombre}" onchange="setPantone(${i},'nombre',this.value)"></td>
+    <td>${soloPrearmado()?'':`<button class="x" title="Borrar pantón" onclick="borrarPantone(${i})">×</button>`}</td></tr>`).join('')
+    ||'<tr><td colspan="3" class="empty">Sin pantones todavía.</td></tr>';
+  $('pan-sub').textContent=PANTONES.length+' color'+(PANTONES.length===1?'':'es');
+}
+function setPantone(i,f,v){
+  const p=PANTONES[i];if(!p)return;
+  p[f]=v.trim();
+  autosave();rowsPantones();rowsLines();
+}
+function agregarPantone(){
+  const pan=($('np-pan').value||'').trim(),nombre=($('np-nombre').value||'').trim();
+  if(!pan||!nombre){toast('Faltan datos','Escribe el código y el nombre del color.');return}
+  if(PANTONES.some(p=>p.pan.toLowerCase()===pan.toLowerCase())){toast('Ya existe','Ese código de pantón ya está en la lista.');return}
+  PANTONES.push({pan,nombre});
+  $('np-pan').value='';$('np-nombre').value='';
+  rowsPantones();rowsLines();autosave();
+  toast('Pantón creado',pan+' '+nombre+' ya está disponible al elegir color.');
+}
+function borrarPantone(i){
+  const p=PANTONES[i];if(!p)return;
+  let usos=0;REFS.forEach(r=>{const f=FICHAS[r.r];if(f)usos+=f.lines.filter(l=>l.pan===p.pan).length});
+  if(!confirm('¿Borrar el pantón "'+p.pan+' '+p.nombre+'"?'+(usos?' Se usa en '+usos+' línea(s) de ficha; quedarán sin color asignado.':'')))return;
+  PANTONES.splice(i,1);
+  REFS.forEach(r=>{const f=FICHAS[r.r];if(f)f.lines.forEach(l=>{if(l.pan===p.pan)l.pan=''})});
+  rowsPantones();rowsLines();autosave();
+  toast('Pantón borrado',p.pan+' '+p.nombre+' se quitó de la lista.');
+}
 function filterCat(q){
   q=(q||'').toLowerCase();
   const l=$('cb-list');
@@ -1807,14 +1851,15 @@ function filas(){
     cst_centros:CEN.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_clientes:CLI.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_fichas:REFS.filter(x=>FICHAS[x.r]).map(x=>({id:x.r,data:FICHAS[x.r]})),
-    cst_marcas:MARCAS.map((m,i)=>({id:m.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:m,orden:i}}))
+    cst_marcas:MARCAS.map((m,i)=>({id:m.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:m,orden:i}})),
+    cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{pan:p.pan,nombre:p.nombre,orden:i}}))
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
 async function cargarNube(){
-  const T=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas'];
+  const T=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones'];
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk]=R;
+  const [pr,ma,ce,cl,fi,mk,pt]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -1838,6 +1883,7 @@ async function cargarNube(){
   Object.keys(FICHAS).forEach(k=>delete FICHAS[k]);
   fi.forEach(x=>FICHAS[x.id]=x.data);
   if(mk&&mk.length){MARCAS=mk.sort(porOrden).map(x=>x.data.nombre)}
+  if(pt&&pt.length){PANTONES=pt.sort(porOrden).map(x=>({pan:x.data.pan,nombre:x.data.nombre}))}
   // fotos del archivo que la nube no tiene
   Object.keys(FOTO).forEach(k=>{if(pr.some(x=>x.data.r===k&&x.data.foto)&&FOTO[k].startsWith('data:'))delete FOTO[k]});
   cur=(FICHAS[cur]?cur:(REFS[0]&&REFS[0].r));
@@ -2293,6 +2339,7 @@ function rowsCatMat(f){
   const fams=[...new Set(CAT.map(x=>x.fam).filter(Boolean))].sort();
   $('dl-fam').innerHTML=fams.map(f=>`<option value="${f}">`).join('');
   pintarBulkMat();
+  rowsPantones();
 }
 function toggleMat(c,v){if(v)SELM.add(c);else SELM.delete(c);pintarBulkMat()}
 function toggleAllMat(v){
