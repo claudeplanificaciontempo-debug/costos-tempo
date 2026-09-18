@@ -178,6 +178,13 @@ input.n:focus{border-color:var(--vino);outline:none}
 .cellbox{border:1px solid var(--line);border-radius:8px;padding:4px 8px;background:#fff}
 .cellbox.auto{background:var(--suave)}
 .cellbox label{display:block;font-size:9px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+/* de un vistazo: pastilla = lo escribió una persona · texto plano = lo calculó el sistema */
+.cellbox .mk{display:none;font-size:8px;font-weight:800;letter-spacing:.06em;border-radius:20px;padding:1px 6px;margin-left:5px}
+.cellbox:not(.auto) .mano{display:inline-block;background:var(--vino-soft);color:var(--vino-deep)}
+.cellbox.auto .calc{display:inline-block;color:var(--ink-3)}
+.soltar-l{margin-top:7px}
+.soltar{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:7px;padding:3px 9px;font:inherit;font-size:10.5px;font-weight:600;cursor:pointer}
+.soltar:hover{border-color:var(--vino);color:var(--vino-deep)}
 .cell-in{width:100%;border:0;background:none;font-size:14px;font-weight:700;padding:1px 0;color:var(--ink)}
 .cellbox.auto .cell-in{color:var(--ink-2)}
 .cell-in:focus{outline:none}
@@ -1160,9 +1167,11 @@ function recetaDe(cat,sub){
   const telas=(g&&g.tipos&&g.tipos[sub])||(g&&g.def)||[];
   return {lines:telas.concat(REC_BASE),cen:{}};
 }
+/* Compara también consumos y desperdicios: si se cambió una cantidad a mano, la ficha
+   ya está tocada y el cambio de tipo NO debe reemplazar sus líneas. */
 function mismasLineas(f,rec){
-  const a=f.lines.map(l=>l.c).sort().join('|');
-  const b=rec.lines.map(l=>l[0]).sort().join('|');
+  const a=f.lines.map(l=>l.c+':'+(+l.q||0)+':'+(+l.d||0)).sort().join('|');
+  const b=rec.lines.map(l=>l[0]+':'+(+l[1]||0)+':'+(+l[2]||0)).sort().join('|');
   return a===b;
 }
 function reajustarReceta(p,pc,ps){
@@ -1206,7 +1215,7 @@ function nuevaFicha(pre){
   return {
     lines:(pre.lines||[]).map(l=>({c:l[0],q:l[1],d:l[2]})),
     cen:CEN.reduce((o,c)=>{o[c.id]={on:!!pre.cen[c.id],val:pre.cen[c.id]||0};return o},{}),
-    pl:CLI.map(c=>({...c,lock:c.modo==='sobrebase'?'up':'pct',pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
+    pl:CLI.map(c=>({...c,man:null,pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
     ver:1,saved:false,fecha:'',edit:false,hist:[],aprob:null
   };
 }
@@ -1428,24 +1437,30 @@ function rowsSum(){
   $('grand').textContent=fmt(TOT.total);
   $('samtot').textContent=TOT.sam.toFixed(2)+' min';
 }
+/* `man` dice qué escribió la persona: 'pvp', 'pct', 'up' o null si todo es calculado.
+   Lo escrito a mano manda siempre; lo demás se deriva del costo y del margen meta. */
+function pctDe(p){return p.man==='pct'?(p.pct==null?(p.meta||0):p.pct):(p.meta||0)}
+function upDe(p){return p.man==='up'?(p.up==null?(p.mas||0):p.up):(p.mas||0)}
 function basePvp(){
-  const b=F().pl[0],c=TOT.total;
-  return b.lock==='pvp'?(b.pvp||0):(b.pct>=100?0:c/(1-b.pct/100));
+  const b=F().pl[0],c=TOT.total,pc=pctDe(b);
+  return b.man==='pvp'?(b.pvp||0):(pc>=100?0:c/(1-pc/100));
 }
 function plCalc(i){
   const p=F().pl[i],c=TOT.total;
   let pvp,up=0;
   if(p.modo==='sobrebase'){
     const bp=basePvp();
-    if(p.lock==='pvp'){pvp=p.pvp||0;up=bp?(pvp/bp-1)*100:0}
-    else{up=p.up||0;pvp=bp*(1+up/100)}
-  }else{pvp=p.lock==='pvp'?(p.pvp||0):(p.pct>=100?0:c/(1-p.pct/100))}
+    if(p.man==='pvp'){pvp=p.pvp||0;up=bp?(pvp/bp-1)*100:0}
+    else{up=upDe(p);pvp=bp*(1+up/100)}
+  }else{const pc=pctDe(p);pvp=p.man==='pvp'?(p.pvp||0):(pc>=100?0:c/(1-pc/100))}
   const pct=pvp>0?(pvp-c)/pvp*100:0;
   const meta=p.modo==='sobrebase'?null:p.meta;
   return {pvp,up,pct,gan:pvp-c,minPvp:meta!==null?c/(1-meta/100):0,meta};
 }
+const MARCA_MC='<span class="mk mano">a mano</span><span class="mk calc">calculado</span>';
 function noteHTML(i,r){
   const p=F().pl[i];
+  const soltar=p.man?`<div class="soltar-l"><button class="soltar" onclick="soltarPL(${i})" title="Descartar el valor escrito a mano y volver a calcularlo">↺ volver al calculado</button></div>`:'';
   const gain=r.gan<0?`<div class="gain neg">Pierdes <b>${fmt(Math.abs(r.gan))}</b> por prenda</div>`
                     :`<div class="gain">Ganas <b>${fmt(r.gan)}</b> por prenda</div>`;
   let msg='';
@@ -1455,7 +1470,7 @@ function noteHTML(i,r){
   }else if(p.modo!=='sobrebase'&&r.pct<r.meta-0.5){
     msg=`<div class="note warn">Bajo la meta del ${r.meta}%. Sería <b>${fmt(r.minPvp)}</b>.</div>`;
   }
-  return gain+msg;
+  return soltar+gain+msg;
 }
 function relTxt(i,r){
   const p=F().pl[i];
@@ -1467,14 +1482,14 @@ function rowsPL(){
   $('plists').innerHTML=F().pl.map((p,i)=>{
     const r=plCalc(i),sb=p.modo==='sobrebase';
     const f2=sb
-      ? `<div class="cellbox ${p.lock==='up'?'':'auto'}"><label>% sobre Ecuador</label>
+      ? `<div class="cellbox ${p.man==='up'?'':'auto'}"><label>% sobre Ecuador ${MARCA_MC}</label>
            <input id="b-${i}" class="cell-in" type="text" inputmode="decimal" value="+${r.up.toFixed(0)}%" oninput="setPL(${i},'up',this.value)"></div>`
-      : `<div class="cellbox ${p.lock==='pct'?'':'auto'}"><label>Margen %</label>
+      : `<div class="cellbox ${p.man==='pct'?'':'auto'}"><label>Margen % ${MARCA_MC}</label>
            <input id="b-${i}" class="cell-in" type="text" inputmode="decimal" value="${r.pct.toFixed(0)}%" oninput="setPL(${i},'pct',this.value)"></div>`;
     return `<div class="plrow ${p.base?'base':''} ${sb?'linked':''}">
       <div class="pl-top"><span class="pl-cli">${p.cli}</span><span class="pl-zona">${p.zona}</span><span class="pl-rel">${relTxt(i,r)}</span></div>
       <div class="pl-in">
-        <div class="cellbox ${p.lock==='pvp'?'':'auto'}"><label>PVP $</label>
+        <div class="cellbox ${p.man==='pvp'?'':'auto'}"><label>PVP $ ${MARCA_MC}</label>
           <input id="p-${i}" class="cell-in" type="text" inputmode="decimal" value="${r.pvp.toFixed(2)}" oninput="setPL(${i},'pvp',this.value)"></div>
         ${f2}</div>
       <div id="n-${i}">${noteHTML(i,r)}</div></div>`;
@@ -1489,18 +1504,25 @@ function paintPL(edited,field){
     if(!pi||!bi)return;
     if(!(i===edited&&field==='pvp'))pi.value=r.pvp.toFixed(2);
     if(!(i===edited&&field!=='pvp'))bi.value=sb?'+'+r.up.toFixed(0)+'%':r.pct.toFixed(0)+'%';
-    pi.parentNode.classList.toggle('auto',p.lock!=='pvp');
-    bi.parentNode.classList.toggle('auto',sb?p.lock!=='up':p.lock!=='pct');
+    pi.parentNode.classList.toggle('auto',p.man!=='pvp');
+    bi.parentNode.classList.toggle('auto',sb?p.man!=='up':p.man!=='pct');
     $('n-'+i).innerHTML=noteHTML(i,r);
     rows[i].querySelector('.pl-rel').textContent=relTxt(i,r);
   });
 }
 function setPL(i,f,v){
   const n=num(v),p=F().pl[i];
-  if(f==='pvp'){p.pvp=n;p.lock='pvp'}
-  else if(f==='pct'){p.pct=n;p.lock='pct'}
-  else{p.up=n;p.lock='up'}
+  p[f]=n;p.man=f;          // lo escribió una persona: desde aquí nada lo recalcula
   paintPL(i,f);
+}
+/* suelta el valor manual y devuelve la fila al cálculo automático */
+function soltarPL(i){
+  const p=F().pl[i];if(!p.man)return;
+  p.man=null;
+  if(p.modo==='sobrebase')p.up=p.mas||0; else p.pct=p.meta||0;
+  p.pvp=0;
+  rowsPL();   // el Proxy del estado dispara el guardado solo
+  toast('Vuelve al cálculo',p.cli+': el precio se vuelve a calcular a partir del costo y del margen meta.');
 }
 
 /* ====== DIBUJO ====== */
@@ -2361,7 +2383,7 @@ function fusionarSemilla(){
     if(!FICHAS[x.r])FICHAS[x.r]=nuevaFicha(recetaDe(x.cat,x.sub));
     const f=FICHAS[x.r];f.hist=f.hist||[];if(f.edit===undefined)f.edit=false;
     CEN.forEach(c=>{if(!f.cen[c.id])f.cen[c.id]={on:false,val:0}});
-    CLI.forEach((c,i)=>{if(!f.pl[i])f.pl[i]={modo:c.modo,meta:c.meta,pct:c.meta,pvp:0,up:c.up||0,lock:'pct'}});
+    CLI.forEach((c,i)=>{if(!f.pl[i])f.pl[i]={...c,man:null,pct:c.meta,pvp:0,up:c.mas||0}});
   });
   return {nm,np};
 }
@@ -2809,19 +2831,25 @@ function setCli(i,v){
   CLI[i].meta=num(v);
   aplicarMargenes();rowsCli();resumenFabrica();draw();rowsProd();rowsExp();
 }
+/* Realinea la lista de precios de cada ficha con los clientes actuales.
+   Regla: lo que escribió una persona (p.man) NUNCA se recalcula aquí; lo demás
+   se repone con el margen meta del cliente. */
 function aplicarMargenes(){
   CLI.forEach(c=>{if(c.vinc&&c.modo!=='sobrebase')c.meta=metaDe(c)});
   Object.values(FICHAS).forEach(f=>{
     f.pl=CLI.map((c,i)=>{
       const o=(f.pl&&f.pl[i]&&f.pl[i].id===c.id)?f.pl[i]:((f.pl||[]).find(x=>x.id===c.id)||{});
+      // fichas viejas: no tenían `man`, se deduce del `lock` de entonces
+      const man=o.man!==undefined?o.man
+        :(o.lock==='pvp'&&(o.pvp||0)>0)?'pvp'
+        :(o.lock==='up'&&o.up!=null&&Math.abs(o.up-(c.mas||0))>0.01)?'up'
+        :(o.lock==='pct'&&o.pct!=null&&Math.abs(o.pct-(c.meta||0))>0.01)?'pct'
+        :null;
       if(c.modo==='sobrebase'){
         // precio ligado al del cliente base (c.vinc), no un margen propio
-        const lock=o.lock==='pvp'?'pvp':'up';
-        const up=(o.modo==='sobrebase'&&o.up!=null)?o.up:(c.mas||0);
-        return {...c,lock,up,pvp:o.pvp||0,pct:0};
+        return {...c,man,up:man==='up'?(o.up==null?(c.mas||0):o.up):(c.mas||0),pvp:o.pvp||0,pct:0};
       }
-      const lock=o.lock==='pvp'?'pvp':'pct';
-      return {...c,lock,pct:c.meta,pvp:o.pvp||0,up:0};
+      return {...c,man,pct:man==='pct'?(o.pct==null?c.meta:o.pct):c.meta,pvp:o.pvp||0,up:0};
     });
   });
 }
