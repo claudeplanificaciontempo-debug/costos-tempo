@@ -2879,7 +2879,7 @@ let masivaModo='prod';
 function abrirMasiva(){
   masivaModo='prod';
   $('mm-t').textContent='Carga masiva de productos';
-  $('mm-h').innerHTML='Pega desde Excel una fila por producto: <b>Referencia ; Nombre ; Categoría ; Tipo de producto ; Departamento ; Marca</b> (las dos últimas son opcionales). Sirve punto y coma, tabulación o coma. Si la referencia ya existe, se actualiza.';
+  $('mm-h').innerHTML='Pega desde Excel una fila por producto: <b>Referencia ; Nombre ; Categoría ; Tipo de producto ; Departamento ; Marca ; Colección</b> (de Departamento en adelante todo es opcional). Sirve punto y coma, tabulación o coma. Si la referencia ya existe, se actualiza.';
   $('mm-ta').value='';$('mm-drop').classList.remove('hide');
   $('ovl2').classList.remove('hide');
 }
@@ -2903,7 +2903,7 @@ function plantilla(){
     return;
   }
   $('mm-ta').value=masivaModo==='prod'
-    ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
+    ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
     : 'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35';
 }
 function partes(l){return l.split(/[\t;]|,(?=\s*\S)/).map(s=>s.trim())}
@@ -2946,9 +2946,12 @@ function procesarMasiva(){
       let marca=(p[5]||'').trim();
       if(marca&&!MARCAS.some(m=>m.toLowerCase()===marca.toLowerCase()))MARCAS.push(marca);
       marca=MARCAS.find(m=>m.toLowerCase()===marca.toLowerCase())||'';
+      /* La colección también se crea sola si no existe, como la familia y el tipo. */
+      let col=MAY((p[6]||'').trim());
+      if(col&&!COLECCIONES.some(c=>c===col))COLECCIONES.push(col);
       const ex=byRef(r);
-      if(ex){ex.n=n;ex.cat=cat;ex.sub=sub;if(dep)ex.dep=dep;if(marca)ex.marca=marca;upd++}
-      else{REFS.push({r,n,cat,sub,dep,marca,cu:'',creado:hoyISO()});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
+      if(ex){ex.n=n;ex.cat=cat;ex.sub=sub;if(dep)ex.dep=dep;if(marca)ex.marca=marca;if(col)ex.col=col;upd++}
+      else{REFS.push({r,n,cat,sub,dep,marca,col,cu:'',creado:hoyISO()});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
     }else{
       if(p.length<5||/^cod/i.test(p[0])){mal++;return}
       const it={c:MAY(p[0]),d:MAY(p[1]),k:['mp','ins','dec','srv'].includes(p[2].toLowerCase())?p[2].toLowerCase():'ins',um:p[3],p:num(p[4]),f:hoy()};
