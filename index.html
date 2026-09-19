@@ -2163,18 +2163,26 @@ async function cargarNube(){
      fallo de lectura o RLS bloqueando el SELECT (Supabase responde 200 con lista vacía).
      Por eso NO se vacía en memoria lo que la nube no devolvió: se avisa y se deja como está. */
   const vacias=[];noConfiables.clear();avisoLectura='';
-  if(!pr.length)noConfiables.add('cst_productos');
-  if(!ma.length)noConfiables.add('cst_materiales');
-  if(!fi.length)noConfiables.add('cst_fichas');
+  /* Una tabla vacía puede significar dos cosas muy distintas: que la lectura falló
+     (RLS bloquea el SELECT y Supabase responde 200 con lista vacía) o que el usuario
+     la vació a propósito. Solo desconfiamos si hay motivo para creer que había datos:
+     que la copia de este navegador los tuviera, o que los datos dependan de otros que sí
+     llegaron (no puede haber fichas si no hay productos). */
+  let previo=null;try{previo=JSON.parse(localStorage.getItem(LKEY)||'null')}catch(e){}
+  const habia=k=>{const v=previo&&previo[k];return !!v&&(Array.isArray(v)?v.length:Object.keys(v).length)>0};
+  const prReales=pr.filter(x=>!(x.data&&x.data.del)).length;
+  if(!pr.length&&habia('REFS'))noConfiables.add('cst_productos');
+  if(!ma.length&&habia('CAT'))noConfiables.add('cst_materiales');
+  if(!fi.length&&(habia('FICHAS')||prReales))noConfiables.add('cst_fichas');
   /* se lee el objeto entero (...rest), no campo por campo: lo que se guardó vuelve completo */
   if(pr.length){REFS.length=0;BORRADOS.prod.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;if(d.del){BORRADOS.prod.push(d.r||x.id);return}const {orden,foto,...rest}=d;REFS.push({...rest,arch:!!d.arch});if(foto){FOTO[d.r]=foto;FOTO_NUBE[d.r]=foto}if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca);if(d.temporada&&!TEMPORADAS.some(t=>t===d.temporada))TEMPORADAS.push(d.temporada)});}
-  else vacias.push('productos');
+  else if(noConfiables.has('cst_productos'))vacias.push('productos');
   if(ma.length){CAT.length=0;BORRADOS.mat.length=0;ma.sort(porOrden).forEach(x=>{const {orden,...m}=x.data;if(m.del){BORRADOS.mat.push(m.c||x.id);return}CAT.push(m)});}
-  else vacias.push('materiales');
+  else if(noConfiables.has('cst_materiales'))vacias.push('materiales');
   if(ce.length){CEN.length=0;ce.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CEN.push(c)})}
   if(cl.length){CLI.length=0;cl.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CLI.push(c)})}
   if(fi.length){Object.keys(FICHAS).forEach(k=>delete FICHAS[k]);fi.forEach(x=>FICHAS[x.id]=x.data);}
-  else vacias.push('fichas de costo');
+  else if(noConfiables.has('cst_fichas'))vacias.push('fichas de costo');
   if(vacias.length){
     /* Regla de oro: nunca escribir encima de una tabla que no se pudo leer. Si no, las
        fichas en blanco que se crean al arrancar pisarían las reales que sí están en la nube. */
