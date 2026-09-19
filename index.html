@@ -233,6 +233,10 @@ input.n:focus{border-color:var(--vino);outline:none}
 .lpq{margin-left:auto;width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;background:#fff}
 .lpq:focus{outline:0;border-color:var(--vino)}
 .rcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.dcat{display:flex;flex-wrap:wrap;gap:5px}
+.dc{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;background:var(--suave);
+  color:var(--ink-2);border-radius:20px;padding:2px 9px}
+.dc b{color:var(--vino-deep);font-weight:800}
 .catgrid{display:flex;flex-direction:column;gap:8px;padding:14px}
 .catacc{border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
 .catacc>.ch{display:flex;gap:10px;align-items:center;padding:9px 12px;cursor:pointer;background:var(--suave)}
@@ -837,14 +841,14 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="card-h"><h2>Muestras entregadas por día</h2><div class="sub" id="rep-ent-sub"></div></div>
     <div class="hint">El día en que el taller te entregó la muestra terminada. Se marca en Productos, en la fecha que está bajo el nombre, o seleccionando varias y pulsando <b>Entregadas hoy</b>.</div>
     <table>
-      <thead><tr><th class="l">Día</th><th>Entregadas</th><th>Acumulado</th><th class="l">Referencias</th></tr></thead>
+      <thead><tr><th class="l">Día</th><th>Entregadas</th><th>Acumulado</th><th class="l">Por categoría</th></tr></thead>
       <tbody id="rep-ent"></tbody>
     </table>
   </div>
   <div class="card">
     <div class="card-h"><h2>Muestras registradas por día</h2><div class="sub" id="rep-dia-sub"></div></div>
     <table>
-      <thead><tr><th class="l">Día</th><th>Muestras</th><th class="l">Categorías</th></tr></thead>
+      <thead><tr><th class="l">Día</th><th>Muestras</th><th class="l">Por categoría</th></tr></thead>
       <tbody id="rep-dia"></tbody>
     </table>
   </div>
@@ -3668,10 +3672,14 @@ function rowsRep(){
     ? T.ent+' entregada'+(T.ent===1?'':'s')+' en '+es.length+' día'+(es.length===1?'':'s')+' · '+prom+' por día · faltan '+T.falta
     : 'Todavía no has marcado ninguna entrega. Faltan '+T.falta+'.';
   let acum=T.ent;
+  /* cada día se abre por familia: no basta saber que entregaron 5, sino de qué */
   $('rep-ent').innerHTML=es.map(d=>{
     const g=ent[d],hasta=acum;acum-=g.length;
+    const porCat={};g.forEach(x=>{const c=x.cat||'(sin categoría)';porCat[c]=(porCat[c]||0)+1});
+    const cs=Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a]||a.localeCompare(b));
     return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td><td>${hasta}</td>
-      <td class="l"><span class="cod">${g.map(x=>escR(x.r)).join(' · ')}</span></td></tr>`;
+      <td class="l"><div class="dcat" title="${escR(g.map(x=>x.r).join(', '))}">${
+        cs.map(c=>`<span class="dc">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
   }).join('')||`<tr><td colspan="4" class="empty">Marca las entregas en Productos: la fecha bajo el nombre, o selecciona varias y pulsa <b>Entregadas hoy</b>.</td></tr>`;
 
   /* cuántas se registraron cada día, de la más reciente hacia atrás */
@@ -3683,8 +3691,10 @@ function rowsRep(){
     +(sinFecha?' · '+sinFecha+' sin fecha':''):(sinFecha?sinFecha+' muestras sin fecha de registro':'');
   $('rep-dia').innerHTML=ds.map(d=>{
     const g=dias[d],cs=[...new Set(g.map(x=>x.cat))].sort();
+    const porCat={};g.forEach(x=>{const c=x.cat||'(sin categoría)';porCat[c]=(porCat[c]||0)+1});
     return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td>
-      <td class="l"><span class="cod">${cs.map(escR).join(' · ')}</span></td></tr>`;
+      <td class="l"><div class="dcat" title="${escR(g.map(x=>x.r).join(', '))}">${
+        cs.map(c=>`<span class="dc">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
   }).join('')||`<tr><td colspan="3" class="empty">Todavía no hay muestras con fecha de registro. Los productos que crees desde ahora la llevan sola.</td></tr>`;
 }
 function csvReporte(){
