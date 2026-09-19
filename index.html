@@ -475,6 +475,25 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <div class="mod-tot"><b>Mano de obra</b>
           <span class="s" id="modsam"></span><span class="v" id="modval">$0.00</span></div>
       </div>
+
+      <div class="card">
+        <div class="card-h"><h2>Operaciones de la referencia</h2>
+          <div class="sub" id="ops-sub"></div></div>
+        <div class="hint" style="margin:12px 14px 0">Aquí se registra la secuencia de operaciones de cada prenda, por centro. <b>Estos minutos NO entran en el costo</b>: el costo lo sigue dando el tiempo que pones arriba en Tiempos por centro. Esto es la base de datos de ingeniería, para consultarla y exportarla.</div>
+        <table>
+          <thead><tr><th class="l" style="width:150px">Centro</th><th class="l">Operación</th><th style="width:92px">Minutos</th><th style="width:34px"></th></tr></thead>
+          <tbody id="tb-ops"></tbody>
+          <tfoot id="tf-ops"></tfoot>
+        </table>
+        <div class="addrow">
+          <select id="op-cen" class="fld" style="width:auto"></select>
+          <input id="op-nom" class="fld may" style="flex:1;min-width:180px" type="text" placeholder="Operación, p. ej. ENSAMBLE DE CUELLO" onkeydown="if(event.key==='Enter')addOp()">
+          <input id="op-min" class="n" type="text" inputmode="decimal" placeholder="min">
+          <button class="btn ghost" onclick="addOp()">+ Agregar operación</button>
+          <button class="btn ghost sm" style="margin-left:auto" onclick="copiarOps()">Copiar de otra referencia</button>
+          <button class="btn ghost sm" onclick="abrirMasivaOps()">Carga masiva de operaciones</button>
+        </div>
+      </div>
     </div>
 
     <!-- BLOQUE 3 -->
@@ -541,6 +560,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost" onclick="document.getElementById('fotos-in').click()">Subir fotos en lote</button>
       <button class="btn ghost" onclick="abrirRecorte()">Recortar de una imagen</button>
       <button class="btn ghost" onclick="exportarBOM()">Exportar BOM (Excel)</button>
+      <button class="btn ghost" onclick="csvOperaciones()">Exportar operaciones (Excel)</button>
       <input type="file" id="fotos-in" accept="image/*" multiple class="hide" onchange="subirFotos(this.files)">
       <input type="file" id="foto-1" accept="image/*" class="hide" onchange="subirFoto1(this.files)">
     </div>
@@ -1306,6 +1326,7 @@ function nuevaFicha(pre){
     lines:(pre.lines||[]).map(l=>({c:l[0],q:l[1],d:l[2]})),
     cen:CEN.reduce((o,c)=>{o[c.id]={on:!!pre.cen[c.id],val:pre.cen[c.id]||0};return o},{}),
     pl:CLI.map(c=>({...c,man:null,pct:c.meta||0,up:c.modo==='sobrebase'?(c.mas||0):0,pvp:0})),
+    ops:[],
     ver:1,saved:false,fecha:'',edit:false,hist:[],aprob:null
   };
 }
@@ -1639,7 +1660,7 @@ function draw(soft){
       tr.cells[4].textContent=fmt(real*precio(l,m));
     });
   }
-  rowsCenFicha();rowsSum();rowsHist();autosave();
+  rowsCenFicha();rowsSum();rowsHist();rowsOps();autosave();
   if(soft)paintPL();else rowsPL();
 }
 
@@ -2770,7 +2791,18 @@ function abrirMasivaMat(){
   $('mm-ta').value='';$('mm-drop').classList.add('hide');
   $('ovl2').classList.remove('hide');
 }
+function abrirMasivaOps(){
+  masivaModo='ops';
+  $('mm-t').textContent='Carga masiva de operaciones';
+  $('mm-h').innerHTML='Pega desde Excel una fila por operación: <b>Referencia ; Centro ; Operación ; Minutos</b>. El centro se busca por su nombre (Corte, Confección…). Las operaciones se AGREGAN a las que ya tenga cada referencia.';
+  $('mm-ta').value='';$('mm-drop').classList.add('hide');
+  $('ovl2').classList.remove('hide');
+}
 function plantilla(){
+  if(masivaModo==='ops'){
+    $('mm-ta').value='4823;Confección;ENSAMBLE DE CUELLO;0.45\n4823;Confección;CERRAR HOMBROS;0.30\n4823;Confección;RECUBRIR BAJOS;0.55\n4823;Corte;TENDIDO;0.20';
+    return;
+  }
   $('mm-ta').value=masivaModo==='prod'
     ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
     : 'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35';
@@ -2783,6 +2815,18 @@ function procesarMasiva(){
   let add=0,upd=0,mal=0;const nuevasCat=[],nuevosTipo=[];
   ls.forEach(l=>{
     const p=partes(l);
+    if(masivaModo==='ops'){
+      if(p.length<4||/^ref/i.test(p[0])){mal++;return}
+      const x=byRef(MAY(p[0]));
+      if(!x){mal++;return}
+      const nom=(p[1]||'').trim().toLowerCase();
+      const c=CEN.find(z=>z.n.toLowerCase()===nom)||CEN.find(z=>z.id.toLowerCase()===nom)
+             ||CEN.find(z=>z.n.toLowerCase().startsWith(nom.slice(0,5)));
+      if(!c){mal++;return}
+      opsDe(x.r).push({cen:c.id,op:MAY((p[2]||'').trim()),min:num(p[3])});
+      add++;
+      return;
+    }
     if(masivaModo==='prod'){
       if(p.length<2||/^ref/i.test(p[0])){mal++;return}
       const r=MAY(p[0]),n=MAY(p[1]);
@@ -2814,7 +2858,8 @@ function procesarMasiva(){
     }
   });
   cerrar('ovl2');
-  if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
+  if(masivaModo==='ops'){rowsOps()}
+  else if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
   else{rowsCatMat();draw()}
   const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
                nuevosTipo.length?nuevosTipo.length+' tipo(s) nuevo(s)':'',
@@ -3083,6 +3128,97 @@ function borrarCen(i){
   CEN.splice(i,1);
   REFS.forEach(x=>{const f=FICHAS[x.r];if(f)delete f.cen[c.id]});
   rowsCentros();resumenFabrica();rowsCenFicha();draw();
+}
+
+/* ====== OPERACIONES POR REFERENCIA (ingeniería) ======
+   Se registran para tener la base de datos y poder exportarla. NO entran en el
+   costo: el costo lo da el tiempo escrito en Tiempos por centro. El día que haya
+   valor de minuto por centro, aquí es donde se enchufa. */
+function opsDe(ref){const f=FICHAS[ref];if(!f)return [];if(!f.ops)f.ops=[];return f.ops}
+function nombreCen(id){const c=CEN.find(x=>x.id===id);return c?c.n:id}
+function rowsOps(){
+  const tb=$('tb-ops');if(!tb)return;
+  const f=F();if(!f)return;
+  const ops=opsDe(cur),ro=RO()||!puedeEditar();
+  const sel=$('op-cen');
+  if(sel){const v=sel.value;sel.innerHTML=CEN.map(c=>`<option value="${c.id}">${escR(c.n)}</option>`).join('');
+    if(CEN.some(c=>c.id===v))sel.value=v;}
+  /* se agrupan por centro, en el orden de los centros de la fábrica */
+  let html='',total=0;
+  CEN.forEach(c=>{
+    const dela=ops.map((o,i)=>({o,i})).filter(({o})=>o.cen===c.id);
+    if(!dela.length)return;
+    const sub=dela.reduce((a,{o})=>a+(+o.min||0),0);total+=sub;
+    html+=`<tr class="cat"><td class="l" colspan="2"><b>${escR(c.n)}</b></td>
+      <td><span>${sub.toFixed(2)} min</span></td><td></td></tr>`;
+    html+=dela.map(({o,i},k)=>`<tr>
+      <td class="l ro"><span class="cod">${k+1}</span></td>
+      <td class="l"><input class="fld may" style="width:100%" value="${escR(o.op||'')}" ${ro?'readonly':''} onchange="setOp(${i},'op',this.value)"></td>
+      <td><input class="n" value="${(+o.min||0)}" ${ro?'readonly':''} onchange="setOp(${i},'min',this.value)"></td>
+      <td>${ro?'':`<button class="x" title="Quitar la operación" onclick="borrarOp(${i})">×</button>`}</td></tr>`).join('');
+  });
+  const huerfanas=ops.map((o,i)=>({o,i})).filter(({o})=>!CEN.some(c=>c.id===o.cen));
+  if(huerfanas.length){
+    html+=`<tr class="cat"><td class="l" colspan="2"><b>Sin centro</b><span> · el centro ya no existe</span></td><td></td><td></td></tr>`;
+    html+=huerfanas.map(({o,i})=>`<tr><td class="l ro"><span class="cod">—</span></td>
+      <td class="l"><input class="fld may" style="width:100%" value="${escR(o.op||'')}" ${ro?'readonly':''} onchange="setOp(${i},'op',this.value)"></td>
+      <td><input class="n" value="${(+o.min||0)}" ${ro?'readonly':''} onchange="setOp(${i},'min',this.value)"></td>
+      <td>${ro?'':`<button class="x" onclick="borrarOp(${i})">×</button>`}</td></tr>`).join('');
+    total+=huerfanas.reduce((a,{o})=>a+(+o.min||0),0);
+  }
+  tb.innerHTML=html||'<tr><td colspan="4" class="empty">Todavía no hay operaciones registradas para esta referencia.</td></tr>';
+  $('ops-sub').textContent=ops.length?ops.length+(ops.length===1?' operación':' operaciones')+' · '+total.toFixed(2)+' min':'sin operaciones';
+  /* comparación con el tiempo que sí cuesta, sin tocarlo */
+  const enCosto=CEN.filter(c=>f.cen[c.id]&&f.cen[c.id].on).reduce((a,c)=>a+(+f.cen[c.id].val||0),0);
+  $('tf-ops').innerHTML=ops.length
+    ? `<tr><td class="l">Total operaciones</td><td class="l ro">no entra en el costo</td>
+       <td class="tot">${total.toFixed(2)} min</td><td></td></tr>
+       <tr><td class="l ro">Tiempo que sí cuesta</td><td class="l ro">de Tiempos por centro</td>
+       <td class="ro">${enCosto.toFixed(2)} min</td><td></td></tr>`
+    : '';
+}
+function addOp(){
+  if(RO()||!puedeEditar())return;
+  const cen=($('op-cen').value||'').trim(),op=MAY(($('op-nom').value||'').trim()),min=num($('op-min').value);
+  if(!op){toast('Falta la operación','Escribe el nombre de la operación.');return}
+  if(!cen){toast('Falta el centro','Elige en qué centro se hace.');return}
+  opsDe(cur).push({cen,op,min});
+  $('op-nom').value='';$('op-min').value='';
+  rowsOps();$('op-nom').focus();
+}
+function setOp(i,f,v){
+  const o=opsDe(cur)[i];if(!o)return;
+  o[f]=f==='min'?num(v):MAY(v);
+  rowsOps();
+}
+function borrarOp(i){opsDe(cur).splice(i,1);rowsOps()}
+function copiarOps(){
+  if(RO()||!puedeEditar())return;
+  const con=REFS.filter(x=>x.r!==cur&&opsDe(x.r).length);
+  if(!con.length){toast('No hay de dónde copiar','Ninguna otra referencia tiene operaciones registradas.');return}
+  const lista=con.map(x=>x.r+' · '+x.n+' ('+opsDe(x.r).length+' op.)').join('\n');
+  const r=(prompt('¿De qué referencia copio las operaciones?\n\n'+lista+'\n\nEscribe la referencia:')||'').trim().toUpperCase();
+  if(!r)return;
+  const orig=con.find(x=>x.r.toUpperCase()===r);
+  if(!orig){toast('No encontrada','No hay una referencia '+r+' con operaciones.');return}
+  const destino=opsDe(cur);
+  if(destino.length&&!confirm('Esta referencia ya tiene '+destino.length+' operación(es). Se reemplazan por las '+opsDe(orig.r).length+' de '+orig.r+'. ¿Continuar?'))return;
+  destino.length=0;
+  opsDe(orig.r).forEach(o=>destino.push({cen:o.cen,op:o.op,min:o.min}));
+  rowsOps();
+  toast('Operaciones copiadas',destino.length+' operación(es) de '+orig.r+'. Ajústalas si esta prenda cambia.');
+}
+function csvOperaciones(){
+  const filas=[];
+  activos().forEach(x=>opsDe(x.r).forEach(o=>filas.push(
+    [x.cu||'',x.r,x.n,x.cat,x.sub,nombreCen(o.cen),o.op,(+o.min||0)]
+      .map(v=>String(v).replace(/[;\n\r]/g,' ')).join(';'))));
+  if(!filas.length){toast('Nada que exportar','Todavía no hay operaciones registradas.');return}
+  const cab='Codigo_unico;Referencia;Producto;Categoria;Tipo;Centro;Operacion;Minutos';
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+[cab].concat(filas).join('\n')],{type:'text/csv;charset=utf-8'}));
+  a.download='TEMPO_operaciones_'+hoyISO()+'.csv';a.click();
+  toast('Operaciones exportadas',filas.length+' línea(s) de '+activos().filter(x=>opsDe(x.r).length).length+' referencia(s).');
 }
 
 /* ====== CATEGORÍAS (familia y tipo hijo) ====== */
