@@ -1158,6 +1158,7 @@ const CAT_ODOO=[
  {c:'IN-ELASTICO',d:'ELASTICO',k:'ins',um:'u',p:0,f:'15-sep-2026',fam:'ELASTICO'},
  {c:'IN-ETIQUETATRAN',d:'ETIQUETA TRANSFER',k:'ins',um:'u',p:0,f:'15-sep-2026',fam:'ETIQUETA TRANSFER'},
  {c:'IN-ETIQUETAS',d:'ETIQUETAS',k:'ins',um:'u',p:0,f:'15-sep-2026',fam:'ETIQUETAS'},
+ {c:'IN-INS001',d:'ETIQUETA DE LAVADO',k:'ins',um:'u',p:0,f:'15-sep-2026',fam:'SATIN'},
  {c:'MP-FAJASTEJIDOS',d:'FAJAS TEJIDOS',k:'mp',um:'u',p:0,f:'15-sep-2026',fam:'FAJAS TEJIDOS'},
  {c:'MP-FAJASTEJIDOS2',d:'FAJAS TEJIDOS COMBINADO',k:'mp',um:'u',p:0,f:'15-sep-2026',fam:'FAJAS TEJIDOS COMBINADO'},
  {c:'MP-FLEECEPERCHA',d:'FLEECE PERCHADO',k:'mp',um:'u',p:0,f:'15-sep-2026',fam:'FLEECE PERCHADO'},
@@ -1280,7 +1281,7 @@ const COLORS={mp:'#b05a72',ins:'#e0a9b5',dec:'#7b5e8f',srv:'#5f8aa8',mo:'#c2926a
 /* ====== TELAS SUGERIDAS POR TIPO DE PRODUCTO ====== */
 /* Lo que lleva TODA prenda, sin importar el tipo: hilo, etiquetas y lavado.
    Es editable desde Configuración, porque quién lleva qué lo decide la planta. */
-let BASE=[{c:'IN-HILOPARACOSE',q:0.010,d:0},{c:'IN-SATIN',q:1,d:0},{c:'IN-ETIQUETAS',q:1,d:0}];
+let BASE=[{c:'IN-HILOPARACOSE',q:0.010,d:0},{c:'IN-ETIQUETAS',q:1,d:0},{c:'IN-INS001',q:1,d:0}];
 const REC_BASE=()=>BASE.filter(b=>b.c).map(b=>[b.c,+b.q||0,+b.d||0]);
 const RECETAS={
  'CAMISETAS':{def:[['MP-JERSEY241',0.200,0],['MP-CUELLOSTEJID',1,0]],tipos:{
