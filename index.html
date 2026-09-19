@@ -229,6 +229,24 @@ input.n:focus{border-color:var(--vino);outline:none}
 .lpq{margin-left:auto;width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;background:#fff}
 .lpq:focus{outline:0;border-color:var(--vino)}
 .rcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.catgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;padding:14px}
+.catc{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;display:flex;flex-direction:column}
+.catc .im{height:120px;background:var(--suave);display:grid;place-items:center;cursor:pointer;position:relative;overflow:hidden}
+.catc .im img{width:100%;height:100%;object-fit:cover}
+.catc .im .nof{font-size:10.5px;color:var(--ink-3);text-align:center;line-height:1.3}
+.catc .im:hover .cam{opacity:1}
+.catc .cam{position:absolute;right:6px;bottom:6px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:6px;font-size:10px;font-weight:700;padding:2px 7px;color:var(--ink-2);opacity:0;transition:opacity .12s}
+.catc .cb{padding:10px 11px;display:flex;flex-direction:column;gap:7px;flex:1}
+.catc .top{display:flex;gap:6px;align-items:center}
+.tips{display:flex;flex-wrap:wrap;gap:5px}
+.tip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;background:var(--suave);
+  color:var(--ink-2);border-radius:20px;padding:3px 4px 3px 9px}
+.tip button{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:12px;line-height:1;padding:0 2px}
+.tip button:hover{color:var(--red)}
+.catc .add{display:flex;gap:5px;margin-top:auto}
+.catc .add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:inherit;font-size:11.5px}
+.catc .add input:focus{border-color:var(--vino);outline:none}
 .rcc{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .rcc.off{opacity:.42}
 .rcim{height:132px;background:var(--line-soft);display:grid;place-items:center;overflow:hidden}
@@ -379,6 +397,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <button class="nav-item on" data-screen="ficha">Ficha de costos <span class="cnt" id="nav-ref">4823</span></button>
     <div class="navsep"></div>
     <button class="nav-item" data-screen="mat">Materiales <span class="cnt" id="nav-mat">0</span></button>
+    <button class="nav-item" data-screen="cat">Categorías <span class="cnt" id="nav-cat">0</span></button>
     <button class="nav-item" data-screen="centros">Centros y tarifas</button>
     <div class="navsep"></div>
     <button class="nav-item" data-screen="lista">Lista de precios</button>
@@ -697,6 +716,23 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   </div>
 </section>
 
+<section id="scr-cat" class="hide">
+  <div class="crumb"><b>Categorías</b></div>
+  <div class="eyebrow">Maestro de producto · familia y tipo</div>
+  <div class="hint"><b>La familia y sus tipos hijos.</b> Por ejemplo CAMISETAS con Level 1, Level 2, Camiseta ML. Puedes crear las que hagan falta y ponerle una foto a cada familia. Cuando subas productos por carga masiva, las familias y tipos que no existan se crean solos.</div>
+  <div class="card">
+    <div class="card-h"><h2>Familias de producto</h2>
+      <input id="cat-q" class="lpq" type="text" placeholder="Buscar familia o tipo…" oninput="rowsCats()">
+      <div class="sub" id="cat-sub"></div></div>
+    <div class="catgrid" id="cat-grid"></div>
+    <div class="addrow">
+      <input id="nc-cat" class="fld may" style="flex:1;min-width:200px" type="text" placeholder="Nombre de la familia nueva, p. ej. CHAQUETAS">
+      <button class="btn ghost" onclick="agregarCat()">+ Crear familia</button>
+    </div>
+    <input type="file" id="cat-foto-in" accept="image/*" class="hide" onchange="subirFotoCatArchivo(this.files)">
+  </div>
+</section>
+
 <section id="scr-rep" class="hide">
   <div class="crumb"><b>Reportes</b></div>
   <div class="eyebrow">Avance de muestras</div>
@@ -860,6 +896,7 @@ function adoptarEstado(){
   FOTO=reactivo(FOTO);REFS=reactivo(REFS);CAT=reactivo(CAT);CEN=reactivo(CEN);
   CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);
   PANTONES=reactivo(PANTONES);TEMPORADAS=reactivo(TEMPORADAS);BORRADOS=reactivo(BORRADOS);
+  CATEG=reactivo(CATEG);CATFOTO=reactivo(CATFOTO);
 }
 
 /* ====== FOTOS DEL CATÁLOGO (PDF) ====== */
@@ -875,7 +912,9 @@ let BORRADOS={mat:[],prod:[]};
 /* Última foto que sabemos que está en la nube, por referencia. Sirve para no
    borrarla cuando una subida nueva falla. No es dato editable: no va en el Proxy. */
 const FOTO_NUBE={};
-const CATEG={
+/* Foto de cada categoría (familia). Va junto a CATEG en cst_categorias. */
+let CATFOTO={};
+let CATEG={
  'CAMISETAS':['Camiseta CV','Camiseta CR','Camiseta Bolsillo','Level 1','Level 2','Fashion Graphics','Camiseta ML','Basica Crop','Oversize','MC Ranglan','Camiseta Corte Moda','Ranglan ML'],
  'FITS':['Bare BVD','Bare Top','Fit 6','Fit 61','Yogga','Bare Tiras','Fit Moda'],
  'POLOS':['Polo Basica','Polo Moda'],
@@ -2134,15 +2173,17 @@ function filas(){
     cst_fichas:REFS.filter(x=>FICHAS[x.r]).map(x=>({id:x.r,data:FICHAS[x.r]})),
     cst_marcas:MARCAS.map((m,i)=>({id:m.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:m,orden:i}})),
     cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{...p,orden:i}})),
-    cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}}))
+    cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}})),
+    cst_categorias:Object.keys(CATEG).map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
+      data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',orden:i}}))
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
-const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas'];
+const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias'];
 async function cargarNube(){
   const T=TABLAS;
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk,pt,tp]=R;
+  const [pr,ma,ce,cl,fi,mk,pt,tp,ct]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -2194,6 +2235,12 @@ async function cargarNube(){
   if(mk&&mk.length){MARCAS.length=0;mk.sort(porOrden).forEach(x=>MARCAS.push(x.data.nombre))}
   if(pt&&pt.length){PANTONES.length=0;pt.sort(porOrden).forEach(x=>{const {orden,...p}=x.data;PANTONES.push(p)})}
   if(tp&&tp.length){TEMPORADAS.length=0;tp.sort(porOrden).forEach(x=>TEMPORADAS.push(x.data.nombre))}
+  /* las categorías de la nube mandan; las del archivo solo rellenan lo que falte */
+  if(ct&&ct.length){
+    Object.keys(CATEG).forEach(k=>delete CATEG[k]);
+    ct.sort(porOrden).forEach(x=>{const d=x.data;if(!d||!d.cat)return;
+      CATEG[d.cat]=(d.tipos||[]).slice();if(d.foto)CATFOTO[d.cat]=d.foto});
+  }
   // fotos del archivo que la nube no tiene
   Object.keys(FOTO).forEach(k=>{if(pr.some(x=>x.data.r===k&&x.data.foto)&&FOTO[k].startsWith('data:'))delete FOTO[k]});
   cur=(FICHAS[cur]?cur:(REFS[0]&&REFS[0].r));
@@ -2221,10 +2268,12 @@ async function subirFotoNube(ref){
 }
 async function subirFotosPendientes(){
   const p=Object.keys(FOTO).filter(k=>FOTO[k]&&FOTO[k].startsWith('data:')&&byRef(k));
-  if(!p.length)return 0;
-  marcaSave('Subiendo fotos '+p.length+'…','');
+  const pc=Object.keys(CATFOTO).filter(c=>CATFOTO[c]&&String(CATFOTO[c]).startsWith('data:')&&CATEG[c]);
+  if(!p.length&&!pc.length)return 0;
+  marcaSave('Subiendo fotos '+(p.length+pc.length)+'…','');
   let n=0;const fallos=[];
   for(const r of p){try{await subirFotoNube(r);n++}catch(e){console.error(e);fallos.push(String((e&&e.message)||e))}}
+  for(const c of pc){try{await subirFotoCatNube(c);n++}catch(e){console.error(e);fallos.push(String((e&&e.message)||e))}}
   /* el fallo ya no se esconde: la foto sigue en pantalla y se avisa del motivo real */
   if(fallos.length){
     ultimoError='No se pudieron subir '+fallos.length+' foto(s) · '+fallos[0];
@@ -2731,15 +2780,25 @@ function procesarMasiva(){
   const txt=$('mm-ta').value.trim();
   if(!txt){toast('No hay nada que procesar','Pega las filas o usa Ver plantilla.');return}
   const ls=txt.split(/\r?\n/).filter(l=>l.trim());
-  let add=0,upd=0,mal=0;
+  let add=0,upd=0,mal=0;const nuevasCat=[],nuevosTipo=[];
   ls.forEach(l=>{
     const p=partes(l);
     if(masivaModo==='prod'){
       if(p.length<2||/^ref/i.test(p[0])){mal++;return}
       const r=MAY(p[0]),n=MAY(p[1]);
-      let cat=(p[2]||'').toUpperCase(),sub=p[3]||'';
-      if(!CATEG[cat]){cat=Object.keys(CATEG).find(c=>c.startsWith((p[2]||'').toUpperCase().slice(0,4)))||'CAMISETAS'}
-      if(!CATEG[cat].includes(sub)){sub=CATEG[cat].find(s=>s.toLowerCase()===(p[3]||'').toLowerCase())||CATEG[cat][0]}
+      /* Familia y tipo que no existan se crean, en vez de forzarlos a CAMISETAS.
+         Solo se empata por nombre exacto: adivinar por las primeras letras archivaba
+         productos en la familia equivocada sin avisar. */
+      let cat=MAY((p[2]||'').trim()),sub=(p[3]||'').trim();
+      if(cat){
+        const ex=Object.keys(CATEG).find(c=>c.toUpperCase()===cat);
+        if(ex)cat=ex; else {CATEG[cat]=[];nuevasCat.push(cat)}
+      }else cat=Object.keys(CATEG)[0]||'CAMISETAS';
+      if(!CATEG[cat])CATEG[cat]=[];
+      if(sub){
+        const ex=CATEG[cat].find(t=>t.toLowerCase()===sub.toLowerCase());
+        if(ex)sub=ex; else {CATEG[cat].push(sub);nuevosTipo.push(cat+' · '+sub)}
+      }else sub=CATEG[cat][0]||'';
       const dep=DEPS.find(d=>d.toLowerCase().startsWith((p[4]||'').trim().toLowerCase().slice(0,3)))||(/kid|ni[nñ]/i.test(p[4]||'')?'Niño':'');
       let marca=(p[5]||'').trim();
       if(marca&&!MARCAS.some(m=>m.toLowerCase()===marca.toLowerCase()))MARCAS.push(marca);
@@ -2755,10 +2814,13 @@ function procesarMasiva(){
     }
   });
   cerrar('ovl2');
-  if(masivaModo==='prod'){rowsProd();rowsExp();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
+  if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
   else{rowsCatMat();draw()}
+  const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
+               nuevosTipo.length?nuevosTipo.length+' tipo(s) nuevo(s)':'',
+               mal?mal+' líneas ignoradas (encabezado o formato incompleto)':''].filter(Boolean).join(' · ');
   toast('Carga masiva lista · '+add+' nuevos, '+upd+' actualizados',
-    mal?mal+' líneas se ignoraron (encabezado o formato incompleto).':'Todas las líneas se procesaron.');
+    extra||'Todas las líneas se procesaron.');
 }
 function cerrar(id){$(id).classList.add('hide')}
 
@@ -3021,6 +3083,97 @@ function borrarCen(i){
   CEN.splice(i,1);
   REFS.forEach(x=>{const f=FICHAS[x.r];if(f)delete f.cen[c.id]});
   rowsCentros();resumenFabrica();rowsCenFicha();draw();
+}
+
+/* ====== CATEGORÍAS (familia y tipo hijo) ====== */
+let catFotoDe=null;
+function usosCat(c){return REFS.filter(x=>x.cat===c).length}
+function usosTipo(c,t){return REFS.filter(x=>x.cat===c&&x.sub===t).length}
+function rowsCats(){
+  const g=$('cat-grid');if(!g)return;
+  const q=(($('cat-q')&&$('cat-q').value)||'').toLowerCase().trim();
+  const cats=Object.keys(CATEG).filter(c=>!q||c.toLowerCase().includes(q)||(CATEG[c]||[]).some(t=>t.toLowerCase().includes(q)));
+  const ro=!puedeEditarCostos();
+  g.innerHTML=cats.map(c=>{
+    const f=CATFOTO[c],tipos=CATEG[c]||[],n=usosCat(c);
+    return `<div class="catc">
+      <div class="im" onclick="${ro?'':`pedirFotoCat('${escR(c)}')`}" title="${ro?'':'Clic para poner o cambiar la foto de la familia'}">
+        ${f?`<img src="${escR(f)}" alt="">`:'<div class="nof">sin foto<br>de familia</div>'}
+        ${ro?'':'<span class="cam">cambiar</span>'}</div>
+      <div class="cb">
+        <div class="top">
+          <input class="fld may" style="flex:1;font-weight:700" value="${escR(c)}" ${ro?'readonly':''} onchange="renombrarCat('${escR(c)}',this.value)">
+          ${ro?'':`<button class="x" title="Borrar la familia" onclick="borrarCat('${escR(c)}')">×</button>`}
+        </div>
+        <div class="cod">${n} producto${n===1?'':'s'} · ${tipos.length} tipo${tipos.length===1?'':'s'}</div>
+        <div class="tips">${tipos.map(t=>`<span class="tip">${escR(t)}${ro?'':`<button title="Quitar el tipo" onclick="borrarTipo('${escR(c)}','${escR(t)}')">×</button>`}</span>`).join('')||'<span class="cod">sin tipos todavía</span>'}</div>
+        ${ro?'':`<div class="add">
+          <input type="text" placeholder="Tipo nuevo…" onkeydown="if(event.key==='Enter'){agregarTipo('${escR(c)}',this.value);this.value=''}">
+          <button class="btn ghost sm" onclick="agregarTipo('${escR(c)}',this.previousElementSibling.value);this.previousElementSibling.value=''">+</button>
+        </div>`}
+      </div></div>`;
+  }).join('')||'<div class="empty">No hay familias con esa búsqueda.</div>';
+  $('cat-sub').textContent=cats.length+' de '+Object.keys(CATEG).length+' familias';
+  if($('nav-cat'))$('nav-cat').textContent=Object.keys(CATEG).length;
+}
+function agregarCat(){
+  const c=MAY(($('nc-cat').value||'').trim());
+  if(!c){toast('Falta el nombre','Escribe el nombre de la familia.');return}
+  if(CATEG[c]){toast('Ya existe','Esa familia ya está en la lista.');return}
+  CATEG[c]=[];$('nc-cat').value='';
+  rowsCats();rowsProd();
+  toast('Familia creada',c+' ya se puede elegir en los productos. Agrégale sus tipos.');
+}
+function renombrarCat(viejo,nuevo){
+  nuevo=MAY((nuevo||'').trim());
+  if(!nuevo||nuevo===viejo){rowsCats();return}
+  if(CATEG[nuevo]){toast('Ya existe','Ya hay una familia llamada '+nuevo+'.');rowsCats();return}
+  /* el orden importa poco, pero los productos deben seguir apuntando a la familia */
+  const orden=Object.keys(CATEG),nuevoMapa={};
+  orden.forEach(k=>{nuevoMapa[k===viejo?nuevo:k]=CATEG[k]});
+  Object.keys(CATEG).forEach(k=>delete CATEG[k]);
+  Object.keys(nuevoMapa).forEach(k=>{CATEG[k]=nuevoMapa[k]});
+  if(CATFOTO[viejo]){CATFOTO[nuevo]=CATFOTO[viejo];delete CATFOTO[viejo]}
+  let n=0;REFS.forEach(x=>{if(x.cat===viejo){x.cat=nuevo;n++}});
+  rowsCats();rowsProd();rowsExp();head();
+  toast('Familia renombrada',viejo+' → '+nuevo+(n?' · '+n+' producto(s) actualizados.':''));
+}
+function borrarCat(c){
+  const n=usosCat(c);
+  if(n){toast('No se puede borrar','La usan '+n+' producto(s). Cámbiales la familia primero.');return}
+  if(!confirm('¿Borrar la familia "'+c+'" y sus '+(CATEG[c]||[]).length+' tipo(s)?'))return;
+  delete CATEG[c];delete CATFOTO[c];
+  rowsCats();rowsProd();
+  toast('Familia borrada',c+' se quitó de la lista.');
+}
+function agregarTipo(c,t){
+  t=(t||'').trim();
+  if(!t)return;
+  if(!CATEG[c])CATEG[c]=[];
+  if(CATEG[c].some(x=>x.toLowerCase()===t.toLowerCase())){toast('Ya existe','Ese tipo ya está en '+c+'.');return}
+  CATEG[c].push(t);
+  rowsCats();rowsProd();head();
+}
+function borrarTipo(c,t){
+  const n=usosTipo(c,t);
+  if(n){toast('No se puede quitar','Lo usan '+n+' producto(s). Cámbiales el tipo primero.');return}
+  CATEG[c]=(CATEG[c]||[]).filter(x=>x!==t);
+  rowsCats();rowsProd();head();
+}
+function pedirFotoCat(c){catFotoDe=c;$('cat-foto-in').value='';$('cat-foto-in').click()}
+function subirFotoCatArchivo(fs){
+  if(!fs||!fs[0]||!catFotoDe)return;
+  leer(fs[0],d=>{CATFOTO[catFotoDe]=d;rowsCats();toast('Foto cargada','Familia '+catFotoDe+'. Se sube a la nube en unos segundos.')});
+}
+async function subirFotoCatNube(c){
+  const d=CATFOTO[c];if(!d||!d.startsWith('data:'))return;
+  const blob=await (await fetch(d)).blob();
+  const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
+  const path='cat_'+c.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
+  const r=await fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
+    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
+  if(!r.ok)throw new Error('foto de la familia '+c+' · HTTP '+r.status+' · '+(await r.text()).slice(0,160));
+  CATFOTO[c]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
 }
 
 /* ====== REPORTES ====== */
@@ -3291,7 +3444,7 @@ function bajarCSV(){
 }
 
 /* ====== NAVEGACIÓN ====== */
-const SCR=['ficha','prod','mat','centros','lista','exp','rep'];
+const SCR=['ficha','prod','mat','cat','centros','lista','exp','rep'];
 function go(s){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.screen===s));
   SCR.forEach(x=>$('scr-'+x).classList.toggle('hide',x!==s));
@@ -3300,6 +3453,7 @@ function go(s){
   if(s==='centros'){resumenFabrica();rowsUsr()}
   if(s==='exp')rowsExp();
   if(s==='rep')rowsRep();
+  if(s==='cat')rowsCats();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.nav-item[data-screen]').forEach(b=>b.onclick=()=>go(b.dataset.screen));
