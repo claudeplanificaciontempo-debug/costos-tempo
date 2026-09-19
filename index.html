@@ -201,6 +201,10 @@ input.n:focus{border-color:var(--vino);outline:none}
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 /* rayado alterno también en Productos, que usa divs y no una tabla */
 .prow:nth-of-type(even){background:var(--zebra)}
+.ent input{border:1px solid var(--line);border-radius:6px;font:inherit;font-size:10px;padding:1px 3px;
+  color:var(--ink-3);background:#fff;width:112px}
+.ent.si input{color:var(--green-txt);border-color:var(--green-soft);font-weight:700}
+.ent input:focus{border-color:var(--vino);outline:none}
 .prow:hover{background:var(--suave)}
 .mth{position:relative;cursor:pointer}
 .edf{position:absolute;right:-5px;bottom:-5px;width:19px;height:19px;border-radius:50%;border:1px solid var(--line);
@@ -568,6 +572,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost sm" onclick="aplicarMasivo('marca')">Aplicar marca</button>
       <select id="bulk-dep" class="fld" style="width:170px"><option value="">Departamento…</option></select>
       <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
+      <button class="btn ghost sm" title="Pone la fecha de hoy como día de entrega en los seleccionados" onclick="entregadasHoy()">Entregadas hoy</button>
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
     </div>
     <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Código único</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Colección</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
@@ -799,7 +804,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 <section id="scr-rep" class="hide">
   <div class="crumb"><b>Reportes</b></div>
   <div class="eyebrow">Avance de muestras</div>
-  <div class="hint"><b>Cuántas muestras hay y en qué punto está cada una.</b> Filtra por temporada y año, y mira el avance agrupado por categoría. Abajo, cuántas muestras se registraron cada día.</div>
+  <div class="hint"><b>Cuántas muestras hay, cuántas te entregaron y en qué punto está cada una.</b> Filtra por temporada, año y colección, y agrupa el avance como te convenga. Abajo, cuántas te entregó el taller cada día y cuántas se registraron.</div>
   <div class="card">
     <div class="card-h"><h2>Filtros</h2><div class="sub" id="rep-sub"></div></div>
     <div class="addrow">
@@ -807,16 +812,33 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <select id="rep-temp" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()"></select></label>
       <label class="mini" style="margin:0;margin-left:14px">Año
         <select id="rep-anio" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()"></select></label>
+      <label class="mini" style="margin:0;margin-left:14px">Colección
+        <select id="rep-col" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()"></select></label>
+      <label class="mini" style="margin:0;margin-left:14px">Agrupar por
+        <select id="rep-grupo" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()">
+          <option value="cat">Categoría</option>
+          <option value="sub">Tipo de producto</option>
+          <option value="col">Colección</option>
+          <option value="temporada">Temporada</option>
+        </select></label>
       <button class="btn ghost sm" style="margin-left:auto" onclick="csvReporte()">Descargar reporte (Excel)</button>
     </div>
   </div>
   <div class="kpis" id="rep-kpis"></div>
   <div class="card">
-    <div class="card-h"><h2>Avance por categoría</h2><div class="sub">registradas · en costeo · por aprobar · costeadas</div></div>
+    <div class="card-h"><h2>Avance</h2><div class="sub" id="rep-grupo-sub">registradas · entregadas · en costeo · por aprobar · costeadas</div></div>
     <table>
-      <thead><tr><th class="l">Categoría</th><th>Registradas</th><th>En costeo</th><th>Por aprobar</th><th>Costeadas</th><th>Aprobadas</th><th class="l" style="width:170px">Avance del costeo</th></tr></thead>
+      <thead><tr><th class="l" id="rep-th-grupo">Categoría</th><th>Registradas</th><th>Entregadas</th><th>Por entregar</th><th>En costeo</th><th>Por aprobar</th><th>Costeadas</th><th>Aprobadas</th><th class="l" style="width:150px">Avance del costeo</th></tr></thead>
       <tbody id="rep-cat"></tbody>
       <tfoot id="rep-tot"></tfoot>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Muestras entregadas por día</h2><div class="sub" id="rep-ent-sub"></div></div>
+    <div class="hint">El día en que el taller te entregó la muestra terminada. Se marca en Productos, en la fecha que está bajo el nombre, o seleccionando varias y pulsando <b>Entregadas hoy</b>.</div>
+    <table>
+      <thead><tr><th class="l">Día</th><th>Entregadas</th><th>Acumulado</th><th class="l">Referencias</th></tr></thead>
+      <tbody id="rep-ent"></tbody>
     </table>
   </div>
   <div class="card">
@@ -1891,6 +1913,14 @@ function aplicarMasivo(campo){
   rowsProd();
   toast('Actualizado',SELP.size+' producto'+(SELP.size===1?'':'s')+' actualizado'+(SELP.size===1?'':'s')+'.');
 }
+/* El taller entrega varias muestras el mismo día: se marcan de una vez. */
+function entregadasHoy(){
+  if(!SELP.size){toast('No hay nada seleccionado','Marca las muestras que te entregaron y vuelve a pulsar.');return}
+  const hoy=hoyISO();let n=0;
+  REFS.forEach((x,i)=>{if(SELP.has(x.r)){setP(i,'ent',hoy);n++}});
+  rowsProd();
+  toast(n+' muestra'+(n===1?'':'s')+' entregada'+(n===1?'':'s'),'Quedaron con fecha de entrega '+fechaBonita(hoy)+'.');
+}
 function activos(){return REFS.filter(x=>!x.arch)}
 function porAprobar(){return activos().filter(x=>FICHAS[x.r].aprob==='pendiente')}
 function pendientes(){return activos().filter(x=>(!FICHAS[x.r].saved||FICHAS[x.r].edit)&&FICHAS[x.r].aprob!=='pendiente')}
@@ -1936,7 +1966,10 @@ function filaProd({x,i}){
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
       <div>
         <div class="pname" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n}</div>
-        <div class="reg">Registrado ${fechaBonita(x.creado)}</div>
+        <div class="reg">Registrado ${fechaBonita(x.creado)} ·
+          <span class="ent${x.ent?' si':''}">Entregada
+            <input type="date" value="${x.ent||''}" title="Día en que el taller entregó la muestra terminada" onchange="setP(${i},'ent',this.value)">
+          </span></div>
       </div>
       <div><select class="fld${x.marca?'':' sindef'}" onchange="marcaSel(${i},this)">
         <option value="" ${x.marca?'':'selected'}>sin definir</option>
@@ -3562,8 +3595,9 @@ function estadoRep(r){
   return (f.saved&&!f.edit)?'costeada':'costeo';
 }
 function repLista(){
-  const t=($('rep-temp')&&$('rep-temp').value)||'',a=($('rep-anio')&&$('rep-anio').value)||'';
-  return activos().filter(x=>(!t||x.temporada===t)&&(!a||String(x.anio||'')===a));
+  const t=($('rep-temp')&&$('rep-temp').value)||'',a=($('rep-anio')&&$('rep-anio').value)||'',
+        c=($('rep-col')&&$('rep-col').value)||'';
+  return activos().filter(x=>(!t||x.temporada===t)&&(!a||String(x.anio||'')===a)&&(!c||x.col===c));
 }
 function rowsRep(){
   if(!$('rep-cat'))return;
@@ -3573,11 +3607,14 @@ function rowsRep(){
   const pon=(id,vals,etq)=>{const e=$(id);if(!e)return;const v=e.value;
     e.innerHTML='<option value="">'+etq+'</option>'+vals.map(x=>`<option ${x===v?'selected':''}>${escR(x)}</option>`).join('');
     if(vals.indexOf(v)>=0)e.value=v;};
-  pon('rep-temp',ts,'Todas'); pon('rep-anio',as,'Todos');
+  const cs=[...new Set(activos().map(x=>x.col).filter(Boolean))].sort();
+  pon('rep-temp',ts,'Todas'); pon('rep-anio',as,'Todos'); pon('rep-col',cs,'Todas');
 
   const lista=repLista();
   const cuenta=arr=>({
     n:arr.length,
+    ent:arr.filter(x=>x.ent).length,
+    falta:arr.filter(x=>!x.ent).length,
     costeo:arr.filter(x=>estadoRep(x.r)==='costeo').length,
     aprobar:arr.filter(x=>estadoRep(x.r)==='aprobar').length,
     costeada:arr.filter(x=>estadoRep(x.r)==='costeada').length,
@@ -3589,15 +3626,21 @@ function rowsRep(){
   const k=(cls,label,val,hint)=>`<div class="kpi ${cls}" style="cursor:default"><div class="k">${label}</div><div class="v">${val}</div><div class="h">${hint}</div></div>`;
   $('rep-kpis').innerHTML=
     k('','Registradas',T.n,'en el filtro')+
+    k('ok','Entregadas',T.ent,(T.n?Math.round(T.ent/T.n*100):0)+'% del total')+
+    k('pend','Por entregar',T.falta,'el taller aún las debe')+
     k('pend','En costeo',T.costeo,'sin cerrar')+
     k('pend','Por aprobar',T.aprobar,'esperando revisión')+
     k('ok','Costeadas',T.costeada,'ficha guardada')+
     k('ok','Aprobadas',T.apr,(T.n?Math.round(T.apr/T.n*100):0)+'% de las registradas')+
     k('','Avance del costeo',pct+'%','fichas cerradas');
 
-  /* una fila por categoría, ordenadas por cuántas muestras tienen */
-  const cats=[...new Set(lista.map(x=>x.cat))].sort((x,y)=>
-    lista.filter(z=>z.cat===y).length-lista.filter(z=>z.cat===x).length||x.localeCompare(y));
+  /* una fila por grupo (categoría, tipo, colección o temporada), de mayor a menor */
+  const campo=($('rep-grupo')&&$('rep-grupo').value)||'cat';
+  const ETQ={cat:'Categoría',sub:'Tipo de producto',col:'Colección',temporada:'Temporada'};
+  if($('rep-th-grupo'))$('rep-th-grupo').textContent=ETQ[campo];
+  const valor=x=>x[campo]||'(sin asignar)';
+  const cats=[...new Set(lista.map(valor))].sort((x,y)=>
+    lista.filter(z=>valor(z)===y).length-lista.filter(z=>valor(z)===x).length||x.localeCompare(y));
   const barra=c=>{
     const w=v=>c.n?(v/c.n*100).toFixed(1):0;
     return `<div class="mb" title="${c.costeada} costeadas · ${c.aprobar} por aprobar · ${c.costeo} en costeo">
@@ -3606,13 +3649,30 @@ function rowsRep(){
       <b style="width:${w(c.costeo)}%;background:var(--line)"></b></div>`;
   };
   $('rep-cat').innerHTML=cats.map(cat=>{
-    const c=cuenta(lista.filter(x=>x.cat===cat)),p=c.n?Math.round(c.costeada/c.n*100):0;
+    const c=cuenta(lista.filter(x=>valor(x)===cat)),p=c.n?Math.round(c.costeada/c.n*100):0;
     return `<tr><td class="l"><b style="font-weight:600">${escR(cat)}</b></td>
-      <td>${c.n}</td><td>${c.costeo||'—'}</td><td>${c.aprobar||'—'}</td><td class="tot">${c.costeada}</td>
+      <td>${c.n}</td><td class="tot" style="color:${c.ent?'var(--green-txt)':'var(--ink-3)'}">${c.ent||'—'}</td>
+      <td${c.falta?' style="color:var(--falta);font-weight:700"':''}>${c.falta||'—'}</td>
+      <td>${c.costeo||'—'}</td><td>${c.aprobar||'—'}</td><td class="tot">${c.costeada}</td>
       <td class="tot" style="color:${c.apr?'var(--green-txt)':'var(--ink-3)'}">${c.apr||'—'}</td>
       <td class="l"><div style="display:flex;align-items:center;gap:8px">${barra(c)}<span class="cod" style="width:34px;text-align:right">${p}%</span></div></td></tr>`;
-  }).join('')||'<tr><td colspan="7" class="empty">No hay muestras con ese filtro.</td></tr>';
-  $('rep-tot').innerHTML=lista.length?`<tr><td class="l">Total</td><td>${T.n}</td><td>${T.costeo}</td><td>${T.aprobar}</td><td class="tot">${T.costeada}</td><td class="tot">${T.apr}</td><td class="l">${pct}%</td></tr>`:'';
+  }).join('')||'<tr><td colspan="9" class="empty">No hay muestras con ese filtro.</td></tr>';
+  $('rep-tot').innerHTML=lista.length?`<tr><td class="l">Total</td><td>${T.n}</td><td class="tot">${T.ent}</td><td>${T.falta}</td><td>${T.costeo}</td><td>${T.aprobar}</td><td class="tot">${T.costeada}</td><td class="tot">${T.apr}</td><td class="l">${pct}%</td></tr>`:'';
+
+  /* cuántas entregó el taller cada día, y cuántas van acumuladas */
+  const ent={};
+  lista.forEach(x=>{if(x.ent)(ent[x.ent]=ent[x.ent]||[]).push(x)});
+  const es=Object.keys(ent).sort().reverse();
+  const prom=es.length?(T.ent/es.length).toFixed(1):'0';
+  $('rep-ent-sub').textContent=es.length
+    ? T.ent+' entregada'+(T.ent===1?'':'s')+' en '+es.length+' día'+(es.length===1?'':'s')+' · '+prom+' por día · faltan '+T.falta
+    : 'Todavía no has marcado ninguna entrega. Faltan '+T.falta+'.';
+  let acum=T.ent;
+  $('rep-ent').innerHTML=es.map(d=>{
+    const g=ent[d],hasta=acum;acum-=g.length;
+    return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td><td>${hasta}</td>
+      <td class="l"><span class="cod">${g.map(x=>escR(x.r)).join(' · ')}</span></td></tr>`;
+  }).join('')||`<tr><td colspan="4" class="empty">Marca las entregas en Productos: la fecha bajo el nombre, o selecciona varias y pulsa <b>Entregadas hoy</b>.</td></tr>`;
 
   /* cuántas se registraron cada día, de la más reciente hacia atrás */
   const dias={};
@@ -3629,9 +3689,9 @@ function rowsRep(){
 }
 function csvReporte(){
   const lista=repLista(),sep=';';
-  const cab=['Codigo_unico','Referencia','Producto','Categoria','Tipo','Marca','Departamento','Anio','Temporada','Registrado','Estado','Muestra_aprobada','Fecha_aprobacion'];
+  const cab=['Codigo_unico','Referencia','Producto','Categoria','Tipo','Marca','Departamento','Anio','Temporada','Coleccion','Registrado','Entregada','Estado','Muestra_aprobada','Fecha_aprobacion'];
   const est={costeada:'Costeada',aprobar:'Por aprobar',costeo:'En costeo'};
-  const filas=lista.map(x=>[x.cu||'',x.r,x.n,x.cat,x.sub,x.marca||'',x.dep||'',x.anio||'',x.temporada||'',x.creado||'',est[estadoRep(x.r)],x.apr?'Si':'No',x.aprFecha||'']
+  const filas=lista.map(x=>[x.cu||'',x.r,x.n,x.cat,x.sub,x.marca||'',x.dep||'',x.anio||'',x.temporada||'',x.col||'',x.creado||'',x.ent||'',est[estadoRep(x.r)],x.apr?'Si':'No',x.aprFecha||'']
     .map(v=>String(v).replace(/[;\n\r]/g,' ')).join(sep));
   const txt='﻿'+[cab.join(sep)].concat(filas).join('\n');
   const a=document.createElement('a');
