@@ -197,7 +197,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 .save p{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
 
 /* productos */
-.prow{display:grid;grid-template-columns:22px 56px 88px minmax(140px,1fr) 150px 120px 96px 130px 178px 178px 110px 34px;gap:10px;align-items:center;
+.prow{display:grid;grid-template-columns:22px 56px 88px 104px minmax(130px,1fr) 140px 110px 92px 124px 160px 160px 104px 34px;gap:10px;align-items:center;
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 /* rayado alterno también en Productos, que usa divs y no una tabla */
 .prow:nth-of-type(even){background:var(--zebra)}
@@ -272,6 +272,9 @@ input.n:focus{border-color:var(--vino);outline:none}
 .mixrow .mb{flex:1;height:8px;background:var(--line-soft);border-radius:4px;overflow:hidden}
 .mixrow .mb b{display:block;height:100%}
 .mixrow .mp{width:44px;text-align:right;color:var(--ink-3)} .mixrow .mv{width:56px;text-align:right;font-weight:700}
+/* barra de avance del reporte: varios tramos en la misma barra */
+.mb{flex:1;display:flex;height:9px;min-width:92px;background:var(--line-soft);border-radius:5px;overflow:hidden}
+.mb b{display:block;height:100%}
 .asv{font-size:10.5px;color:var(--ink-3);margin-right:2px;white-space:nowrap}
 .asv.ok{color:var(--green-txt);background:var(--green-soft);padding:2px 8px;border-radius:5px;font-weight:700}
 .asv.err{color:var(--red);font-weight:700}
@@ -297,6 +300,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 .hrow.now{background:var(--suave)}
 .pname{font-weight:600;font-size:12.5px;cursor:pointer;padding:6px 2px}
 .pname:hover{color:var(--vino-2);text-decoration:underline}
+.reg{font-size:10px;color:var(--ink-3);padding:0 2px 4px}
 /* campo incompleto ≠ costo irreal: gris apagado, nunca el naranja de señal */
 .fld.sindef::placeholder{color:var(--ink-3);opacity:1;font-style:italic}
 select.fld.sindef{color:var(--ink-3);font-style:italic}
@@ -367,6 +371,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="navsep"></div>
     <button class="nav-item" data-screen="lista">Lista de precios</button>
     <button class="nav-item" data-screen="exp">Exportar por cliente</button>
+    <button class="nav-item" data-screen="rep">Reportes</button>
   </nav>
 </header>
 
@@ -495,7 +500,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
     </div>
-    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
+    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Código único</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
     <div id="pr-rows"></div>
     <div class="addrow">
       <button id="bt-prod" class="btn org" onclick="guardarProductos()">Guardar productos</button>
@@ -676,6 +681,38 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost" onclick="exportar(true)">Exportar todos los clientes</button>
       <label class="mini" style="margin:0 0 0 auto;display:flex;align-items:center;gap:6px"><input type="checkbox" id="pdf-borr"> Incluir borradores en el PDF</label>
     </div>
+  </div>
+</section>
+
+<section id="scr-rep" class="hide">
+  <div class="crumb"><b>Reportes</b></div>
+  <div class="eyebrow">Avance de muestras</div>
+  <div class="hint"><b>Cuántas muestras hay y en qué punto está cada una.</b> Filtra por temporada y año, y mira el avance agrupado por categoría. Abajo, cuántas muestras se registraron cada día.</div>
+  <div class="card">
+    <div class="card-h"><h2>Filtros</h2><div class="sub" id="rep-sub"></div></div>
+    <div class="addrow">
+      <label class="mini" style="margin:0">Temporada
+        <select id="rep-temp" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()"></select></label>
+      <label class="mini" style="margin:0;margin-left:14px">Año
+        <select id="rep-anio" class="fld" style="width:auto;margin-left:6px" onchange="rowsRep()"></select></label>
+      <button class="btn ghost sm" style="margin-left:auto" onclick="csvReporte()">Descargar reporte (Excel)</button>
+    </div>
+  </div>
+  <div class="kpis" id="rep-kpis"></div>
+  <div class="card">
+    <div class="card-h"><h2>Avance por categoría</h2><div class="sub">registradas · en costeo · por aprobar · costeadas</div></div>
+    <table>
+      <thead><tr><th class="l">Categoría</th><th>Registradas</th><th>En costeo</th><th>Por aprobar</th><th>Costeadas</th><th class="l" style="width:190px">Avance</th></tr></thead>
+      <tbody id="rep-cat"></tbody>
+      <tfoot id="rep-tot"></tfoot>
+    </table>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Muestras registradas por día</h2><div class="sub" id="rep-dia-sub"></div></div>
+    <table>
+      <thead><tr><th class="l">Día</th><th>Muestras</th><th class="l">Categorías</th></tr></thead>
+      <tbody id="rep-dia"></tbody>
+    </table>
   </div>
 </section>
 
@@ -1263,7 +1300,9 @@ function totRef(r){const g=cur;cur=r;calc();const t={...TOT};cur=g;calc();return
 function head(){
   const x=byRef(cur),f=F();
   $('rh-img').src=FOTO[cur]||'';
-  $('rh-ref').textContent='REF '+x.r;
+  $('rh-ref').innerHTML='REF '+x.r
+    +(x.cu?` &nbsp;·&nbsp; <b title="Código único para empatar con el otro sistema">${escR(x.cu)}</b>`:'')
+    +`<br><span style="color:var(--ink-3)">Registrado ${fechaBonita(x.creado)}</span>`;
   $('rh-name').textContent=x.n;
   $('rh-cats').innerHTML=`${x.marca?`<span class="chip">${x.marca}</span>`:''}${x.dep?`<span class="chip">${x.dep}</span>`:''}`;
   $('rh-cat-sel').innerHTML=Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
@@ -1546,6 +1585,14 @@ function draw(soft){
 }
 
 /* ====== GUARDADOS ====== */
+/* ISO para poder agrupar y ordenar; hoy() sigue siendo el formato para mostrar */
+function hoyISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+function fechaBonita(iso){
+  if(!iso)return '—';
+  const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+  const p=String(iso).split('-');if(p.length!==3)return iso;
+  return (+p[2])+'-'+M[(+p[1])-1]+'-'+p[0];
+}
 function hoy(){
   const d=new Date(),M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   return d.getDate()+'-'+M[d.getMonth()]+'-'+d.getFullYear();
@@ -1726,7 +1773,11 @@ function filaProd({x,i}){
       <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
       <div><input class="fld cod" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
-      <div class="pname" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n}</div>
+      <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
+      <div>
+        <div class="pname" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n}</div>
+        <div class="reg">Registrado ${fechaBonita(x.creado)}</div>
+      </div>
       <div><select class="fld${x.marca?'':' sindef'}" onchange="marcaSel(${i},this)">
         <option value="" ${x.marca?'':'selected'}>sin definir</option>
         ${MARCAS.map(m=>`<option ${m===x.marca?'selected':''}>${m}</option>`).join('')}
@@ -1817,7 +1868,7 @@ function setP(i,f,v){
 function nuevoProd(){
   let n=1;while(byRef('NUEVO'+n))n++;
   const r='NUEVO'+n;
-  REFS.push({r,n:'PRODUCTO NUEVO',cat:'CAMISETAS',sub:CATEG['CAMISETAS'][0]});
+  REFS.push({r,n:'PRODUCTO NUEVO',cat:'CAMISETAS',sub:CATEG['CAMISETAS'][0],cu:'',creado:hoyISO()});
   FICHAS[r]=nuevaFicha(recetaDe('CAMISETAS',CATEG['CAMISETAS'][0]));rowsProd();rowsExp();
 }
 function toggleArchivo(i){
@@ -2646,7 +2697,7 @@ function procesarMasiva(){
       marca=MARCAS.find(m=>m.toLowerCase()===marca.toLowerCase())||'';
       const ex=byRef(r);
       if(ex){ex.n=n;ex.cat=cat;ex.sub=sub;if(dep)ex.dep=dep;if(marca)ex.marca=marca;upd++}
-      else{REFS.push({r,n,cat,sub,dep,marca});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
+      else{REFS.push({r,n,cat,sub,dep,marca,cu:'',creado:hoyISO()});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
     }else{
       if(p.length<5||/^cod/i.test(p[0])){mal++;return}
       const it={c:p[0],d:p[1],k:['mp','ins','dec','srv'].includes(p[2].toLowerCase())?p[2].toLowerCase():'ins',um:p[3],p:num(p[4]),f:hoy()};
@@ -2923,6 +2974,89 @@ function borrarCen(i){
   rowsCentros();resumenFabrica();rowsCenFicha();draw();
 }
 
+/* ====== REPORTES ====== */
+/* Estado de cada muestra: costeada, por aprobar o todavía en costeo. */
+function estadoRep(r){
+  const f=FICHAS[r];if(!f)return 'costeo';
+  if(f.aprob==='pendiente')return 'aprobar';
+  return (f.saved&&!f.edit)?'costeada':'costeo';
+}
+function repLista(){
+  const t=($('rep-temp')&&$('rep-temp').value)||'',a=($('rep-anio')&&$('rep-anio').value)||'';
+  return activos().filter(x=>(!t||x.temporada===t)&&(!a||String(x.anio||'')===a));
+}
+function rowsRep(){
+  if(!$('rep-cat'))return;
+  /* los desplegables se arman con lo que de verdad hay en los productos */
+  const ts=[...new Set(activos().map(x=>x.temporada).filter(Boolean))].sort();
+  const as=[...new Set(activos().map(x=>String(x.anio||'')).filter(Boolean))].sort().reverse();
+  const pon=(id,vals,etq)=>{const e=$(id);if(!e)return;const v=e.value;
+    e.innerHTML='<option value="">'+etq+'</option>'+vals.map(x=>`<option ${x===v?'selected':''}>${escR(x)}</option>`).join('');
+    if(vals.indexOf(v)>=0)e.value=v;};
+  pon('rep-temp',ts,'Todas'); pon('rep-anio',as,'Todos');
+
+  const lista=repLista();
+  const cuenta=arr=>({
+    n:arr.length,
+    costeo:arr.filter(x=>estadoRep(x.r)==='costeo').length,
+    aprobar:arr.filter(x=>estadoRep(x.r)==='aprobar').length,
+    costeada:arr.filter(x=>estadoRep(x.r)==='costeada').length
+  });
+  const T=cuenta(lista),pct=T.n?Math.round(T.costeada/T.n*100):0;
+
+  $('rep-sub').textContent=lista.length+' muestra'+(lista.length===1?'':'s')+' en el filtro';
+  const k=(cls,label,val,hint)=>`<div class="kpi ${cls}" style="cursor:default"><div class="k">${label}</div><div class="v">${val}</div><div class="h">${hint}</div></div>`;
+  $('rep-kpis').innerHTML=
+    k('','Registradas',T.n,'en el filtro')+
+    k('pend','En costeo',T.costeo,'sin cerrar')+
+    k('pend','Por aprobar',T.aprobar,'esperando revisión')+
+    k('ok','Costeadas',T.costeada,'ficha guardada')+
+    k('ok','Avance',pct+'%','del total registrado');
+
+  /* una fila por categoría, ordenadas por cuántas muestras tienen */
+  const cats=[...new Set(lista.map(x=>x.cat))].sort((x,y)=>
+    lista.filter(z=>z.cat===y).length-lista.filter(z=>z.cat===x).length||x.localeCompare(y));
+  const barra=c=>{
+    const w=v=>c.n?(v/c.n*100).toFixed(1):0;
+    return `<div class="mb" title="${c.costeada} costeadas · ${c.aprobar} por aprobar · ${c.costeo} en costeo">
+      <b style="width:${w(c.costeada)}%;background:var(--green)"></b>
+      <b style="width:${w(c.aprobar)}%;background:var(--amber)"></b>
+      <b style="width:${w(c.costeo)}%;background:var(--line)"></b></div>`;
+  };
+  $('rep-cat').innerHTML=cats.map(cat=>{
+    const c=cuenta(lista.filter(x=>x.cat===cat)),p=c.n?Math.round(c.costeada/c.n*100):0;
+    return `<tr><td class="l"><b style="font-weight:600">${escR(cat)}</b></td>
+      <td>${c.n}</td><td>${c.costeo||'—'}</td><td>${c.aprobar||'—'}</td><td class="tot">${c.costeada}</td>
+      <td class="l"><div style="display:flex;align-items:center;gap:8px">${barra(c)}<span class="cod" style="width:34px;text-align:right">${p}%</span></div></td></tr>`;
+  }).join('')||'<tr><td colspan="6" class="empty">No hay muestras con ese filtro.</td></tr>';
+  $('rep-tot').innerHTML=lista.length?`<tr><td class="l">Total</td><td>${T.n}</td><td>${T.costeo}</td><td>${T.aprobar}</td><td class="tot">${T.costeada}</td><td class="l">${pct}%</td></tr>`:'';
+
+  /* cuántas se registraron cada día, de la más reciente hacia atrás */
+  const dias={};
+  lista.forEach(x=>{const d=x.creado||'';if(!d)return;(dias[d]=dias[d]||[]).push(x)});
+  const ds=Object.keys(dias).sort().reverse();
+  const sinFecha=lista.filter(x=>!x.creado).length;
+  $('rep-dia-sub').textContent=ds.length?ds.length+' día'+(ds.length===1?'':'s')+' con registros'
+    +(sinFecha?' · '+sinFecha+' sin fecha':''):(sinFecha?sinFecha+' muestras sin fecha de registro':'');
+  $('rep-dia').innerHTML=ds.map(d=>{
+    const g=dias[d],cs=[...new Set(g.map(x=>x.cat))].sort();
+    return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td>
+      <td class="l"><span class="cod">${cs.map(escR).join(' · ')}</span></td></tr>`;
+  }).join('')||`<tr><td colspan="3" class="empty">Todavía no hay muestras con fecha de registro. Los productos que crees desde ahora la llevan sola.</td></tr>`;
+}
+function csvReporte(){
+  const lista=repLista(),sep=';';
+  const cab=['Codigo_unico','Referencia','Producto','Categoria','Tipo','Marca','Departamento','Anio','Temporada','Registrado','Estado'];
+  const est={costeada:'Costeada',aprobar:'Por aprobar',costeo:'En costeo'};
+  const filas=lista.map(x=>[x.cu||'',x.r,x.n,x.cat,x.sub,x.marca||'',x.dep||'',x.anio||'',x.temporada||'',x.creado||'',est[estadoRep(x.r)]]
+    .map(v=>String(v).replace(/[;\n\r]/g,' ')).join(sep));
+  const txt='﻿'+[cab.join(sep)].concat(filas).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
+  a.download='Reporte_muestras_'+hoyISO()+'.csv';a.click();
+  toast('Reporte descargado',lista.length+' muestra(s) con su estado y fecha de registro.');
+}
+
 /* ====== EXPORTAR ====== */
 let cliSel='fc';
 function abbr(s){return s.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,4)}
@@ -3053,12 +3187,12 @@ function pdfCliente(){
 function exportarBOM(){
   const list=activos().filter(x=>(FICHAS[x.r].lines||[]).length);
   if(!list.length){toast('Nada que exportar','No hay fichas con materiales cargados.');return}
-  let out='Referencia;Producto;Marca;Departamento;Codigo_material;Material;Tipo;Familia;Color;Consumo;UM\n';
+  let out='Codigo_unico;Referencia;Producto;Marca;Departamento;Codigo_material;Material;Tipo;Familia;Color;Consumo;UM\n';
   list.forEach(x=>{
     const f=FICHAS[x.r];
     f.lines.forEach(l=>{
       const m=byCode(l.c);if(!m)return;
-      out+=[x.r,x.n,x.marca||'',x.dep||'',m.c,m.d,KN[m.k]?KN[m.k][0]:m.k,m.fam||'',l.pan?pantoneNombre(l.pan):'',(l.q*(1+l.d/100)).toString(),m.um].join(';')+'\n';
+      out+=[x.cu||'',x.r,x.n,x.marca||'',x.dep||'',m.c,m.d,KN[m.k]?KN[m.k][0]:m.k,m.fam||'',l.pan?pantoneNombre(l.pan):'',(l.q*(1+l.d/100)).toString(),m.um].join(';')+'\n';
     });
   });
   CSVTXT=out;CSVNOM='TEMPO_BOM.csv';
@@ -3105,7 +3239,7 @@ function bajarCSV(){
 }
 
 /* ====== NAVEGACIÓN ====== */
-const SCR=['ficha','prod','mat','centros','lista','exp'];
+const SCR=['ficha','prod','mat','centros','lista','exp','rep'];
 function go(s){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.screen===s));
   SCR.forEach(x=>$('scr-'+x).classList.toggle('hide',x!==s));
@@ -3113,6 +3247,7 @@ function go(s){
   if(s==='lista')rowsLista();
   if(s==='centros'){resumenFabrica();rowsUsr()}
   if(s==='exp')rowsExp();
+  if(s==='rep')rowsRep();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.nav-item[data-screen]').forEach(b=>b.onclick=()=>go(b.dataset.screen));
