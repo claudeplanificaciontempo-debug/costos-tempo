@@ -912,10 +912,23 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="btn org" onclick="cargarRutaBase()">Cargar ruta base</button>
         <span class="mini" id="lmo-aviso" style="margin:0"></span>
       </div>
+      <div class="addrow" style="flex-wrap:wrap;border-bottom:1px solid var(--line-soft)">
+        <select id="nlmo-cen" class="fld" style="width:auto" title="Centro"></select>
+        <input id="nlmo-cat" class="fld may" list="dl-lmocat" style="width:150px" placeholder="Categoría">
+        <input id="nlmo-sec" class="fld may" list="dl-lmosec" style="width:130px" placeholder="Sección">
+        <input id="nlmo-fam" class="fld may" list="dl-lmofam" style="width:140px" placeholder="Familia">
+        <input id="nlmo-op" class="fld may" style="flex:1;min-width:200px" placeholder="Operación, p. ej. PEGAR CIERRE">
+        <input id="nlmo-maq" class="fld may" list="dl-lmomaq" style="width:150px" placeholder="Máquina">
+        <input id="nlmo-min" class="n" style="width:70px" placeholder="min">
+        <button class="btn ghost" onclick="agregarLmo()">+ Crear operación</button>
+        <button class="btn ghost" onclick="abrirMasivaLmo()">Carga masiva del catálogo</button>
+        <datalist id="dl-lmocat"></datalist><datalist id="dl-lmosec"></datalist>
+        <datalist id="dl-lmofam"></datalist><datalist id="dl-lmomaq"></datalist>
+      </div>
       <table>
         <thead><tr><th style="width:52px">Base</th><th class="l">Centro</th><th class="l">Categoría</th>
           <th class="l">Sección</th><th class="l">Familia</th><th class="l">Operación</th>
-          <th class="l">Máquina</th><th>Minutos</th><th class="l">Código</th></tr></thead>
+          <th class="l">Máquina</th><th>Minutos</th><th class="l">Código</th><th></th></tr></thead>
         <tbody id="tb-lmo"></tbody>
         <tfoot id="tf-lmo"></tfoot>
       </table>
@@ -3750,6 +3763,10 @@ function plantilla(){
     $('mm-ta').value='4823;Confección;ENSAMBLE DE CUELLO;0.45\n4823;Confección;CERRAR HOMBROS;0.30\n4823;Confección;RECUBRIR BAJOS;0.55\n4823;Corte;TENDIDO;0.20';
     return;
   }
+  if(masivaModo==='lmo'){
+    $('mm-ta').value='CON;CHOMPA;FRENTE;ENSAMBLE;PEGAR CIERRE;RECTA;1.10;SI\nCON;CHOMPA;FRENTE;ENSAMBLE;PESPUNTE DE CIERRE;RECTA;0.85;\nTER;CHOMPA;GENERAL;OJALES;HACER OJALES;OJALADORA;0.26;';
+    return;
+  }
   $('mm-ta').value=masivaModo==='prod'
     ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
     : 'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35';
@@ -3778,6 +3795,18 @@ function procesarMasiva(){
       if(!c){mal++;return}
       opsDe(x.r).push({cen:c.id,op:MAY((p[2]||'').trim()),min:num(p[3])});
       add++;
+      return;
+    }
+    if(masivaModo==='lmo'){
+      if(p.length<5||/^centro/i.test(p[0])){mal++;return}
+      const cen=MAY(p[0]).trim();
+      if(!LMO_CEN[cen]){mal++;return}
+      const o={cen,cat:MAY(p[1]),sec:MAY(p[2]||'GENERAL'),fam:MAY(p[3]||'ENSAMBLE'),op:MAY(p[4]),
+        maq:MAY(p[5]||''),min:num(p[6]),base:/^s[ií]$/i.test((p[7]||'').trim())};
+      if(!o.op||!o.cat){mal++;return}
+      const ex=LMO.find(x=>x.cat===o.cat&&x.op===o.op&&x.cen===o.cen);
+      if(ex){Object.assign(ex,{sec:o.sec,fam:o.fam,maq:o.maq,min:o.min,base:o.base});upd++}
+      else{o.cenCod=(LMO.find(x=>x.cen===o.cen)||{}).cenCod||o.cen;o.id=codLmo(o);o.cod=o.id;LMO.push(o);add++}
       return;
     }
     if(masivaModo==='prod'){
@@ -3815,6 +3844,7 @@ function procesarMasiva(){
   });
   cerrar('ovl2');
   if(masivaModo==='ops'){rowsOps();rowsRutas()}
+  else if(masivaModo==='lmo'){rowsLmo()}
   else if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
   else{rowsCatMat();draw()}
   const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
@@ -4341,11 +4371,19 @@ function rowsLmo(){
     <td class="l"><b style="font-weight:${o.base?'800':'500'}">${escR(o.op)}</b></td>
     <td class="l"><span class="cod">${escR(o.maq)}</span></td>
     <td><input class="n" style="width:72px" value="${o.min}" ${ro?'readonly':''} onchange="setLmo(${idx(o)},'min',this.value)"></td>
-    <td class="l"><span class="cod">${escR(o.cod)}</span></td></tr>`).join('')
-    ||'<tr><td colspan="9" class="empty">Ninguna operación con esos filtros.</td></tr>';
+    <td class="l"><span class="cod">${escR(o.cod)}</span></td>
+    <td>${ro?'':`<button class="x" title="Borrar la operación del catálogo" onclick="borrarLmo(${idx(o)})">×</button>`}</td></tr>`).join('')
+    ||'<tr><td colspan="10" class="empty">Ninguna operación con esos filtros.</td></tr>';
   const min=lista.reduce((a,o)=>a+(+o.min||0),0),nb=lista.filter(o=>o.base).length;
   $('tf-lmo').innerHTML=lista.length?`<tr><td colspan="6" class="l">${lista.length} operación(es) · ${nb} marcadas como base</td>
-    <td class="l">total</td><td class="tot">${min.toFixed(2)}</td><td></td></tr>`:'';
+    <td class="l">total</td><td class="tot">${min.toFixed(2)}</td><td colspan="2"></td></tr>`:'';
+  const dl=(id,vals)=>{const e=$(id);if(e)e.innerHTML=vals.map(v=>`<option value="${escR(v)}">`).join('')};
+  dl('dl-lmocat',[...new Set(LMO.map(o=>o.cat))].sort());
+  dl('dl-lmosec',[...new Set(LMO.map(o=>o.sec))].sort());
+  dl('dl-lmofam',[...new Set(LMO.map(o=>o.fam))].sort());
+  dl('dl-lmomaq',[...new Set(LMO.map(o=>o.maq))].sort());
+  const sc=$('nlmo-cen');
+  if(sc&&!sc.options.length)sc.innerHTML=Object.keys(LMO_CEN).map(c=>`<option value="${c}">${escR(nomCen(c))}</option>`).join('');
   $('lmo-sub').textContent=LMO.length+' operaciones en el catálogo · '+LMO.filter(o=>o.base).length+' base'
     +(lista.length>400?' · se muestran las primeras 400':'');
   const cat=($('lmo-cat')&&$('lmo-cat').value)||'';
@@ -4384,6 +4422,54 @@ function cargarRutaBase(){
   toast(add?add+' operación(es) cargadas':'Ya las tenía todas',
     (add?'La ruta base de '+cat+' quedó en '+ref+'. ':'')+
     (fuera.length?'Quedaron fuera '+fuera.length+' de Terminado, porque ese centro todavía no existe en la app.':'Revísala en la ficha y ajusta los tiempos.'));
+}
+/* El código sigue el esquema de la fábrica: centro-categoría-sección-familia-
+   operación-secuencia. Se reutilizan los códigos cortos que ya usa esa
+   categoría, sección o familia; si es nueva, se arma con sus iniciales. */
+function cortoLmo(campo,valor,n){
+  const ej=LMO.find(o=>o[campo]===valor);
+  if(ej){const p=ej.cod.split('-');const pos={cat:2,sec:3,fam:4}[campo];
+    if(p[pos])return p[pos];}
+  return MAY(String(valor||'').replace(/[^A-Za-zÁÉÍÓÚÑ ]/g,'').split(/\s+/).map(w=>w.slice(0,2)).join('')).slice(0,n)||'XX';
+}
+function codLmo(o){
+  const cen=(LMO.find(x=>x.cen===o.cen)||{}).cenCod||o.cen;
+  const base=[cen,cortoLmo('cat',o.cat,3),cortoLmo('sec',o.sec,2),cortoLmo('fam',o.fam,3),
+    MAY(o.op.replace(/[^A-Za-zÁÉÍÓÚÑ ]/g,'').split(/\s+/).map(w=>w.slice(0,3)).join('')).slice(0,6)].join('-');
+  let n=1,c=base+'-'+String(n).padStart(2,'0');
+  while(LMO.some(x=>x.id===c)){n++;c=base+'-'+String(n).padStart(2,'0')}
+  return c;
+}
+function agregarLmo(){
+  if(!puedeEditarCostos()){toast('Sin permiso','Tu usuario no puede cambiar el catálogo.');return}
+  const o={cen:($('nlmo-cen').value||'CON'),cat:MAY(($('nlmo-cat').value||'').trim()),
+    sec:MAY(($('nlmo-sec').value||'GENERAL').trim()),fam:MAY(($('nlmo-fam').value||'ENSAMBLE').trim()),
+    op:MAY(($('nlmo-op').value||'').trim()),maq:MAY(($('nlmo-maq').value||'').trim()),
+    min:num($('nlmo-min').value),base:false};
+  if(!o.op){toast('Falta la operación','Escribe el nombre de la operación.');return}
+  if(!o.cat){toast('Falta la categoría','Escribe para qué categoría de prenda es.');return}
+  if(LMO.some(x=>x.cat===o.cat&&x.op===o.op&&x.cen===o.cen)){
+    toast('Ya existe','Esa operación ya está en '+o.cat+'.');return}
+  o.cenCod=(LMO.find(x=>x.cen===o.cen)||{}).cenCod||o.cen;
+  o.id=codLmo(o);o.cod=o.id;
+  LMO.push(o);
+  ['nlmo-op','nlmo-min'].forEach(id=>$(id).value='');
+  if($('lmo-cat'))$('lmo-cat').value=o.cat;
+  rowsLmo();
+  toast('Operación creada',o.op+' · '+o.cat+' · código '+o.id+'. Márcala como base si la prenda la lleva siempre.');
+}
+function borrarLmo(i){
+  const o=LMO[i];if(!o)return;
+  if(!confirm('¿Borrar "'+o.op+'" de '+o.cat+' del catálogo?\nLas rutas ya cargadas en las fichas no se tocan.'))return;
+  LMO.splice(i,1);rowsLmo();
+  toast('Operación borrada',o.op+' salió del catálogo.');
+}
+function abrirMasivaLmo(){
+  masivaModo='lmo';
+  $('mm-t').textContent='Carga masiva del catálogo de operaciones';
+  $('mm-h').innerHTML='Pega desde Excel una fila por operación: <b>Centro ; Categoría ; Sección ; Familia ; Operación ; Máquina ; Minutos ; Base</b>. El centro es el código corto (COR, CON, EMP, SER, BOR, TER). En Base escribe SI si la prenda la lleva siempre. El código se arma solo. Si la operación ya existe en esa categoría y centro, se actualiza.';
+  $('mm-ta').value='';$('mm-drop').classList.add('hide');
+  $('ovl2').classList.remove('hide');
 }
 function csvLmo(){
   const sep=';',lista=lmoLista();
