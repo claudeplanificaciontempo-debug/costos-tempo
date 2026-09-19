@@ -229,16 +229,24 @@ input.n:focus{border-color:var(--vino);outline:none}
 .lpq{margin-left:auto;width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;background:#fff}
 .lpq:focus{outline:0;border-color:var(--vino)}
 .rcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.catgrid{display:flex;gap:14px;padding:14px;overflow-x:auto;align-items:flex-start}
-.catcol{flex:0 0 auto;width:268px;display:flex;flex-direction:column;gap:8px}
-.catcol .ch{display:flex;gap:6px;align-items:center;position:sticky;top:0;background:var(--bg);padding-bottom:2px}
-.catcol .ch input{flex:1;min-width:0;border:1px solid transparent;border-radius:7px;padding:4px 6px;font:inherit;
-  font-size:12.5px;font-weight:800;color:var(--vino-deep);background:none;letter-spacing:.02em}
-.catcol .ch input:hover{border-color:var(--line);background:#fff}
-.catcol .ch input:focus{border-color:var(--vino);background:#fff;outline:none}
-.catcol .ch .x{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:15px;line-height:1;padding:0 3px}
-.catcol .ch .x:hover{color:var(--red)}
-.catcol .cn{font-size:10.5px;color:var(--ink-3);margin:-4px 0 2px 6px}
+.catgrid{display:flex;flex-direction:column;gap:8px;padding:14px}
+.catacc{border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
+.catacc>.ch{display:flex;gap:10px;align-items:center;padding:9px 12px;cursor:pointer;background:var(--suave)}
+.catacc>.ch:hover{background:#f2e6e8}
+.catacc.ab>.ch{border-bottom:1px solid var(--line)}
+.catacc .fl{color:var(--vino);font-size:10px;width:11px;flex:0 0 auto;transition:transform .12s}
+.catacc.ab .fl{transform:rotate(90deg)}
+.catacc .nm{flex:1;min-width:0;font-size:13px;font-weight:800;color:var(--vino-deep);letter-spacing:.02em}
+.catacc .lap{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:12px;padding:0 4px;opacity:0;transition:opacity .12s}
+.catacc>.ch:hover .lap{opacity:1}
+.catacc .lap:hover{color:var(--vino)}
+.catacc .ch input{flex:1;min-width:0;border:1px solid transparent;border-radius:7px;padding:3px 6px;font:inherit;
+  font-size:13px;font-weight:800;color:var(--vino-deep);background:none;letter-spacing:.02em}
+.catacc .ch input:hover{border-color:var(--line);background:#fff}
+.catacc .ch input:focus{border-color:var(--vino);background:#fff;outline:none}
+.catacc .cn{font-size:10.5px;color:var(--ink-3);white-space:nowrap;font-weight:600}
+.catacc .cn b{color:var(--falta)}
+.catacc>.cuerpo{padding:11px 12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(236px,1fr));gap:9px}
 .tiprow{display:flex;gap:9px;align-items:center;border:1px solid var(--line);border-radius:10px;
   background:#fff;padding:7px;min-height:62px}
 .tiprow .ph{width:54px;height:54px;border-radius:8px;overflow:hidden;background:var(--suave);flex:0 0 auto;
@@ -254,9 +262,9 @@ input.n:focus{border-color:var(--vino);outline:none}
 .tiprow .tu{font-size:10px;color:var(--ink-3);font-weight:500;display:block;margin-top:1px}
 .tiprow .x{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;align-self:flex-start}
 .tiprow .x:hover{color:var(--red)}
-.catcol .add{display:flex;gap:5px}
-.catcol .add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:inherit;font-size:11.5px;background:#fff}
-.catcol .add input:focus{border-color:var(--vino);outline:none}
+.catacc .add{display:flex;gap:5px;align-items:center}
+.catacc .add input{flex:1;min-width:0;border:1px solid var(--line);border-radius:7px;padding:5px 8px;font:inherit;font-size:11.5px;background:#fff}
+.catacc .add input:focus{border-color:var(--vino);outline:none}
 .rcc{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
 .rcc.off{opacity:.42}
 .rcim{height:132px;background:var(--line-soft);display:grid;place-items:center;overflow:hidden}
@@ -749,10 +757,12 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 <section id="scr-cat" class="hide">
   <div class="crumb"><b>Categorías</b></div>
   <div class="eyebrow">Maestro de producto · familia y tipo</div>
-  <div class="hint"><b>La familia y sus tipos hijos.</b> Por ejemplo CAMISETAS con Level 1, Level 2, Camiseta ML. <b>La foto es de cada tipo</b>: haz clic en el recuadro que está junto al nombre del tipo y elige la imagen. Con <b>Cargar fotos por nombre</b> puedes subirlas todas de una vez si el archivo se llama igual que el tipo. Cuando subas productos por carga masiva, las familias y tipos que no existan se crean solos.</div>
+  <div class="hint"><b>La familia y sus tipos hijos.</b> Por ejemplo CAMISETAS con Level 1, Level 2, Camiseta ML. Haz clic en una familia para desplegar sus tipos. <b>La foto es de cada tipo</b>: clic en el recuadro que está junto al nombre y eliges la imagen. Con <b>Cargar fotos por nombre</b> puedes subirlas todas de una vez si el archivo se llama igual que el tipo. Cuando subas productos por carga masiva, las familias y tipos que no existan se crean solos.</div>
   <div class="card">
     <div class="card-h"><h2>Familias de producto</h2>
       <input id="cat-q" class="lpq" type="text" placeholder="Buscar familia o tipo…" oninput="rowsCats()">
+      <button class="btn ghost sm" onclick="abrirTodasCats(true)">Abrir todas</button>
+      <button class="btn ghost sm" onclick="abrirTodasCats(false)">Cerrar todas</button>
       <div class="sub" id="cat-sub"></div></div>
     <div class="catgrid" id="cat-grid"></div>
     <div class="addrow">
@@ -1364,7 +1374,11 @@ REFS.forEach(x=>FICHAS[x.r]=nuevaFicha(PRE[x.r]||recetaDe(x.cat,x.sub)));
 
 const RO=()=>{const f=F();return (f.saved&&!f.edit)||(typeof puedeEditar==='function'&&!puedeEditar())};
 let cur='4823';
-const F=()=>FICHAS[cur];
+const fichaVacia=()=>({lines:[],cen:{},pl:[],ops:[],ver:1,saved:false,edit:false,fecha:'',aprob:''});
+/* Cuando no queda ningún producto (lista vacía o todos borrados) no hay ficha que
+   mostrar. Se devuelve una en blanco para que la pantalla se dibuje vacía en vez
+   de romperse a mitad de camino. */
+const F=()=>FICHAS[cur]||fichaVacia();
 let TOT={};
 
 const fmt=n=>'$'+(Math.round(n*100)/100).toFixed(2);
@@ -1392,6 +1406,18 @@ function totRef(r){const g=cur;cur=r;calc();const t={...TOT};cur=g;calc();return
 /* ====== BLOQUE 1 · FOTO ====== */
 function head(){
   const x=byRef(cur),f=F();
+  if(!x){
+    $('rh-img').src='';
+    $('rh-ref').textContent='Sin productos';
+    $('rh-name').textContent='Todavía no hay ningún producto. Créalo en la pestaña Productos y su ficha aparecerá aquí.';
+    $('rh-cats').innerHTML='';
+    $('rh-cat-sel').innerHTML='';$('rh-sub-sel').innerHTML='';
+    $('cr-ref').textContent='Sin productos';
+    $('nav-ref').textContent='—';
+    const bb=$('rh-badge');if(bb){bb.textContent='Borrador';bb.className='badge draft'}
+    const bv=$('rh-ver');if(bv)bv.textContent='Sin ficha';
+    return;
+  }
   $('rh-img').src=FOTO[cur]||'';
   $('rh-ref').innerHTML='REF '+x.r
     +(x.cu?` &nbsp;·&nbsp; <b title="Código único para empatar con el otro sistema">${escR(x.cu)}</b>`:'')
@@ -2254,10 +2280,15 @@ async function cargarNube(){
      llegaron (no puede haber fichas si no hay productos). */
   let previo=null;try{previo=JSON.parse(localStorage.getItem(LKEY)||'null')}catch(e){}
   const habia=k=>{const v=previo&&previo[k];return !!v&&(Array.isArray(v)?v.length:Object.keys(v).length)>0};
-  const prReales=pr.filter(x=>!(x.data&&x.data.del)).length;
+  const vivos=pr.filter(x=>!(x.data&&x.data.del));
+  const refsVivas=new Set(vivos.map(x=>(x.data&&x.data.r)||x.id));
   if(!pr.length&&habia('REFS'))noConfiables.add('cst_productos');
   if(!ma.length&&habia('CAT'))noConfiables.add('cst_materiales');
-  if(!fi.length&&(habia('FICHAS')||prReales))noConfiables.add('cst_fichas');
+  /* Cero fichas solo es sospechoso si en la nube quedan productos vivos: cada producto
+     lleva su ficha, así que sin fichas la lectura falló. Si los productos se borraron
+     a propósito (todas las filas son lápidas), cero fichas es lo correcto y no hay
+     nada que salvar: ahí no se avisa, porque el aviso bloquearía el guardado. */
+  if(!fi.length&&refsVivas.size)noConfiables.add('cst_fichas');
   /* se lee el objeto entero (...rest), no campo por campo: lo que se guardó vuelve completo */
   if(pr.length){REFS.length=0;BORRADOS.prod.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;if(d.del){BORRADOS.prod.push(d.r||x.id);return}const {orden,foto,...rest}=d;REFS.push({...rest,arch:!!d.arch});if(foto){FOTO[d.r]=foto;FOTO_NUBE[d.r]=foto}if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca);if(d.temporada&&!TEMPORADAS.some(t=>t===d.temporada))TEMPORADAS.push(d.temporada)});}
   else if(noConfiables.has('cst_productos'))vacias.push('productos');
@@ -3247,6 +3278,8 @@ function csvOperaciones(){
 
 /* ====== CATEGORÍAS (familia y tipo hijo) ====== */
 let catFotoDe=null;
+const CAT_ABIERTAS=new Set();   // qué familias están desplegadas
+let CAT_EDITANDO=null;          // la familia cuyo nombre se está escribiendo
 function usosCat(c){return REFS.filter(x=>x.cat===c).length}
 function usosTipo(c,t){return REFS.filter(x=>x.cat===c&&x.sub===t).length}
 function rowsCats(){
@@ -3254,34 +3287,46 @@ function rowsCats(){
   const q=(($('cat-q')&&$('cat-q').value)||'').toLowerCase().trim();
   const cats=Object.keys(CATEG).filter(c=>!q||c.toLowerCase().includes(q)||(CATEG[c]||[]).some(t=>t.toLowerCase().includes(q)));
   const ro=!puedeEditarCostos();
-  /* Una columna por familia y, dentro, un renglón por tipo con su foto al lado,
-     igual que el catálogo del otro sistema. La foto es del tipo. */
+  /* Una familia por renglón, plegada. Se abre con un clic y solo entonces se ven
+     sus tipos con la foto al lado. Buscando, se abren solas las que coinciden. */
   g.innerHTML=cats.map(c=>{
     const tipos=(CATEG[c]||[]).filter(t=>!q||c.toLowerCase().includes(q)||t.toLowerCase().includes(q));
-    const n=usosCat(c);
-    return `<div class="catcol">
-      <div class="ch">
-        <input class="may" value="${escR(c)}" ${ro?'readonly':''} onchange="renombrarCat('${escR(c)}',this.value)" title="${escR(c)}">
-        ${ro?'':`<button class="x" title="Borrar la familia" onclick="borrarCat('${escR(c)}')">×</button>`}
+    const n=usosCat(c),sf=tipos.filter(t=>!CATFOTO[kFoto(c,t)]).length;
+    const abierta=q?true:CAT_ABIERTAS.has(c);
+    return `<div class="catacc${abierta?' ab':''}">
+      <div class="ch" onclick="if(event.target.tagName!=='INPUT'&&event.target.tagName!=='BUTTON')abrirCat('${escR(c)}')">
+        <span class="fl">▶</span>
+        ${CAT_EDITANDO===c
+          ? `<input class="may" value="${escR(c)}" onblur="renombrarCat('${escR(c)}',this.value)" onkeydown="if(event.key==='Enter')this.blur();if(event.key==='Escape'){CAT_EDITANDO=null;rowsCats()}">`
+          : `<span class="nm">${escR(c)}</span>
+             ${ro?'':`<button class="lap" title="Renombrar la familia" onclick="CAT_EDITANDO='${escR(c)}';rowsCats()">✎</button>`}`}
+        <span class="cn">${tipos.length} tipo${tipos.length===1?'':'s'} · ${n} producto${n===1?'':'s'}${sf?' · <b>'+sf+' sin foto</b>':''}</span>
       </div>
-      <div class="cn">${n} producto${n===1?'':'s'} · ${tipos.length} tipo${tipos.length===1?'':'s'}</div>
-      ${tipos.map(t=>{const f=CATFOTO[kFoto(c,t)],u=usosTipo(c,t);
-        return `<div class="tiprow">
-          <div class="ph${f?'':' vacia'}" title="${ro?'':'Clic para poner o cambiar la foto de '+escR(t)}" onclick="${ro?'':`pedirFotoCat('${escR(c)}','${escR(t)}')`}">
-            ${f?`<img src="${escR(f)}" alt="">`:'<div class="pon">+ foto</div>'}
-            ${ro||!f?'':'<span class="cam">cambiar</span>'}</div>
-          <div class="tn">${escR(t)}<span class="tu">${u} producto${u===1?'':'s'}</span></div>
-          ${ro?'':`<button class="x" title="Quitar el tipo" onclick="borrarTipo('${escR(c)}','${escR(t)}')">×</button>`}
-        </div>`}).join('')||'<div class="cn">sin tipos todavía</div>'}
-      ${ro?'':`<div class="add">
-        <input type="text" placeholder="Tipo nuevo…" onkeydown="if(event.key==='Enter'){agregarTipo('${escR(c)}',this.value);this.value=''}">
-        <button class="btn ghost sm" onclick="agregarTipo('${escR(c)}',this.previousElementSibling.value);this.previousElementSibling.value=''">+</button>
-      </div>`}
+      ${abierta?`<div class="cuerpo">
+        ${tipos.map(t=>{const f=CATFOTO[kFoto(c,t)],u=usosTipo(c,t);
+          return `<div class="tiprow">
+            <div class="ph${f?'':' vacia'}" title="${ro?'':'Clic para poner o cambiar la foto de '+escR(t)}" onclick="${ro?'':`pedirFotoCat('${escR(c)}','${escR(t)}')`}">
+              ${f?`<img src="${escR(f)}" alt="">`:'<div class="pon">+ foto</div>'}
+              ${ro||!f?'':'<span class="cam">cambiar</span>'}</div>
+            <div class="tn">${escR(t)}<span class="tu">${u} producto${u===1?'':'s'}</span></div>
+            ${ro?'':`<button class="x" title="Quitar el tipo" onclick="borrarTipo('${escR(c)}','${escR(t)}')">×</button>`}
+          </div>`}).join('')||'<div class="cn">sin tipos todavía</div>'}
+        ${ro?'':`<div class="add">
+          <input type="text" placeholder="Tipo nuevo…" onkeydown="if(event.key==='Enter'){agregarTipo('${escR(c)}',this.value);this.value=''}">
+          <button class="btn ghost sm" onclick="agregarTipo('${escR(c)}',this.previousElementSibling.value);this.previousElementSibling.value=''">+</button>
+        </div>`}
+      </div>`:''}
     </div>`}).join('')||'<div class="cn" style="padding:10px">No hay ninguna familia que coincida con la búsqueda.</div>';
   const nt=Object.keys(CATEG).reduce((a,c)=>a+(CATEG[c]||[]).length,0);
   const sf=Object.keys(CATEG).reduce((a,c)=>a+(CATEG[c]||[]).filter(t=>!CATFOTO[kFoto(c,t)]).length,0);
   const sub=$('cat-sub');if(sub)sub.textContent=Object.keys(CATEG).length+' familias · '+nt+' tipos'+(sf?' · '+sf+' sin foto':' · todos con foto');
   if($('nav-cat'))$('nav-cat').textContent=Object.keys(CATEG).length;
+}
+function abrirCat(c){if(CAT_EDITANDO)return;CAT_ABIERTAS.has(c)?CAT_ABIERTAS.delete(c):CAT_ABIERTAS.add(c);rowsCats()}
+function abrirTodasCats(abrir){
+  CAT_ABIERTAS.clear();
+  if(abrir)Object.keys(CATEG).forEach(c=>CAT_ABIERTAS.add(c));
+  rowsCats();
 }
 function agregarCat(){
   const c=MAY(($('nc-cat').value||'').trim());
@@ -3292,6 +3337,7 @@ function agregarCat(){
   toast('Familia creada',c+' ya se puede elegir en los productos. Agrégale sus tipos.');
 }
 function renombrarCat(viejo,nuevo){
+  CAT_EDITANDO=null;
   nuevo=MAY((nuevo||'').trim());
   if(!nuevo||nuevo===viejo){rowsCats();return}
   if(CATEG[nuevo]){toast('Ya existe','Ya hay una familia llamada '+nuevo+'.');rowsCats();return}
