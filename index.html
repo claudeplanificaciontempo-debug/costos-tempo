@@ -2082,10 +2082,10 @@ function subirFotos(fs){
 function leer(f,cb){const r=new FileReader();r.onload=()=>reducir(r.result,cb);r.readAsDataURL(f)}
 function reducir(src,cb){
   const im=new Image();
-  im.onload=()=>{const alt=440,s=Math.min(1,alt/im.height);
+  im.onload=()=>{const alt=900,s=Math.min(1,alt/im.height);   /* alto máximo guardado: cubre pantallas de alta resolución */
     const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);
     c.getContext('2d').drawImage(im,0,0,c.width,c.height);
-    cb(c.toDataURL('image/webp',0.8))};
+    cb(c.toDataURL('image/webp',0.82))};
   im.onerror=()=>cb(src);
   im.src=src;
 }
@@ -2821,7 +2821,7 @@ function detectar(){
       const m=6,x0=Math.max(0,c[0]-m),y0=Math.max(0,c[1]-m),
             x1=Math.min(W,c[2]+m),y1=Math.min(H,c[3]+m);
       const o=document.createElement('canvas');
-      const alt=440,f=Math.min(1,alt/(y1-y0));
+      const alt=900,f=Math.min(1,alt/(y1-y0));   /* mismo alto que el resto de fotos */
       o.width=Math.round((x1-x0)*f);o.height=Math.round((y1-y0)*f);
       o.getContext('2d').drawImage(cv,x0,y0,x1-x0,y1-y0,0,0,o.width,o.height);
       return {src:o.toDataURL('image/jpeg',0.82),ref:'',on:true};
