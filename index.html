@@ -241,7 +241,12 @@ input.n:focus{border-color:var(--vino);outline:none}
 .catc .top{display:flex;gap:6px;align-items:center}
 .tips{display:flex;flex-wrap:wrap;gap:5px}
 .tip{display:inline-flex;align-items:center;gap:4px;font-size:10.5px;font-weight:600;background:var(--suave);
-  color:var(--ink-2);border-radius:20px;padding:3px 4px 3px 9px}
+  color:var(--ink-2);border-radius:20px;padding:3px 4px 3px 3px}
+.tip .tf{width:22px;height:22px;border-radius:50%;overflow:hidden;background:#fff;border:1px solid var(--line);
+  display:grid;place-items:center;flex:0 0 auto;cursor:pointer;font-size:11px;color:var(--ink-3);line-height:1}
+.tip .tf img{width:100%;height:100%;object-fit:cover;display:block}
+.tip .tf:hover{border-color:var(--vino)}
+.tip.sinfoto .tf{border-style:dashed}
 .tip button{border:0;background:none;color:var(--ink-3);cursor:pointer;font-size:12px;line-height:1;padding:0 2px}
 .tip button:hover{color:var(--red)}
 .catc .add{display:flex;gap:5px;margin-top:auto}
@@ -739,7 +744,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 <section id="scr-cat" class="hide">
   <div class="crumb"><b>Categorías</b></div>
   <div class="eyebrow">Maestro de producto · familia y tipo</div>
-  <div class="hint"><b>La familia y sus tipos hijos.</b> Por ejemplo CAMISETAS con Level 1, Level 2, Camiseta ML. Puedes crear las que hagan falta y ponerle una foto a cada familia. Cuando subas productos por carga masiva, las familias y tipos que no existan se crean solos.</div>
+  <div class="hint"><b>La familia y sus tipos hijos.</b> Por ejemplo CAMISETAS con Level 1, Level 2, Camiseta ML. <b>La foto es de cada tipo</b>: haz clic en el círculo de la pastilla del tipo. La familia muestra la foto del primer tipo que tenga, salvo que le pongas una propia. Cuando subas productos por carga masiva, las familias y tipos que no existan se crean solos.</div>
   <div class="card">
     <div class="card-h"><h2>Familias de producto</h2>
       <input id="cat-q" class="lpq" type="text" placeholder="Buscar familia o tipo…" oninput="rowsCats()">
@@ -748,8 +753,10 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="addrow">
       <input id="nc-cat" class="fld may" style="flex:1;min-width:200px" type="text" placeholder="Nombre de la familia nueva, p. ej. CHAQUETAS">
       <button class="btn ghost" onclick="agregarCat()">+ Crear familia</button>
+      <button class="btn ghost" title="Elige varias imágenes de una vez: cada archivo se coloca en el tipo que se llame igual" onclick="$('cat-fotos-in').value='';$('cat-fotos-in').click()">Cargar fotos por nombre</button>
     </div>
     <input type="file" id="cat-foto-in" accept="image/*" class="hide" onchange="subirFotoCatArchivo(this.files)">
+    <input type="file" id="cat-fotos-in" accept="image/*" multiple class="hide" onchange="fotosPorNombre(this.files)">
   </div>
 </section>
 
@@ -934,6 +941,17 @@ let BORRADOS={mat:[],prod:[]};
 const FOTO_NUBE={};
 /* Foto de cada categoría (familia). Va junto a CATEG en cst_categorias. */
 let CATFOTO={};
+/* La foto pertenece al TIPO HIJO. Clave: 'FAMILIA||Tipo'. La familia puede
+   tener también la suya (clave = solo la familia), y si no tiene, se muestra
+   la del primer tipo que sí tenga. */
+const kFoto=(c,t)=>t?(c+'||'+t):c;
+const normCat=v=>String(v==null?'':v).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Z0-9]/g,'');
+const colapsa=v=>normCat(v).replace(/(.)\1+/g,'$1');   // FLEECE y FLECCE caen en la misma
+function fotoFam(c){
+  if(CATFOTO[c])return CATFOTO[c];
+  const t=(CATEG[c]||[]).find(x=>CATFOTO[kFoto(c,x)]);
+  return t?CATFOTO[kFoto(c,t)]:'';
+}
 let CATEG={
  'CAMISETAS':['Camiseta CV','Camiseta CR','Camiseta Bolsillo','Level 1','Level 2','Fashion Graphics','Camiseta ML','Basica Crop','Oversize','MC Ranglan','Camiseta Corte Moda','Ranglan ML'],
  'FITS':['Bare BVD','Bare Top','Fit 6','Fit 61','Yogga','Bare Tiras','Fit Moda'],
@@ -2196,7 +2214,9 @@ function filas(){
     cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{...p,orden:i}})),
     cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}})),
     cst_categorias:Object.keys(CATEG).map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
-      data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',orden:i}}))
+      data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',
+        fotos:(CATEG[c]||[]).reduce((o,t)=>{const f=CATFOTO[kFoto(c,t)];
+          if(f&&!String(f).startsWith('data:'))o[t]=f;return o},{}),orden:i}}))
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
@@ -2260,7 +2280,8 @@ async function cargarNube(){
   if(ct&&ct.length){
     Object.keys(CATEG).forEach(k=>delete CATEG[k]);
     ct.sort(porOrden).forEach(x=>{const d=x.data;if(!d||!d.cat)return;
-      CATEG[d.cat]=(d.tipos||[]).slice();if(d.foto)CATFOTO[d.cat]=d.foto});
+      CATEG[d.cat]=(d.tipos||[]).slice();if(d.foto)CATFOTO[d.cat]=d.foto;
+      Object.keys(d.fotos||{}).forEach(t=>{if(d.fotos[t])CATFOTO[kFoto(d.cat,t)]=d.fotos[t]})});
   }
   // fotos del archivo que la nube no tiene
   Object.keys(FOTO).forEach(k=>{if(pr.some(x=>x.data.r===k&&x.data.foto)&&FOTO[k].startsWith('data:'))delete FOTO[k]});
@@ -2289,7 +2310,8 @@ async function subirFotoNube(ref){
 }
 async function subirFotosPendientes(){
   const p=Object.keys(FOTO).filter(k=>FOTO[k]&&FOTO[k].startsWith('data:')&&byRef(k));
-  const pc=Object.keys(CATFOTO).filter(c=>CATFOTO[c]&&String(CATFOTO[c]).startsWith('data:')&&CATEG[c]);
+  const vive=k=>{const [c,t]=String(k).split('||');return !!CATEG[c]&&(!t||CATEG[c].includes(t))};
+  const pc=Object.keys(CATFOTO).filter(k=>CATFOTO[k]&&String(CATFOTO[k]).startsWith('data:')&&vive(k));
   if(!p.length&&!pc.length)return 0;
   marcaSave('Subiendo fotos '+(p.length+pc.length)+'…','');
   let n=0;const fallos=[];
@@ -3231,7 +3253,7 @@ function rowsCats(){
   const cats=Object.keys(CATEG).filter(c=>!q||c.toLowerCase().includes(q)||(CATEG[c]||[]).some(t=>t.toLowerCase().includes(q)));
   const ro=!puedeEditarCostos();
   g.innerHTML=cats.map(c=>{
-    const f=CATFOTO[c],tipos=CATEG[c]||[],n=usosCat(c);
+    const f=fotoFam(c),tipos=CATEG[c]||[],n=usosCat(c);
     return `<div class="catc">
       <div class="im" onclick="${ro?'':`pedirFotoCat('${escR(c)}')`}" title="${ro?'':'Clic para poner o cambiar la foto de la familia'}">
         ${f?`<img src="${escR(f)}" alt="">`:'<div class="nof">sin foto<br>de familia</div>'}
@@ -3242,7 +3264,8 @@ function rowsCats(){
           ${ro?'':`<button class="x" title="Borrar la familia" onclick="borrarCat('${escR(c)}')">×</button>`}
         </div>
         <div class="cod">${n} producto${n===1?'':'s'} · ${tipos.length} tipo${tipos.length===1?'':'s'}</div>
-        <div class="tips">${tipos.map(t=>`<span class="tip">${escR(t)}${ro?'':`<button title="Quitar el tipo" onclick="borrarTipo('${escR(c)}','${escR(t)}')">×</button>`}</span>`).join('')||'<span class="cod">sin tipos todavía</span>'}</div>
+        <div class="tips">${tipos.map(t=>{const ft=CATFOTO[kFoto(c,t)];
+          return `<span class="tip${ft?'':' sinfoto'}"><span class="tf" title="${ro?'':'Clic para poner o cambiar la foto de '+escR(t)}" onclick="${ro?'':`pedirFotoCat('${escR(c)}','${escR(t)}')`}">${ft?`<img src="${escR(ft)}" alt="">`:'+'}</span>${escR(t)}${ro?'':`<button title="Quitar el tipo" onclick="borrarTipo('${escR(c)}','${escR(t)}')">×</button>`}</span>`}).join('')||'<span class="cod">sin tipos todavía</span>'}</div>
         ${ro?'':`<div class="add">
           <input type="text" placeholder="Tipo nuevo…" onkeydown="if(event.key==='Enter'){agregarTipo('${escR(c)}',this.value);this.value=''}">
           <button class="btn ghost sm" onclick="agregarTipo('${escR(c)}',this.previousElementSibling.value);this.previousElementSibling.value=''">+</button>
@@ -3270,6 +3293,8 @@ function renombrarCat(viejo,nuevo){
   Object.keys(CATEG).forEach(k=>delete CATEG[k]);
   Object.keys(nuevoMapa).forEach(k=>{CATEG[k]=nuevoMapa[k]});
   if(CATFOTO[viejo]){CATFOTO[nuevo]=CATFOTO[viejo];delete CATFOTO[viejo]}
+  Object.keys(CATFOTO).forEach(k=>{if(k.startsWith(viejo+'||')){
+    CATFOTO[nuevo+'||'+k.slice(viejo.length+2)]=CATFOTO[k];delete CATFOTO[k]}});
   let n=0;REFS.forEach(x=>{if(x.cat===viejo){x.cat=nuevo;n++}});
   rowsCats();rowsProd();rowsExp();head();
   toast('Familia renombrada',viejo+' → '+nuevo+(n?' · '+n+' producto(s) actualizados.':''));
@@ -3279,6 +3304,7 @@ function borrarCat(c){
   if(n){toast('No se puede borrar','La usan '+n+' producto(s). Cámbiales la familia primero.');return}
   if(!confirm('¿Borrar la familia "'+c+'" y sus '+(CATEG[c]||[]).length+' tipo(s)?'))return;
   delete CATEG[c];delete CATFOTO[c];
+  Object.keys(CATFOTO).forEach(k=>{if(k.startsWith(c+'||'))delete CATFOTO[k]});
   rowsCats();rowsProd();
   toast('Familia borrada',c+' se quitó de la lista.');
 }
@@ -3294,22 +3320,61 @@ function borrarTipo(c,t){
   const n=usosTipo(c,t);
   if(n){toast('No se puede quitar','Lo usan '+n+' producto(s). Cámbiales el tipo primero.');return}
   CATEG[c]=(CATEG[c]||[]).filter(x=>x!==t);
+  delete CATFOTO[kFoto(c,t)];
   rowsCats();rowsProd();head();
 }
-function pedirFotoCat(c){catFotoDe=c;$('cat-foto-in').value='';$('cat-foto-in').click()}
+function pedirFotoCat(c,t){catFotoDe=kFoto(c,t||'');$('cat-foto-in').value='';$('cat-foto-in').click()}
 function subirFotoCatArchivo(fs){
   if(!fs||!fs[0]||!catFotoDe)return;
-  leer(fs[0],d=>{CATFOTO[catFotoDe]=d;rowsCats();toast('Foto cargada','Familia '+catFotoDe+'. Se sube a la nube en unos segundos.')});
+  const [c,t]=catFotoDe.split('||'),k=catFotoDe;
+  leer(fs[0],d=>{CATFOTO[k]=d;rowsCats();
+    toast('Foto cargada',(t?t+' · familia '+c:'Familia '+c)+'. Se sube a la nube en unos segundos.')});
 }
-async function subirFotoCatNube(c){
-  const d=CATFOTO[c];if(!d||!d.startsWith('data:'))return;
+/* ====== FOTOS POR NOMBRE DE ARCHIVO ======
+   Cada archivo se empareja con el tipo (o la familia) que se llame igual.
+   Se ignoran mayúsculas, tildes, espacios y guiones; si aun así no calza,
+   se vuelve a probar colapsando letras repetidas, para que FLECCE encuentre
+   a FLEECE. Solo se acepta cuando hay un único candidato. */
+function destinoFoto(nombre){
+  const base=String(nombre).replace(/\.[A-Za-z0-9]+$/,'');
+  const claves=[];
+  Object.keys(CATEG).forEach(c=>{claves.push({k:c,et:c+' (familia)',n:normCat(c),co:colapsa(c)});
+    (CATEG[c]||[]).forEach(t=>claves.push({k:kFoto(c,t),et:t+' · '+c,n:normCat(t),co:colapsa(t)}))});
+  const tipos=claves.filter(x=>x.k.includes('||'));
+  for(const lista of [tipos,claves]){
+    let m=lista.filter(x=>x.n===normCat(base));
+    if(m.length===1)return m[0];
+    m=lista.filter(x=>x.co===colapsa(base));
+    if(m.length===1)return m[0];
+  }
+  return null;
+}
+function fotosPorNombre(fs){
+  fs=[...(fs||[])];
+  if(!fs.length)return;
+  const puestas=[],sin=[];let faltan=fs.length;
+  fs.forEach(f=>{
+    const d=destinoFoto(f.name);
+    if(!d){sin.push(f.name);if(!--faltan)cerrar();return}
+    leer(f,dat=>{CATFOTO[d.k]=dat;puestas.push(d.et);if(!--faltan)cerrar()});
+  });
+  function cerrar(){
+    rowsCats();
+    if(puestas.length)toast(puestas.length+' foto(s) colocadas',
+      (sin.length?'No se reconocieron '+sin.length+': '+sin.slice(0,4).join(', ')+(sin.length>4?'…':'')+'. ':'')+'Se suben a la nube en unos segundos.');
+    else toast('Ninguna foto calzó','Los nombres de archivo deben coincidir con el tipo o la familia. No se reconocieron: '+sin.slice(0,5).join(', '));
+  }
+}
+async function subirFotoCatNube(k){
+  const d=CATFOTO[k];if(!d||!d.startsWith('data:'))return;
+  const [c,t]=String(k).split('||');
   const blob=await (await fetch(d)).blob();
   const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
-  const path='cat_'+c.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
+  const path='cat_'+String(k).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
   const r=await fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
     headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
-  if(!r.ok)throw new Error('foto de la familia '+c+' · HTTP '+r.status+' · '+(await r.text()).slice(0,160));
-  CATFOTO[c]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
+  if(!r.ok)throw new Error('foto de '+(t?t+' ('+c+')':'la familia '+c)+' · HTTP '+r.status+' · '+(await r.text()).slice(0,160));
+  CATFOTO[k]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
 }
 
 /* ====== REPORTES ====== */
