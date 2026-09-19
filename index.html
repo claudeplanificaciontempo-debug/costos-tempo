@@ -53,6 +53,11 @@ input,select,button,textarea{font-family:inherit;font-variant-numeric:tabular-nu
   cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px}
 .nav-item:hover{color:var(--vino-deep)}
 .nav-item.on{color:var(--vino-deep);border-bottom-color:var(--vino)}
+.subnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
+.subtab{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:20px;
+  padding:6px 15px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.subtab:hover{border-color:var(--vino);color:var(--vino-deep)}
+.subtab.on{background:var(--vino);border-color:var(--vino);color:#fff}
 .nav-item .cnt{font-size:10px;color:var(--vino-medio);background:rgba(255,255,255,.7);border-radius:20px;padding:1.5px 7px;font-weight:700}
 .nav-item.on .cnt{background:var(--vino);color:#fff}
 .navsep{width:1px;background:var(--barra-line);margin:5px 10px 11px;flex:none}
@@ -445,7 +450,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="navsep"></div>
     <button class="nav-item" data-screen="mat">Materiales <span class="cnt" id="nav-mat">0</span></button>
     <button class="nav-item" data-screen="cat">Categorías <span class="cnt" id="nav-cat">0</span></button>
-    <button class="nav-item" data-screen="centros">Centros y tarifas</button>
+    <button class="nav-item" data-screen="rutas">Operaciones <span class="cnt" id="nav-rutas">0</span></button>
+    <button class="nav-item" data-screen="centros">Configuración</button>
     <div class="navsep"></div>
     <button class="nav-item" data-screen="lista">Lista de precios</button>
     <button class="nav-item" data-screen="exp">Exportar por cliente</button>
@@ -663,69 +669,18 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 
 <!-- ============ CENTROS ============ -->
 <section id="scr-centros" class="hide">
-  <div class="crumb"><b>Centros y tarifas</b></div>
-  <div class="eyebrow">Maestro de costos</div>
-  <div class="hint"><b>Cada centro tiene mano de obra directa e indirecta.</b> Son los valores que pasa contabilidad, con fecha de vigencia. Bordado va por cada mil puntadas. Arriba, el promedio de la fábrica y la comparación con la referencia del modelo de nómina 2026.</div>
-  <div class="card hide" id="card-usr">
-    <div class="card-h"><h2>Usuarios</h2><div class="sub">Quién puede editar · solo lo ve el administrador</div></div>
-    <table>
-      <thead><tr><th class="l">Nombre</th><th class="l">Correo</th><th class="l">Permiso</th></tr></thead>
-      <tbody id="tb-usr"></tbody>
-    </table>
-    <div class="addrow"><span class="mini" style="margin:0">Los usuarios los crea el administrador en el panel de Supabase (Authentication → Users → Add user). Aquí solo se les asigna el permiso.</span></div>
+  <div class="crumb"><b>Configuración</b></div>
+  <div class="eyebrow">Todo lo que se configura una vez y manda en el resto</div>
+  <div class="subnav" id="cfg-nav">
+    <button class="subtab on" data-cfg="centros" onclick="verCfg('centros')">Centros y tarifas</button>
+    <button class="subtab" data-cfg="clientes" onclick="verCfg('clientes')">Clientes y márgenes</button>
+    <button class="subtab" data-cfg="maestros" onclick="verCfg('maestros')">Temporadas, colecciones e insumos base</button>
+    <button class="subtab hide" id="cfg-usr" data-cfg="usuarios" onclick="verCfg('usuarios')">Usuarios</button>
+    <button class="subtab hide" id="cfg-resp" data-cfg="respaldo" onclick="verCfg('respaldo')">Respaldo</button>
   </div>
-  <div class="card hide" id="card-respaldo">
-    <div class="card-h"><h2>Respaldo y restauración</h2><div class="sub">Descarga una copia de todo · restaurar compara con la nube antes de tocar nada</div></div>
-    <div class="hint">Descarga un respaldo de vez en cuando (por ejemplo, antes de un cambio grande). Si necesitas restaurar uno, esta función SIEMPRE revisa primero qué hay en la nube: si algo se editó después de la fecha del respaldo, no se sobrescribe solo, para no perder trabajo reciente por accidente.</div>
-    <div class="addrow">
-      <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
-      <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
-      <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
-    </div>
-    <div class="hint" style="margin-top:10px">Si una ficha que ya habías guardado aparece de golpe como "Borrador" o con costo $0, no está perdida: cada guardado también queda en un historial aparte (cst_versiones) que nada más toca. Este botón reconstruye cada ficha con la última versión de ese historial.</div>
-    <div class="addrow">
-      <button class="btn ghost" onclick="recuperarDesdeVersiones()">Recuperar costos desde el historial</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-h"><h2>Configuración</h2><div class="sub" id="temp-sub"></div></div>
-    <div class="hint">Temporadas disponibles para asignar a cada producto (en Productos, junto a Marca y Departamento).</div>
-    <table>
-      <thead><tr><th class="l">Temporada</th><th></th></tr></thead>
-      <tbody id="tb-temp"></tbody>
-    </table>
-    <div class="addrow">
-      <input id="nt-nombre" class="fld" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la temporada nueva">
-      <button class="btn ghost" onclick="agregarTemporada()">+ Crear temporada</button>
-    </div>
-    <div class="card-h" style="margin-top:6px"><h2>Colecciones</h2><div class="sub" id="col-sub"></div></div>
-    <div class="hint">Colecciones disponibles para asignar a cada producto (en Productos, junto a Temporada). Si renombras una, los productos que la usan se actualizan solos.</div>
-    <table>
-      <thead><tr><th class="l">Colección</th><th>Productos</th><th></th></tr></thead>
-      <tbody id="tb-col"></tbody>
-    </table>
-    <div class="addrow">
-      <input id="ncol-nombre" class="fld may" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la colección nueva, p. ej. NAVIDAD 2026">
-      <button class="btn ghost" onclick="agregarColeccion()">+ Crear colección</button>
-    </div>
-    <div class="card-h" style="margin-top:6px"><h2>Insumos que lleva toda prenda</h2><div class="sub" id="base-sub"></div></div>
-    <div class="hint">Estos se agregan solos a la ficha de cualquier producto nuevo, además de las telas propias de su tipo. Es lo que va sí o sí: hilo, etiqueta de talla, instrucciones de lavado. Cambiar esta lista <b>no toca las fichas ya hechas</b>, solo las que se creen de aquí en adelante.</div>
-    <table>
-      <thead><tr><th class="l">Insumo</th><th>Cantidad</th><th>Desperdicio %</th><th>Costo unitario</th><th></th></tr></thead>
-      <tbody id="tb-base"></tbody>
-    </table>
-    <datalist id="dl-base"></datalist>
-    <div class="addrow">
-      <button class="btn ghost" onclick="agregarBase()">+ Agregar insumo a la base</button>
-    </div>
-  </div>
-  <div class="card">
-    <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
-    <table>
-      <thead><tr><th class="l">Cliente</th><th class="l">Zona</th><th>Margen meta %</th><th class="l">Regla</th></tr></thead>
-      <tbody id="tb-cli"></tbody>
-    </table>
-  </div>
+
+  <div class="cfg" data-cfg="centros">
+    <div class="hint"><b>Cada centro tiene mano de obra directa e indirecta.</b> Son los valores que pasa contabilidad, con fecha de vigencia. Bordado va por cada mil puntadas. Los cambios se ven arriba al instante.</div>
   <div class="kpis" id="kpis-fab"></div>
   <div class="tri2">
     <div class="card">
@@ -757,6 +712,83 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </div>
   </div>
 
+  </div>
+
+  <div class="cfg hide" data-cfg="clientes">
+  <div class="card">
+    <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
+    <table>
+      <thead><tr><th class="l">Cliente</th><th class="l">Zona</th><th>Margen meta %</th><th class="l">Regla</th></tr></thead>
+      <tbody id="tb-cli"></tbody>
+    </table>
+  </div>
+  </div>
+
+  <div class="cfg hide" data-cfg="maestros">
+  <div class="card">
+    <div class="card-h"><h2>Temporadas</h2><div class="sub" id="temp-sub"></div></div>
+    <div class="hint">Temporadas disponibles para asignar a cada producto (en Productos, junto a Marca y Departamento).</div>
+    <table>
+      <thead><tr><th class="l">Temporada</th><th></th></tr></thead>
+      <tbody id="tb-temp"></tbody>
+    </table>
+    <div class="addrow">
+      <input id="nt-nombre" class="fld" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la temporada nueva">
+      <button class="btn ghost" onclick="agregarTemporada()">+ Crear temporada</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Colecciones</h2><div class="sub" id="col-sub"></div></div>
+    <div class="hint">Colecciones disponibles para asignar a cada producto (en Productos, junto a Temporada). Si renombras una, los productos que la usan se actualizan solos.</div>
+    <table>
+      <thead><tr><th class="l">Colección</th><th>Productos</th><th></th></tr></thead>
+      <tbody id="tb-col"></tbody>
+    </table>
+    <div class="addrow">
+      <input id="ncol-nombre" class="fld may" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la colección nueva, p. ej. NAVIDAD 2026">
+      <button class="btn ghost" onclick="agregarColeccion()">+ Crear colección</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-h"><h2>Insumos que lleva toda prenda</h2><div class="sub" id="base-sub"></div></div>
+    <div class="hint">Estos se agregan solos a la ficha de cualquier producto nuevo, además de las telas propias de su tipo. Es lo que va sí o sí: hilo, etiqueta de talla, instrucciones de lavado. Cambiar esta lista <b>no toca las fichas ya hechas</b>, solo las que se creen de aquí en adelante.</div>
+    <table>
+      <thead><tr><th class="l">Insumo</th><th>Cantidad</th><th>Desperdicio %</th><th>Costo unitario</th><th></th></tr></thead>
+      <tbody id="tb-base"></tbody>
+    </table>
+    <datalist id="dl-base"></datalist>
+    <div class="addrow">
+      <button class="btn ghost" onclick="agregarBase()">+ Agregar insumo a la base</button>
+    </div>
+  </div>
+  </div>
+
+  <div class="cfg hide" data-cfg="usuarios">
+  <div class="card hide" id="card-usr">
+    <div class="card-h"><h2>Usuarios</h2><div class="sub">Quién puede editar · solo lo ve el administrador</div></div>
+    <table>
+      <thead><tr><th class="l">Nombre</th><th class="l">Correo</th><th class="l">Permiso</th></tr></thead>
+      <tbody id="tb-usr"></tbody>
+    </table>
+    <div class="addrow"><span class="mini" style="margin:0">Los usuarios los crea el administrador en el panel de Supabase (Authentication → Users → Add user). Aquí solo se les asigna el permiso.</span></div>
+  </div>
+  </div>
+
+  <div class="cfg hide" data-cfg="respaldo">
+  <div class="card hide" id="card-respaldo">
+    <div class="card-h"><h2>Respaldo y restauración</h2><div class="sub">Descarga una copia de todo · restaurar compara con la nube antes de tocar nada</div></div>
+    <div class="hint">Descarga un respaldo de vez en cuando (por ejemplo, antes de un cambio grande). Si necesitas restaurar uno, esta función SIEMPRE revisa primero qué hay en la nube: si algo se editó después de la fecha del respaldo, no se sobrescribe solo, para no perder trabajo reciente por accidente.</div>
+    <div class="addrow">
+      <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
+      <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
+      <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
+    </div>
+    <div class="hint" style="margin-top:10px">Si una ficha que ya habías guardado aparece de golpe como "Borrador" o con costo $0, no está perdida: cada guardado también queda en un historial aparte (cst_versiones) que nada más toca. Este botón reconstruye cada ficha con la última versión de ese historial.</div>
+    <div class="addrow">
+      <button class="btn ghost" onclick="recuperarDesdeVersiones()">Recuperar costos desde el historial</button>
+    </div>
+  </div>
+  </div>
 </section>
 
 <!-- ============ EXPORTAR ============ -->
@@ -823,6 +855,29 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </div>
     <input type="file" id="cat-foto-in" accept="image/*" class="hide" onchange="subirFotoCatArchivo(this.files)">
     <input type="file" id="cat-fotos-in" accept="image/*" multiple class="hide" onchange="fotosPorNombre(this.files)">
+  </div>
+</section>
+
+<section id="scr-rutas" class="hide">
+  <div class="crumb"><b>Operaciones</b></div>
+  <div class="eyebrow">Rutas y tiempos por referencia</div>
+  <div class="hint"><b>La secuencia de operaciones de cada prenda, con sus minutos.</b> Se guarda como base de datos: hoy <b>no entra al costo</b>, que sigue saliendo del tiempo de Confección que pones en la ficha. Cuando tengas la mano de obra de cada centro, se habilita. Para cargar muchas, usa el Excel de carga masiva.</div>
+  <div class="card">
+    <div class="card-h"><h2>Rutas cargadas</h2>
+      <input id="rutas-q" class="lpq" type="text" placeholder="Buscar referencia o nombre…" oninput="rowsRutas()">
+      <div class="sub" id="rutas-sub"></div></div>
+    <div class="addrow" style="border-bottom:1px solid var(--line-soft)">
+      <button class="btn org" onclick="abrirMasivaOps()">Carga masiva de operaciones</button>
+      <button class="btn ghost" onclick="csvOperaciones()">Exportar operaciones (Excel)</button>
+      <label class="mini" style="margin:0 0 0 auto">
+        <input type="checkbox" id="rutas-solo" onchange="rowsRutas()" style="vertical-align:-1px"> Ver solo las que ya tienen ruta</label>
+    </div>
+    <table>
+      <thead><tr><th class="l">Referencia</th><th class="l">Producto</th><th class="l">Categoría</th>
+        <th>Operaciones</th><th>Minutos totales</th><th class="l" style="width:260px">Reparto por centro</th><th></th></tr></thead>
+      <tbody id="tb-rutas"></tbody>
+      <tfoot id="tf-rutas"></tfoot>
+    </table>
   </div>
 </section>
 
@@ -3029,7 +3084,7 @@ function procesarMasiva(){
     }
   });
   cerrar('ovl2');
-  if(masivaModo==='ops'){rowsOps()}
+  if(masivaModo==='ops'){rowsOps();rowsRutas()}
   else if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
   else{rowsCatMat();draw()}
   const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
@@ -3176,11 +3231,25 @@ function resumenFabrica(){
       <span class="mp">${pc.toFixed(0)}%</span><span class="mv">${fmt(ac[kk]/n)}</span></div>`}).join('')+
     `<div class="mixrow" style="border-top:1px solid var(--line);margin-top:4px"><i style="visibility:hidden"></i><span style="width:150px"><b>Costo promedio</b></span><div class="mb" style="visibility:hidden"></div><span class="mp"></span><span class="mv">${fmt(ac.total/n)}</span></div>`;
 }
+/* Submenús de Configuración: se ve un grupo a la vez, en vez de una tira
+   larguísima hacia abajo. */
+function verCfg(g){
+  document.querySelectorAll('#cfg-nav .subtab').forEach(b=>b.classList.toggle('on',b.dataset.cfg===g));
+  document.querySelectorAll('.cfg').forEach(d=>d.classList.toggle('hide',d.dataset.cfg!==g));
+  if(g==='centros')resumenFabrica();
+  if(g==='maestros'){rowsTemporadas();rowsColecciones();rowsBase()}
+  window.scrollTo(0,0);
+}
 async function rowsUsr(){
   const c=$('card-usr');if(!c)return;
-  const cr=$('card-respaldo');
-  if(ROL!=='admin'){c.classList.add('hide');if(cr)cr.classList.add('hide');return}
-  c.classList.remove('hide');if(cr)cr.classList.remove('hide');
+  const cr=$('card-respaldo'),bu=$('cfg-usr'),br=$('cfg-resp');
+  const esconde=v=>{[c,cr,bu,br].forEach(e=>{if(e)e.classList.toggle('hide',v)})};
+  if(ROL!=='admin'){esconde(true);
+    /* si estaba mirando un grupo que ya no puede ver, vuelve al primero */
+    const ab=document.querySelector('.cfg:not(.hide)');
+    if(ab&&['usuarios','respaldo'].includes(ab.dataset.cfg))verCfg('centros');
+    return}
+  esconde(false);
   try{
     const r=await fetch(SB_URL+'/rest/v1/perfiles?select=id,email,nombre,rol&order=creado',{headers:hdr()});
     const us=await r.json();
@@ -3429,13 +3498,19 @@ function addOp(){
   opsDe(cur).push({cen,op,min});
   $('op-nom').value='';$('op-min').value='';
   rowsOps();$('op-nom').focus();
+
+  if($("tb-rutas"))rowsRutas();
 }
 function setOp(i,f,v){
   const o=opsDe(cur)[i];if(!o)return;
   o[f]=f==='min'?num(v):MAY(v);
   rowsOps();
+
+  if($("tb-rutas"))rowsRutas();
 }
-function borrarOp(i){opsDe(cur).splice(i,1);rowsOps()}
+function borrarOp(i){opsDe(cur).splice(i,1);rowsOps()
+  if($("tb-rutas"))rowsRutas();
+}
 function copiarOps(){
   if(RO()||!puedeEditar())return;
   const con=REFS.filter(x=>x.r!==cur&&opsDe(x.r).length);
@@ -3451,6 +3526,40 @@ function copiarOps(){
   opsDe(orig.r).forEach(o=>destino.push({cen:o.cen,op:o.op,min:o.min}));
   rowsOps();
   toast('Operaciones copiadas',destino.length+' operación(es) de '+orig.r+'. Ajústalas si esta prenda cambia.');
+
+  if($("tb-rutas"))rowsRutas();
+}
+/* Vista global de las rutas: una fila por referencia, con sus minutos repartidos
+   por centro. Desde aquí se ve de un vistazo a cuáles les falta el estudio. */
+function rowsRutas(){
+  const tb=$('tb-rutas');if(!tb)return;
+  const q=(($('rutas-q')&&$('rutas-q').value)||'').toLowerCase().trim();
+  const solo=$('rutas-solo')&&$('rutas-solo').checked;
+  const lista=activos().filter(x=>{
+    if(q&&!(x.r.toLowerCase().includes(q)||String(x.n||'').toLowerCase().includes(q)))return false;
+    return !solo||opsDe(x.r).length;
+  });
+  const conRuta=activos().filter(x=>opsDe(x.r).length).length;
+  let tOps=0,tMin=0;
+  tb.innerHTML=lista.map(x=>{
+    const ops=opsDe(x.r);
+    const min=ops.reduce((a,o)=>a+(+o.min||0),0);
+    tOps+=ops.length;tMin+=min;
+    const porCen=CEN.map(c=>({c,m:ops.filter(o=>o.cen===c.id).reduce((a,o)=>a+(+o.min||0),0)})).filter(z=>z.m>0);
+    return `<tr>
+      <td class="l"><b style="font-weight:700">${escR(x.r)}</b></td>
+      <td class="l"><span class="pname" style="font-size:12px" onclick="verFicha('${escR(x.r)}')" title="Abrir la ficha">${escR(x.n)}</span></td>
+      <td class="l"><span class="cod">${escR(x.cat)} · ${escR(x.sub||'')}</span></td>
+      <td${ops.length?'':' style="color:var(--falta);font-weight:700"'}>${ops.length||'sin ruta'}</td>
+      <td class="tot">${min?min.toFixed(2):'—'}</td>
+      <td class="l"><div class="dcat">${porCen.map(z=>
+        `<span class="dc" style="cursor:default">${escR(z.c.n)} <b>${z.m.toFixed(2)}</b></span>`).join('')||'<span class="cod">—</span>'}</div></td>
+      <td><button class="btn ghost sm" onclick="verFicha('${escR(x.r)}')">Ver ruta</button></td></tr>`;
+  }).join('')||'<tr><td colspan="7" class="empty">Ninguna referencia con esa búsqueda.</td></tr>';
+  $('tf-rutas').innerHTML=lista.length?`<tr><td class="l" colspan="3">Total de lo mostrado</td>
+    <td>${tOps}</td><td class="tot">${tMin.toFixed(2)}</td><td colspan="2" class="l"><span class="cod">promedio ${lista.length?(tMin/lista.length).toFixed(2):'0'} min por prenda</span></td></tr>`:'';
+  $('rutas-sub').textContent=conRuta+' de '+activos().length+' referencias con ruta cargada';
+  if($('nav-rutas'))$('nav-rutas').textContent=conRuta;
 }
 function csvOperaciones(){
   const filas=[];
@@ -3948,7 +4057,7 @@ function bajarCSV(){
 }
 
 /* ====== NAVEGACIÓN ====== */
-const SCR=['ficha','prod','mat','cat','centros','lista','exp','rep'];
+const SCR=['ficha','prod','mat','cat','rutas','centros','lista','exp','rep'];
 function go(s){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.screen===s));
   SCR.forEach(x=>$('scr-'+x).classList.toggle('hide',x!==s));
@@ -3958,6 +4067,7 @@ function go(s){
   if(s==='exp')rowsExp();
   if(s==='rep')rowsRep();
   if(s==='cat')rowsCats();
+  if(s==='rutas')rowsRutas();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.nav-item[data-screen]').forEach(b=>b.onclick=()=>go(b.dataset.screen));
