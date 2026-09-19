@@ -233,9 +233,25 @@ input.n:focus{border-color:var(--vino);outline:none}
 .lpq{margin-left:auto;width:220px;border:1px solid var(--line);border-radius:8px;padding:6px 10px;font:inherit;font-size:12px;background:#fff}
 .lpq:focus{outline:0;border-color:var(--vino)}
 .rcgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.avbar{display:flex;align-items:center;gap:12px;padding:4px 16px 14px}
+.avbar .mb{height:16px;border-radius:8px}
+.avtxt{font-size:12px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+.avtxt b{color:var(--green-txt);font-size:15px}
 .dcat{display:flex;flex-wrap:wrap;gap:5px}
 .dc{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;background:var(--suave);
-  color:var(--ink-2);border-radius:20px;padding:2px 9px}
+  color:var(--ink-2);border-radius:20px;padding:2px 9px;cursor:pointer;border:1px solid transparent}
+.dc:hover{border-color:var(--vino);background:#fff}
+.dc.on{background:var(--vino);color:#fff;border-color:var(--vino)}
+.dc.on b{color:#fff}
+.minis{display:flex;flex-wrap:wrap;gap:10px;padding:10px 4px 4px}
+.mini-m{width:88px;cursor:pointer}
+.mini-m .im{width:88px;height:106px;border-radius:8px;overflow:hidden;background:var(--suave);
+  display:grid;place-items:center;border:1px solid var(--line)}
+.mini-m .im img{width:100%;height:100%;object-fit:cover}
+.mini-m:hover .im{border-color:var(--vino)}
+.mini-m .nof{font-size:9px;color:var(--ink-3);text-align:center;line-height:1.2}
+.mini-m .rf{font-size:10px;font-weight:800;color:var(--vino-deep);margin-top:3px}
+.mini-m .nm2{font-size:9.5px;color:var(--ink-3);line-height:1.2;word-break:break-word}
 .dc b{color:var(--vino-deep);font-weight:800}
 .catgrid{display:flex;flex-direction:column;gap:8px;padding:14px}
 .catacc{border:1px solid var(--line);border-radius:11px;background:#fff;overflow:hidden}
@@ -839,7 +855,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   </div>
   <div class="card">
     <div class="card-h"><h2>Muestras entregadas por día</h2><div class="sub" id="rep-ent-sub"></div></div>
-    <div class="hint">El día en que el taller te entregó la muestra terminada. Se marca en Productos, en la fecha que está bajo el nombre, o seleccionando varias y pulsando <b>Entregadas hoy</b>.</div>
+    <div class="hint">El día en que el taller te entregó la muestra terminada. Se marca en Productos, en la fecha que está bajo el nombre, o seleccionando varias y pulsando <b>Entregadas hoy</b>. Haz clic en una categoría para ver las fotos de ese día.</div>
+    <div class="avbar"><div class="mb" id="rep-ent-bar"></div><div class="avtxt" id="rep-ent-pct"></div></div>
     <table>
       <thead><tr><th class="l">Día</th><th>Entregadas</th><th>Acumulado</th><th class="l">Por categoría</th></tr></thead>
       <tbody id="rep-ent"></tbody>
@@ -3598,6 +3615,8 @@ function estadoRep(r){
   if(f.aprob==='pendiente')return 'aprobar';
   return (f.saved&&!f.edit)?'costeada':'costeo';
 }
+const REP_ABIERTO=new Set();   // qué día y familia están desplegados en el reporte
+function abrirDia(d,c){const k=d+'||'+c;REP_ABIERTO.has(k)?REP_ABIERTO.delete(k):REP_ABIERTO.add(k);rowsRep()}
 function repLista(){
   const t=($('rep-temp')&&$('rep-temp').value)||'',a=($('rep-anio')&&$('rep-anio').value)||'',
         c=($('rep-col')&&$('rep-col').value)||'';
@@ -3671,15 +3690,32 @@ function rowsRep(){
   $('rep-ent-sub').textContent=es.length
     ? T.ent+' entregada'+(T.ent===1?'':'s')+' en '+es.length+' día'+(es.length===1?'':'s')+' · '+prom+' por día · faltan '+T.falta
     : 'Todavía no has marcado ninguna entrega. Faltan '+T.falta+'.';
+  /* barra de avance: cuánto de lo que hay que entregar ya entregaron */
+  const pe=T.n?Math.round(T.ent/T.n*100):0;
+  if($('rep-ent-bar'))$('rep-ent-bar').innerHTML=
+    `<b style="width:${T.n?(T.ent/T.n*100).toFixed(1):0}%;background:var(--green)"></b>`;
+  if($('rep-ent-pct'))$('rep-ent-pct').innerHTML=`<b>${pe}%</b> entregado · ${T.ent} de ${T.n}`;
+
   let acum=T.ent;
-  /* cada día se abre por familia: no basta saber que entregaron 5, sino de qué */
+  /* cada día se abre por familia, y cada familia se abre en fotos */
   $('rep-ent').innerHTML=es.map(d=>{
     const g=ent[d],hasta=acum;acum-=g.length;
     const porCat={};g.forEach(x=>{const c=x.cat||'(sin categoría)';porCat[c]=(porCat[c]||0)+1});
     const cs=Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a]||a.localeCompare(b));
-    return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td><td>${hasta}</td>
-      <td class="l"><div class="dcat" title="${escR(g.map(x=>x.r).join(', '))}">${
-        cs.map(c=>`<span class="dc">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
+    const abiertas=cs.filter(c=>REP_ABIERTO.has(d+'||'+c));
+    const fila=`<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td><td>${hasta}</td>
+      <td class="l"><div class="dcat">${cs.map(c=>
+        `<span class="dc${REP_ABIERTO.has(d+'||'+c)?' on':''}" title="Ver las muestras de ${escR(c)} entregadas ese día"
+           onclick="abrirDia('${escR(d)}','${escR(c)}')">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
+    if(!abiertas.length)return fila;
+    const fotos=abiertas.map(c=>{
+      const del=g.filter(x=>(x.cat||'(sin categoría)')===c);
+      return `<div class="cod" style="margin-top:4px">${escR(c)} · ${del.length} muestra${del.length===1?'':'s'}</div>
+        <div class="minis">${del.map(x=>`<div class="mini-m" title="Abrir la ficha de ${escR(x.r)}" onclick="verFicha('${escR(x.r)}')">
+          <div class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}" alt="">`:'<div class="nof">sin<br>foto</div>'}</div>
+          <div class="rf">${escR(x.r)}</div><div class="nm2">${escR(x.n)}</div></div>`).join('')}</div>`;
+    }).join('');
+    return fila+`<tr class="detalle"><td colspan="4">${fotos}</td></tr>`;
   }).join('')||`<tr><td colspan="4" class="empty">Marca las entregas en Productos: la fecha bajo el nombre, o selecciona varias y pulsa <b>Entregadas hoy</b>.</td></tr>`;
 
   /* cuántas se registraron cada día, de la más reciente hacia atrás */
