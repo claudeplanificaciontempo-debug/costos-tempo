@@ -408,6 +408,10 @@ select.fld{border-color:var(--line)}
 
 .toast.err{background:var(--red)}
 .toast.warn{background:var(--amber)}
+.zoom{position:fixed;z-index:9000;pointer-events:none;background:#fff;border:1px solid var(--line);
+  border-radius:12px;padding:6px;box-shadow:0 18px 44px rgba(49,38,42,.22);max-width:330px}
+.zoom img{display:block;width:100%;max-width:318px;max-height:420px;object-fit:contain;border-radius:8px;background:var(--suave)}
+.zoom .zt{font-size:11px;font-weight:700;color:var(--vino-deep);text-align:center;padding:5px 2px 1px;line-height:1.25}
 .toast{position:fixed;right:22px;bottom:22px;z-index:80;background:var(--vino-deep);color:#fff;border-radius:12px;
   padding:13px 18px;box-shadow:0 14px 34px rgba(59,66,82,.20);display:flex;gap:11px;align-items:flex-start;
   max-width:360px;transform:translateY(14px);opacity:0;transition:.18s;pointer-events:none}
@@ -1018,6 +1022,9 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   </div>
 </div>
 
+<!-- Lupa: la foto grande al pasar el mouse. Va suelta en el body para que
+     no la recorte la fila de la tabla. -->
+<div id="zoom" class="zoom hide"><img id="zoom-img" alt=""><div class="zt" id="zoom-t"></div></div>
 <div id="toast" class="toast"><div class="tk">✓</div><div><b id="to-t"></b><small id="to-s"></small></div></div>
 
 <script>
@@ -1577,6 +1584,35 @@ function head(){
 function setRef(r){cur=r;draw();window.scrollTo(0,0)}
 function verFicha(r){cur=r;draw();go('ficha');window.scrollTo(0,0)}
 
+/* ====== LUPA DE FOTOS ======
+   Cualquier elemento con data-zoom="url" muestra la foto en grande al pasar
+   el mouse. Se engancha una sola vez al documento, así sirve en productos,
+   en el reporte de entregas y en las categorías sin repetir código. */
+function moverZoom(e){
+  const z=$('zoom');if(!z||z.classList.contains('hide'))return;
+  const m=18,a=z.offsetWidth||330,h=z.offsetHeight||300;
+  let x=e.clientX+m,y=e.clientY+m;
+  if(x+a>innerWidth-8)x=e.clientX-a-m;
+  if(y+h>innerHeight-8)y=Math.max(8,innerHeight-h-8);
+  z.style.left=x+'px';z.style.top=y+'px';
+}
+document.addEventListener('mouseover',e=>{
+  const el=e.target.closest&&e.target.closest('[data-zoom]');
+  const z=$('zoom');if(!z)return;
+  if(!el||!el.dataset.zoom){z.classList.add('hide');return}
+  $('zoom-img').src=el.dataset.zoom;
+  $('zoom-t').textContent=el.dataset.zoomT||'';
+  z.classList.remove('hide');
+  moverZoom(e);
+});
+document.addEventListener('mousemove',moverZoom);
+document.addEventListener('mouseout',e=>{
+  const z=$('zoom');if(!z)return;
+  const a=e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('[data-zoom]');
+  if(!a)z.classList.add('hide');
+});
+window.addEventListener('scroll',()=>{const z=$('zoom');if(z)z.classList.add('hide')},true);
+
 /* ====== BLOQUE 2 · MATERIALES ====== */
 function rowsLines(){
   const f=F(),tb=$('tb-lines'),order={mp:0,ins:1,dec:2,srv:3};
@@ -2042,7 +2078,8 @@ function filaProd({x,i}){
   const f=FICHAS[x.r],t=totRef(x.r);
   return `<div class="prow">
       <div><input type="checkbox" class="prsel" ${SELP.has(x.r)?'checked':''} onchange="toggleProd('${x.r}',this.checked)"></div>
-      <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
+      <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos"
+        ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
       <div><input class="fld cod may" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
@@ -3603,7 +3640,9 @@ function rowsCats(){
       ${abierta?`<div class="cuerpo">
         ${tipos.map(t=>{const f=CATFOTO[kFoto(c,t)],u=usosTipo(c,t);
           return `<div class="tiprow">
-            <div class="ph${f?'':' vacia'}" title="${ro?'':'Clic para poner o cambiar la foto de '+escR(t)}" onclick="${ro?'':`pedirFotoCat('${escR(c)}','${escR(t)}')`}">
+            <div class="ph${f?'':' vacia'}" title="${ro?'':'Clic para poner o cambiar la foto de '+escR(t)}"
+              ${f?`data-zoom="${escR(f)}" data-zoom-t="${escR(t)} · ${escR(c)}"`:''}
+              onclick="${ro?'':`pedirFotoCat('${escR(c)}','${escR(t)}')`}">
               ${f?`<img src="${escR(f)}" alt="">`:'<div class="pon">+ foto</div>'}
               ${ro||!f?'':'<span class="cam">cambiar</span>'}</div>
             <div class="tn">${escR(t)}<span class="tu">${u} producto${u===1?'':'s'}</span></div>
@@ -3841,7 +3880,7 @@ function rowsRep(){
       return `<div class="cerrar" onclick="abrirDia('${escR(d)}','${escR(c)}')" title="Clic para ocultar estas fotos">
           <b>${escR(c)}</b> · ${del.length} muestra${del.length===1?'':'s'} <span>▲ ocultar</span></div>
         <div class="minis">${del.map(x=>`<div class="mini-m" title="Abrir la ficha de ${escR(x.r)}" onclick="verFicha('${escR(x.r)}')">
-          <div class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}" alt="">`:'<div class="nof">sin<br>foto</div>'}</div>
+          <div class="im" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}" alt="">`:'<div class="nof">sin<br>foto</div>'}</div>
           <div class="rf">${escR(x.r)}</div><div class="nm2">${escR(x.n)}</div></div>`).join('')}</div>`;
     }).join('');
     return fila+`<tr class="detalle"><td colspan="4">${fotos}</td></tr>`;
