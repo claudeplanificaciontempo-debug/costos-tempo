@@ -197,7 +197,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 .save p{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
 
 /* productos */
-.prow{display:grid;grid-template-columns:22px 56px 88px 104px minmax(130px,1fr) 140px 110px 92px 124px 150px 150px 104px 74px;gap:10px;align-items:center;
+.prow{display:grid;grid-template-columns:22px 56px 88px 100px minmax(120px,1fr) 128px 104px 78px 116px 130px 138px 138px 96px 70px;gap:10px;align-items:center;
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 /* rayado alterno también en Productos, que usa divs y no una tabla */
 .prow:nth-of-type(even){background:var(--zebra)}
@@ -559,6 +559,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="tab on" onclick="agruparProd('')">Ninguno</button>
         <button class="tab" onclick="agruparProd('cat')">Categoría</button>
         <button class="tab" onclick="agruparProd('sub')">Tipo</button>
+        <button class="tab" onclick="agruparProd('col')">Colección</button>
       </div>
       <div class="sub" id="prod-sub"></div></div>
     <div id="bulk-prod" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--vino-soft);border-radius:10px;margin:0 14px 10px">
@@ -569,7 +570,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
     </div>
-    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Código único</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
+    <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Código único</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Colección</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
     <div id="pr-rows"></div>
     <div class="addrow">
       <button id="bt-prod" class="btn org" onclick="guardarProductos()">Guardar productos</button>
@@ -666,6 +667,16 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="addrow">
       <input id="nt-nombre" class="fld" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la temporada nueva">
       <button class="btn ghost" onclick="agregarTemporada()">+ Crear temporada</button>
+    </div>
+    <div class="card-h" style="margin-top:6px"><h2>Colecciones</h2><div class="sub" id="col-sub"></div></div>
+    <div class="hint">Colecciones disponibles para asignar a cada producto (en Productos, junto a Temporada). Si renombras una, los productos que la usan se actualizan solos.</div>
+    <table>
+      <thead><tr><th class="l">Colección</th><th>Productos</th><th></th></tr></thead>
+      <tbody id="tb-col"></tbody>
+    </table>
+    <div class="addrow">
+      <input id="ncol-nombre" class="fld may" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la colección nueva, p. ej. NAVIDAD 2026">
+      <button class="btn ghost" onclick="agregarColeccion()">+ Crear colección</button>
     </div>
   </div>
   <div class="card">
@@ -936,7 +947,7 @@ function reactivo(o){
 }
 function adoptarEstado(){
   FOTO=reactivo(FOTO);REFS=reactivo(REFS);CAT=reactivo(CAT);CEN=reactivo(CEN);
-  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);
+  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);COLECCIONES=reactivo(COLECCIONES);
   PANTONES=reactivo(PANTONES);TEMPORADAS=reactivo(TEMPORADAS);BORRADOS=reactivo(BORRADOS);
   CATEG=reactivo(CATEG);CATFOTO=reactivo(CATFOTO);
 }
@@ -948,6 +959,7 @@ let FOTO = {"4823": "data:image/webp;base64,UklGRvoMAABXRUJQVlA4IO4MAAAwaQCdASoR
 const DEPS=['Hombre','Mujer','Niño'];
 let MARCAS=['Aeropostale'];
 let TEMPORADAS=['Spring','Summer','Fall','Winter'];
+let COLECCIONES=[];
 /* Códigos borrados a propósito. Sin esto, el catálogo que viene dentro del archivo los
    volvía a insertar en cada recarga y parecía que el borrado "no se guardaba". */
 let BORRADOS={mat:[],prod:[]};
@@ -1921,6 +1933,10 @@ function filaProd({x,i}){
         <option value="" ${x.temporada?'':'selected'}>sin definir</option>
         ${TEMPORADAS.map(t=>`<option ${t===x.temporada?'selected':''}>${t}</option>`).join('')}
         <option value="__nueva__">+ Nueva temporada…</option></select></div>
+      <div><select class="fld${x.col?'':' sindef'}" onchange="coleccionSel(${i},this)">
+        <option value="" ${x.col?'':'selected'}>sin definir</option>
+        ${COLECCIONES.map(c=>`<option ${c===x.col?'selected':''}>${c}</option>`).join('')}
+        <option value="__nueva__">+ Nueva colección…</option></select></div>
       <div><select class="fld" onchange="setP(${i},'cat',this.value)">
         ${Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div>
       <div><select class="fld" onchange="setP(${i},'sub',this.value)">
@@ -1975,6 +1991,14 @@ function temporadaSel(i,sel){
     if(!TEMPORADAS.some(t=>t.toLowerCase()===n.toLowerCase()))TEMPORADAS.push(n);
     setP(i,'temporada',n);rowsProd();
   }else setP(i,'temporada',sel.value);
+}
+function coleccionSel(i,sel){
+  if(sel.value==='__nueva__'){
+    const n=MAY((prompt('Nombre de la colección nueva:')||'').trim());
+    if(!n){sel.value=REFS[i].col||'';return}
+    if(!COLECCIONES.some(c=>c.toLowerCase()===n.toLowerCase()))COLECCIONES.push(n);
+    setP(i,'col',n);rowsProd();rowsColecciones();
+  }else setP(i,'col',sel.value);
 }
 function setCatHead(f,v){
   const i=REFS.findIndex(r=>r.r===cur);if(i<0)return;
@@ -2241,6 +2265,7 @@ function filas(){
     cst_marcas:MARCAS.map((m,i)=>({id:m.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:m,orden:i}})),
     cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{...p,orden:i}})),
     cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}})),
+    cst_colecciones:COLECCIONES.map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'c'+i,data:{nombre:c,orden:i}})),
     cst_categorias:Object.keys(CATEG).map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
       data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',
         fotos:(CATEG[c]||[]).reduce((o,t)=>{const f=CATFOTO[kFoto(c,t)];
@@ -2248,11 +2273,11 @@ function filas(){
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
-const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias'];
+const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones'];
 async function cargarNube(){
   const T=TABLAS;
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk,pt,tp,ct]=R;
+  const [pr,ma,ce,cl,fi,mk,pt,tp,ct,co]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -2290,7 +2315,7 @@ async function cargarNube(){
      nada que salvar: ahí no se avisa, porque el aviso bloquearía el guardado. */
   if(!fi.length&&refsVivas.size)noConfiables.add('cst_fichas');
   /* se lee el objeto entero (...rest), no campo por campo: lo que se guardó vuelve completo */
-  if(pr.length){REFS.length=0;BORRADOS.prod.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;if(d.del){BORRADOS.prod.push(d.r||x.id);return}const {orden,foto,...rest}=d;REFS.push({...rest,arch:!!d.arch});if(foto){FOTO[d.r]=foto;FOTO_NUBE[d.r]=foto}if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca);if(d.temporada&&!TEMPORADAS.some(t=>t===d.temporada))TEMPORADAS.push(d.temporada)});}
+  if(pr.length){REFS.length=0;BORRADOS.prod.length=0;pr.sort(porOrden).forEach(x=>{const d=x.data;if(d.del){BORRADOS.prod.push(d.r||x.id);return}const {orden,foto,...rest}=d;REFS.push({...rest,arch:!!d.arch});if(foto){FOTO[d.r]=foto;FOTO_NUBE[d.r]=foto}if(d.marca&&!MARCAS.some(m=>m===d.marca))MARCAS.push(d.marca);if(d.temporada&&!TEMPORADAS.some(t=>t===d.temporada))TEMPORADAS.push(d.temporada);if(d.col&&!COLECCIONES.some(c=>c===d.col))COLECCIONES.push(d.col)});}
   else if(noConfiables.has('cst_productos'))vacias.push('productos');
   if(ma.length){CAT.length=0;BORRADOS.mat.length=0;ma.sort(porOrden).forEach(x=>{const {orden,...m}=x.data;if(m.del){BORRADOS.mat.push(m.c||x.id);return}CAT.push(m)});}
   else if(noConfiables.has('cst_materiales'))vacias.push('materiales');
@@ -2309,6 +2334,7 @@ async function cargarNube(){
   if(mk&&mk.length){MARCAS.length=0;mk.sort(porOrden).forEach(x=>MARCAS.push(x.data.nombre))}
   if(pt&&pt.length){PANTONES.length=0;pt.sort(porOrden).forEach(x=>{const {orden,...p}=x.data;PANTONES.push(p)})}
   if(tp&&tp.length){TEMPORADAS.length=0;tp.sort(porOrden).forEach(x=>TEMPORADAS.push(x.data.nombre))}
+  if(co&&co.length){COLECCIONES.length=0;co.sort(porOrden).forEach(x=>COLECCIONES.push(x.data.nombre))}
   /* las categorías de la nube mandan; las del archivo solo rellenan lo que falte */
   if(ct&&ct.length){
     Object.keys(CATEG).forEach(k=>delete CATEG[k]);
@@ -2439,7 +2465,7 @@ async function guardarVersion(ref){
 
 /* ====== GUARDADO LOCAL Y RESPALDO ====== */
 const LKEY='costos_tempo_v1';
-function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,BORRADOS}}
+function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,COLECCIONES,BORRADOS}}
 function marcaSave(txt,cls){const e=$('autosave');if(!e)return;e.textContent=txt;e.className='asv '+(cls||'');e.title=ultimoError||''}
 let ultimoError='',avisado=false;
 /* Aviso que NO se borra con un guardado exitoso: mientras haya una tabla que no se pudo
@@ -2641,6 +2667,7 @@ function aplicarEstado(d){
   if(d.MARCAS&&d.MARCAS.length){MARCAS.length=0;d.MARCAS.forEach(x=>MARCAS.push(x))}
   if(d.PANTONES&&d.PANTONES.length){PANTONES.length=0;d.PANTONES.forEach(x=>PANTONES.push(x))}
   if(d.TEMPORADAS&&d.TEMPORADAS.length){TEMPORADAS.length=0;d.TEMPORADAS.forEach(x=>TEMPORADAS.push(x))}
+  if(d.COLECCIONES&&d.COLECCIONES.length){COLECCIONES.length=0;d.COLECCIONES.forEach(x=>COLECCIONES.push(x))}
   if(d.BORRADOS){BORRADOS.mat.length=0;BORRADOS.prod.length=0;
     (d.BORRADOS.mat||[]).forEach(c=>BORRADOS.mat.push(c));(d.BORRADOS.prod||[]).forEach(r=>BORRADOS.prod.push(r))}
   cur=(d.cur&&FICHAS[d.cur])?d.cur:(REFS[0]&&REFS[0].r);
@@ -3136,6 +3163,44 @@ function rowsTemporadas(){
     <td>${soloPrearmado()?'':`<button class="x" title="Borrar temporada" onclick="borrarTemporada(${i})">×</button>`}</td></tr>`).join('')
     ||'<tr><td colspan="2" class="empty">Sin temporadas todavía.</td></tr>';
   $('temp-sub').textContent=TEMPORADAS.length+' temporada'+(TEMPORADAS.length===1?'':'s');
+  rowsColecciones();
+}
+function rowsColecciones(){
+  const tb=$('tb-col');if(!tb)return;
+  tb.innerHTML=COLECCIONES.map((c,i)=>{const u=REFS.filter(r=>r.col===c).length;
+    return `<tr>
+    <td class="l"><input class="fld may" style="width:100%" value="${escR(c)}" onchange="setColeccion(${i},this.value)"></td>
+    <td>${u}</td>
+    <td>${soloPrearmado()?'':`<button class="x" title="Borrar colección" onclick="borrarColeccion(${i})">×</button>`}</td></tr>`}).join('')
+    ||'<tr><td colspan="3" class="empty">Sin colecciones todavía. Créalas aquí abajo o desde la lista de productos.</td></tr>';
+  $('col-sub').textContent=COLECCIONES.length+' colección'+(COLECCIONES.length===1?'':'es');
+}
+function setColeccion(i,v){
+  const old=COLECCIONES[i];v=MAY((v||'').trim());if(!v){rowsColecciones();return}
+  if(v===old)return;
+  if(COLECCIONES.some((c,j)=>j!==i&&c.toLowerCase()===v.toLowerCase())){toast('Ya existe','Ya hay una colección llamada '+v+'.');rowsColecciones();return}
+  COLECCIONES[i]=v;
+  let n=0;REFS.forEach(r=>{if(r.col===old){r.col=v;n++}});
+  rowsColecciones();rowsProd();
+  toast('Colección renombrada',old+' → '+v+(n?' · '+n+' producto(s) actualizados.':''));
+}
+function agregarColeccion(){
+  const n=MAY(($('ncol-nombre').value||'').trim());
+  if(!n){toast('Falta el nombre','Escribe el nombre de la colección.');return}
+  if(COLECCIONES.some(c=>c.toLowerCase()===n.toLowerCase())){toast('Ya existe','Esa colección ya está en la lista.');return}
+  COLECCIONES.push(n);
+  $('ncol-nombre').value='';
+  rowsColecciones();rowsProd();
+  toast('Colección creada',n+' ya se puede asignar a los productos.');
+}
+function borrarColeccion(i){
+  const c=COLECCIONES[i];if(!c)return;
+  const usos=REFS.filter(r=>r.col===c).length;
+  if(!confirm('¿Borrar la colección "'+c+'"?'+(usos?' La usan '+usos+' producto(s); quedarán sin colección asignada.':'')))return;
+  COLECCIONES.splice(i,1);
+  REFS.forEach(r=>{if(r.col===c)r.col=''});
+  rowsColecciones();rowsProd();
+  toast('Colección borrada',c+' se quitó de la lista.');
 }
 function setTemporada(i,v){
   const old=TEMPORADAS[i];v=v.trim();if(!v)return;
