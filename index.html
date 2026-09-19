@@ -277,6 +277,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 .asv.err{color:var(--red);font-weight:700}
 .asv{cursor:pointer}
 .asv.bad{color:#fff;background:var(--red);padding:2px 8px;border-radius:5px;font-weight:800;letter-spacing:.2px}
+.asv.warn{color:var(--amber);background:var(--amber-soft);padding:2px 8px;border-radius:5px;font-weight:700}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:0 0 14px}
 .kpi{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px 14px;text-align:left;
   cursor:pointer;font:inherit;position:relative;transition:border-color .12s,box-shadow .12s}
@@ -2223,7 +2224,7 @@ function pintarEstado(tipo,extra){
   if(tipo==='guardando')marcaSave('Guardando…'+(extra?' '+extra:''),'');
   else if(tipo==='ok')marcaSave('Guardado '+new Date().toLocaleTimeString().slice(0,5),'ok');
   else if(tipo==='parcial')marcaSave('GUARDADO A MEDIAS','bad');
-  else if(tipo==='falta')marcaSave('NO SE GUARDÓ · falta una tabla','bad');
+  else if(tipo==='falta')marcaSave('GUARDADO · falta '+(extra||1)+' tabla'+((extra||1)===1?'':'s'),'warn');
   else marcaSave('NO SE GUARDÓ','bad');
 }
 function estadoOk(){
@@ -2236,9 +2237,9 @@ function verEstadoGuardado(){
   else if(pendiente)toast('Cambios sin subir','Todavía hay cambios que no están en Supabase; se está reintentando.');
   else toast('Todo guardado','No queda ningún cambio pendiente de subir.');
 }
-function avisarError(){
+function avisarError(titulo){
   if(avisado)return;avisado=true;
-  toast('NO SE GUARDÓ',ultimoError+' — lo que ves en pantalla NO se ha perdido, se reintenta solo.');
+  toast(titulo||'NO SE GUARDÓ',ultimoError+' — lo que ves en pantalla NO se ha perdido, se reintenta solo.');
 }
 
 /* ====== MOTOR DE GUARDADO ======
@@ -2288,8 +2289,8 @@ async function cicloSync(){
     const r=await syncPush();
     reintentos=0;
     if(r.omitidas.length){
-      ultimoError='Falta crear en Supabase la tabla: '+r.omitidas.join(', ')+'. Hasta que exista, esos datos no se guardan en la nube.';
-      pendiente=true;marcarPend(true);pintarEstado('falta');avisarError();
+      ultimoError='Todo lo demás SÍ quedó guardado. Falta crear en Supabase: '+r.omitidas.join(', ')+'. Solo esos datos se quedan sin subir hasta que la tabla exista.';
+      pendiente=true;marcarPend(true);pintarEstado('falta',r.omitidas.length);avisarError('Falta una tabla en Supabase');
       clearTimeout(tRetry);tRetry=setTimeout(cicloSync,SUCIO?1000:60000);
     }else if(SUCIO){
       pendiente=true;programar(150);   // se editó algo durante el envío: se vuelve a enviar
@@ -2344,9 +2345,9 @@ async function forzarGuardado(btnId,etiqueta){
         await subirFotosPendientes();
         const r=await syncPush();
         if(r.omitidas.length){
-          ultimoError='Falta crear en Supabase la tabla: '+r.omitidas.join(', ')+'.';
-          pendiente=true;marcarPend(true);pintarEstado('falta');
-          toast('NO SE GUARDÓ del todo',ultimoError+' Lo demás sí quedó guardado.');
+          ultimoError='Todo lo demás SÍ quedó guardado. Falta crear en Supabase: '+r.omitidas.join(', ')+'.';
+          pendiente=true;marcarPend(true);pintarEstado('falta',r.omitidas.length);
+          toast('Falta una tabla en Supabase',ultimoError);
         }else{
           ok=!avisoLectura;
           if(SUCIO){pendiente=true;programar(150)}else{pendiente=false;marcarPend(false)}
