@@ -243,6 +243,11 @@ input.n:focus{border-color:var(--vino);outline:none}
 .dc:hover{border-color:var(--vino);background:#fff}
 .dc.on{background:var(--vino);color:#fff;border-color:var(--vino)}
 .dc.on b{color:#fff}
+.cerrar{display:flex;align-items:center;gap:7px;cursor:pointer;font-size:11px;color:var(--ink-2);
+  background:var(--suave);border-radius:8px;padding:5px 10px;margin-top:6px}
+.cerrar:hover{background:#f2e6e8}
+.cerrar b{font-weight:800;color:var(--vino-deep);letter-spacing:.02em}
+.cerrar span{margin-left:auto;font-size:10px;font-weight:700;color:var(--vino)}
 .minis{display:flex;flex-wrap:wrap;gap:10px;padding:10px 4px 4px}
 .mini-m{width:88px;cursor:pointer}
 .mini-m .im{width:88px;height:106px;border-radius:8px;overflow:hidden;background:var(--suave);
@@ -856,7 +861,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="card">
     <div class="card-h"><h2>Muestras entregadas por día</h2><div class="sub" id="rep-ent-sub"></div></div>
     <div class="hint">El día en que el taller te entregó la muestra terminada. Se marca en Productos, en la fecha que está bajo el nombre, o seleccionando varias y pulsando <b>Entregadas hoy</b>. Haz clic en una categoría para ver las fotos de ese día.</div>
-    <div class="avbar"><div class="mb" id="rep-ent-bar"></div><div class="avtxt" id="rep-ent-pct"></div></div>
+    <div class="avbar"><div class="mb" id="rep-ent-bar"></div><div class="avtxt" id="rep-ent-pct"></div>
+      <button class="btn ghost sm" id="rep-ord" onclick="voltearOrden()" title="Cambiar el orden de los días">↑ Más antigua primero</button></div>
     <table>
       <thead><tr><th class="l">Día</th><th>Entregadas</th><th>Acumulado</th><th class="l">Por categoría</th></tr></thead>
       <tbody id="rep-ent"></tbody>
@@ -2963,7 +2969,13 @@ function plantilla(){
     ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
     : 'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35';
 }
-function partes(l){return l.split(/[\t;]|,(?=\s*\S)/).map(s=>s.trim())}
+/* Si la fila ya viene separada por tabulación o punto y coma —que es como llega
+   pegada desde Excel— la coma NO separa: es la coma decimal de "0,45" o parte del
+   nombre de una operación. Partirla ahí metía minutos equivocados sin avisar. */
+function partes(l){
+  const sep=/[\t;]/.test(l)?/[\t;]/:/,(?=\s*\S)/;
+  return l.split(sep).map(s=>s.trim());
+}
 function procesarMasiva(){
   const txt=$('mm-ta').value.trim();
   if(!txt){toast('No hay nada que procesar','Pega las filas o usa Ver plantilla.');return}
@@ -3616,6 +3628,8 @@ function estadoRep(r){
   return (f.saved&&!f.edit)?'costeada':'costeo';
 }
 const REP_ABIERTO=new Set();   // qué día y familia están desplegados en el reporte
+let REP_ASC=true;              // los días van de la más antigua a la más reciente
+function voltearOrden(){REP_ASC=!REP_ASC;rowsRep()}
 function abrirDia(d,c){const k=d+'||'+c;REP_ABIERTO.has(k)?REP_ABIERTO.delete(k):REP_ABIERTO.add(k);rowsRep()}
 function repLista(){
   const t=($('rep-temp')&&$('rep-temp').value)||'',a=($('rep-anio')&&$('rep-anio').value)||'',
@@ -3685,7 +3699,9 @@ function rowsRep(){
   /* cuántas entregó el taller cada día, y cuántas van acumuladas */
   const ent={};
   lista.forEach(x=>{if(x.ent)(ent[x.ent]=ent[x.ent]||[]).push(x)});
-  const es=Object.keys(ent).sort().reverse();
+  const es=Object.keys(ent).sort();
+  if(!REP_ASC)es.reverse();
+  if($('rep-ord'))$('rep-ord').textContent=REP_ASC?'↑ Más antigua primero':'↓ Más reciente primero';
   const prom=es.length?(T.ent/es.length).toFixed(1):'0';
   $('rep-ent-sub').textContent=es.length
     ? T.ent+' entregada'+(T.ent===1?'':'s')+' en '+es.length+' día'+(es.length===1?'':'s')+' · '+prom+' por día · faltan '+T.falta
@@ -3696,10 +3712,13 @@ function rowsRep(){
     `<b style="width:${T.n?(T.ent/T.n*100).toFixed(1):0}%;background:var(--green)"></b>`;
   if($('rep-ent-pct'))$('rep-ent-pct').innerHTML=`<b>${pe}%</b> entregado · ${T.ent} de ${T.n}`;
 
-  let acum=T.ent;
+  /* el acumulado se calcula siempre del día más antiguo hacia adelante,
+     aunque en pantalla se estén viendo al revés */
+  const acumDe={};let suma=0;
+  Object.keys(ent).sort().forEach(d=>{suma+=ent[d].length;acumDe[d]=suma});
   /* cada día se abre por familia, y cada familia se abre en fotos */
   $('rep-ent').innerHTML=es.map(d=>{
-    const g=ent[d],hasta=acum;acum-=g.length;
+    const g=ent[d],hasta=acumDe[d];
     const porCat={};g.forEach(x=>{const c=x.cat||'(sin categoría)';porCat[c]=(porCat[c]||0)+1});
     const cs=Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a]||a.localeCompare(b));
     const abiertas=cs.filter(c=>REP_ABIERTO.has(d+'||'+c));
@@ -3710,7 +3729,8 @@ function rowsRep(){
     if(!abiertas.length)return fila;
     const fotos=abiertas.map(c=>{
       const del=g.filter(x=>(x.cat||'(sin categoría)')===c);
-      return `<div class="cod" style="margin-top:4px">${escR(c)} · ${del.length} muestra${del.length===1?'':'s'}</div>
+      return `<div class="cerrar" onclick="abrirDia('${escR(d)}','${escR(c)}')" title="Clic para ocultar estas fotos">
+          <b>${escR(c)}</b> · ${del.length} muestra${del.length===1?'':'s'} <span>▲ ocultar</span></div>
         <div class="minis">${del.map(x=>`<div class="mini-m" title="Abrir la ficha de ${escR(x.r)}" onclick="verFicha('${escR(x.r)}')">
           <div class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}" alt="">`:'<div class="nof">sin<br>foto</div>'}</div>
           <div class="rf">${escR(x.r)}</div><div class="nm2">${escR(x.n)}</div></div>`).join('')}</div>`;
