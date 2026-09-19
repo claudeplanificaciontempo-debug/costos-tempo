@@ -1331,7 +1331,10 @@ const RECETAS={
 function recetaDe(cat,sub){
   const g=RECETAS[cat];
   const telas=(g&&g.tipos&&g.tipos[sub])||(g&&g.def)||[];
-  return {lines:telas.concat(REC_BASE()),cen:{}};
+  /* Si un material se borró del catálogo, la receta lo salta en vez de dejar una
+     línea con un código que ya no existe. En planos la tela cambia en cada estilo
+     y muchas veces es nueva: vale más una ficha sin tela que una línea rota. */
+  return {lines:telas.concat(REC_BASE()).filter(l=>byCode(l[0])),cen:{}};
 }
 /* Compara también consumos y desperdicios: si se cambió una cantidad a mano, la ficha
    ya está tocada y el cambio de tipo NO debe reemplazar sus líneas. */
