@@ -313,6 +313,8 @@ input.n:focus{border-color:var(--vino);outline:none}
 .vst-l i{font-style:normal;font-size:13px;font-weight:800}
 /* campo incompleto ≠ costo irreal: gris apagado, nunca el naranja de señal */
 .fld.sindef::placeholder{color:var(--ink-3);opacity:1;font-style:italic}
+.fld.may{text-transform:uppercase}
+.fld.may::placeholder{text-transform:none}
 select.fld.sindef{color:var(--ink-3);font-style:italic}
 .prow.head{background:var(--suave);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--vino-deep);font-weight:700;padding:8px 14px}
 .mth{background:var(--suave);border-radius:8px;overflow:hidden;height:56px;position:relative;cursor:pointer}
@@ -545,7 +547,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </div>
     <div id="bulk-mat" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--vino-soft);border-radius:10px;margin:0 14px 10px">
       <b id="bulk-mat-n" style="white-space:nowrap"></b>
-      <input id="bulk-fam" class="fld" list="dl-fam" style="width:220px" placeholder="Escribe o elige una familia…">
+      <input id="bulk-fam" class="fld may" list="dl-fam" style="width:220px" placeholder="Escribe o elige una familia…">
       <button class="btn ghost sm" onclick="aplicarFamiliaMasiva()">Aplicar familia</button>
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelMat()">Cancelar selección</button>
     </div>
@@ -1382,6 +1384,7 @@ function setPrecio(i,v){
 }
 function setMat(i,f,v){
   const x=CAT[i];if(!x)return;
+  if(f==='d'||f==='fam')v=MAY(v);
   x[f]=v.trim();x.f=hoy();
   const e=$('mf-'+i);if(e)e.textContent=x.f;
   draw();rowsProd();
@@ -1603,6 +1606,11 @@ function draw(soft){
 
 /* ====== GUARDADOS ====== */
 /* ISO para poder agrupar y ordenar; hoy() sigue siendo el formato para mostrar */
+/* Todo lo que nombra un producto o un material se guarda en mayúsculas, para que
+   la lista no quede mezclada. No se aplica al código único (es la llave con el otro
+   sistema y cambiarle las mayúsculas podría romper el empate) ni a marcas,
+   temporadas, clientes o centros, que son nombres propios. */
+const MAY=v=>String(v==null?'':v).toUpperCase();
 function hoyISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function fechaBonita(iso){
   if(!iso)return '—';
@@ -1789,7 +1797,7 @@ function filaProd({x,i}){
       <div><input type="checkbox" class="prsel" ${SELP.has(x.r)?'checked':''} onchange="toggleProd('${x.r}',this.checked)"></div>
       <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
-      <div><input class="fld cod" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
+      <div><input class="fld cod may" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
       <div>
         <div class="pname" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n}</div>
@@ -1867,6 +1875,7 @@ function setCatHead(f,v){
   setP(i,f,v);
 }
 function setP(i,f,v){
+  if(f==='r'||f==='n')v=MAY(v);
   const old=REFS[i].r;
   if(f==='r'){
     v=v.trim();if(!v)return;
@@ -2458,10 +2467,10 @@ function tomarSemilla(){SEED={CAT:CAT.map(x=>({...x})),CEN:CEN.map(x=>({...x})),
 function fusionarSemilla(){
   let nm=0,np=0;
   /* lo que se borró a propósito NO se vuelve a insertar desde el catálogo del archivo */
-  SEED.CAT.forEach(m=>{if(BORRADOS.mat.indexOf(m.c)>=0)return;if(!CAT.some(x=>x.c===m.c)){CAT.push({...m});nm++}});
+  SEED.CAT.forEach(m=>{if(BORRADOS.mat.indexOf(m.c)>=0)return;if(!CAT.some(x=>x.c===m.c)){CAT.push({...m,d:MAY(m.d)});nm++}});
   SEED.CEN.forEach(c=>{if(!CEN.some(x=>x.id===c.id))CEN.push({...c})});
   SEED.CLI.forEach(c=>{if(!CLI.some(x=>x.id===c.id))CLI.push({...c})});
-  SEED.REFS.forEach(r=>{if(BORRADOS.prod.indexOf(r.r)>=0)return;if(!REFS.some(x=>x.r===r.r)){REFS.push({...r});np++}});
+  SEED.REFS.forEach(r=>{if(BORRADOS.prod.indexOf(r.r)>=0)return;if(!REFS.some(x=>x.r===r.r)){REFS.push({...r,n:MAY(r.n)});np++}});
   Object.keys(SEED.FOTO).forEach(k=>{if(!FOTO[k])FOTO[k]=SEED.FOTO[k]});
   REFS.forEach(x=>{
     if(!FICHAS[x.r])FICHAS[x.r]=nuevaFicha(recetaDe(x.cat,x.sub));
@@ -2719,7 +2728,7 @@ function procesarMasiva(){
     const p=partes(l);
     if(masivaModo==='prod'){
       if(p.length<2||/^ref/i.test(p[0])){mal++;return}
-      const r=p[0],n=p[1];
+      const r=MAY(p[0]),n=MAY(p[1]);
       let cat=(p[2]||'').toUpperCase(),sub=p[3]||'';
       if(!CATEG[cat]){cat=Object.keys(CATEG).find(c=>c.startsWith((p[2]||'').toUpperCase().slice(0,4)))||'CAMISETAS'}
       if(!CATEG[cat].includes(sub)){sub=CATEG[cat].find(s=>s.toLowerCase()===(p[3]||'').toLowerCase())||CATEG[cat][0]}
@@ -2732,7 +2741,7 @@ function procesarMasiva(){
       else{REFS.push({r,n,cat,sub,dep,marca,cu:'',creado:hoyISO()});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
     }else{
       if(p.length<5||/^cod/i.test(p[0])){mal++;return}
-      const it={c:p[0],d:p[1],k:['mp','ins','dec','srv'].includes(p[2].toLowerCase())?p[2].toLowerCase():'ins',um:p[3],p:num(p[4]),f:hoy()};
+      const it={c:MAY(p[0]),d:MAY(p[1]),k:['mp','ins','dec','srv'].includes(p[2].toLowerCase())?p[2].toLowerCase():'ins',um:p[3],p:num(p[4]),f:hoy()};
       const ex=byCode(it.c);
       if(ex){Object.assign(ex,it);upd++}else{CAT.push(it);add++}
     }
@@ -2749,7 +2758,7 @@ function cerrar(id){$(id).classList.add('hide')}
 let catF='all';
 function agregarMat(){
   const c='NUEVO-'+Date.now().toString(36).toUpperCase();
-  CAT.push({c,d:'Nuevo material',k:'mp',um:'u',p:0,f:hoy(),fam:''});
+  CAT.push({c,d:'NUEVO MATERIAL',k:'mp',um:'u',p:0,f:hoy(),fam:''});
   rowsCatMat('all');draw();rowsProd();
   const fila=document.querySelector('#tb-cat tr:last-child input.fld');
   if(fila){fila.scrollIntoView({block:'center'});fila.focus();fila.select&&fila.select()}
@@ -2773,9 +2782,9 @@ function rowsCatMat(f){
   $('tb-cat').innerHTML=lista.map(({x,i})=>`
     <tr><td><input type="checkbox" ${SELM.has(x.c)?'checked':''} onchange="toggleMat('${x.c}',this.checked)"></td>
     <td class="l"><span class="cod">${x.c}</span></td>
-    <td class="l"><input class="fld" style="font-weight:600;width:100%" value="${x.d}" onchange="setMat(${i},'d',this.value)"></td>
+    <td class="l"><input class="fld may" style="font-weight:600;width:100%" value="${x.d}" onchange="setMat(${i},'d',this.value)"></td>
     <td class="l"><select class="fld" style="width:auto" onchange="setMat(${i},'k',this.value)">${Object.keys(KN).map(k=>`<option value="${k}" ${k===x.k?'selected':''}>${KN[k][0]}</option>`).join('')}</select></td>
-    <td class="l"><input class="fld" list="dl-fam" style="width:150px" value="${x.fam||''}" placeholder="—" onchange="setMat(${i},'fam',this.value)"></td>
+    <td class="l"><input class="fld may" list="dl-fam" style="width:150px" value="${x.fam||''}" placeholder="—" onchange="setMat(${i},'fam',this.value)"></td>
     <td><input class="fld" style="width:76px;text-align:center" value="${x.um}" onchange="setMat(${i},'um',this.value)"></td>
     <td>${soloPrearmado()?'<span class="ro">—</span>':`<input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()">`}</td>
     <td class="l ro" id="mf-${i}">${x.f}</td>
@@ -2803,7 +2812,7 @@ function pintarBulkMat(){
   if($('mat-all'))$('mat-all').checked=allSel;
 }
 function aplicarFamiliaMasiva(){
-  const fam=($('bulk-fam').value||'').trim();
+  const fam=MAY(($('bulk-fam').value||'').trim());
   if(!fam){toast('Escribe una familia','Elige o escribe el nombre de la familia antes de aplicar.');return}
   const f=hoy();
   CAT.forEach(x=>{if(SELM.has(x.c)){x.fam=fam;x.f=f}});
