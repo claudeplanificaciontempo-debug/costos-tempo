@@ -678,6 +678,16 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <input id="ncol-nombre" class="fld may" style="flex:1;min-width:180px" type="text" placeholder="Nombre de la colección nueva, p. ej. NAVIDAD 2026">
       <button class="btn ghost" onclick="agregarColeccion()">+ Crear colección</button>
     </div>
+    <div class="card-h" style="margin-top:6px"><h2>Insumos que lleva toda prenda</h2><div class="sub" id="base-sub"></div></div>
+    <div class="hint">Estos se agregan solos a la ficha de cualquier producto nuevo, además de las telas propias de su tipo. Es lo que va sí o sí: hilo, etiqueta de talla, instrucciones de lavado. Cambiar esta lista <b>no toca las fichas ya hechas</b>, solo las que se creen de aquí en adelante.</div>
+    <table>
+      <thead><tr><th class="l">Insumo</th><th>Cantidad</th><th>Desperdicio %</th><th>Costo unitario</th><th></th></tr></thead>
+      <tbody id="tb-base"></tbody>
+    </table>
+    <datalist id="dl-base"></datalist>
+    <div class="addrow">
+      <button class="btn ghost" onclick="agregarBase()">+ Agregar insumo a la base</button>
+    </div>
   </div>
   <div class="card">
     <div class="card-h"><h2>Clientes y márgenes</h2><div class="sub">Margen meta sobre el PVP · se aplica a todas las referencias</div></div>
@@ -947,7 +957,7 @@ function reactivo(o){
 }
 function adoptarEstado(){
   FOTO=reactivo(FOTO);REFS=reactivo(REFS);CAT=reactivo(CAT);CEN=reactivo(CEN);
-  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);COLECCIONES=reactivo(COLECCIONES);
+  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);COLECCIONES=reactivo(COLECCIONES);BASE=reactivo(BASE);
   PANTONES=reactivo(PANTONES);TEMPORADAS=reactivo(TEMPORADAS);BORRADOS=reactivo(BORRADOS);
   CATEG=reactivo(CATEG);CATFOTO=reactivo(CATFOTO);
 }
@@ -1268,7 +1278,10 @@ const KN={mp:['Materia prima','mp'],ins:['Insumos','ins'],dec:['Decoración','de
 const COLORS={mp:'#b05a72',ins:'#e0a9b5',dec:'#7b5e8f',srv:'#5f8aa8',mo:'#c2926a',moi:'#d8c9bd'};
 
 /* ====== TELAS SUGERIDAS POR TIPO DE PRODUCTO ====== */
-const REC_BASE=[['IN-HILOPARACOSE',0.010,0],['IN-SATIN',1,0],['IN-ETIQUETAS',1,0]];
+/* Lo que lleva TODA prenda, sin importar el tipo: hilo, etiquetas y lavado.
+   Es editable desde Configuración, porque quién lleva qué lo decide la planta. */
+let BASE=[{c:'IN-HILOPARACOSE',q:0.010,d:0},{c:'IN-SATIN',q:1,d:0},{c:'IN-ETIQUETAS',q:1,d:0}];
+const REC_BASE=()=>BASE.filter(b=>b.c).map(b=>[b.c,+b.q||0,+b.d||0]);
 const RECETAS={
  'CAMISETAS':{def:[['MP-JERSEY241',0.200,0],['MP-CUELLOSTEJID',1,0]],tipos:{
    'Camiseta ML':[['MP-JERSEY241',0.240,0],['MP-CUELLOSTEJID',1,0],['MP-PUOSTEJIDOS',1,0]],
@@ -1317,7 +1330,7 @@ const RECETAS={
 function recetaDe(cat,sub){
   const g=RECETAS[cat];
   const telas=(g&&g.tipos&&g.tipos[sub])||(g&&g.def)||[];
-  return {lines:telas.concat(REC_BASE),cen:{}};
+  return {lines:telas.concat(REC_BASE()),cen:{}};
 }
 /* Compara también consumos y desperdicios: si se cambió una cantidad a mano, la ficha
    ya está tocada y el cambio de tipo NO debe reemplazar sus líneas. */
@@ -2266,6 +2279,7 @@ function filas(){
     cst_pantones:PANTONES.map((p,i)=>({id:p.pan.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'p'+i,data:{...p,orden:i}})),
     cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}})),
     cst_colecciones:COLECCIONES.map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'c'+i,data:{nombre:c,orden:i}})),
+    cst_base:BASE.filter(b=>b.c).map((b,i)=>({id:b.c,data:{...b,orden:i}})),
     cst_categorias:Object.keys(CATEG).map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
       data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',
         fotos:(CATEG[c]||[]).reduce((o,t)=>{const f=CATFOTO[kFoto(c,t)];
@@ -2273,11 +2287,11 @@ function filas(){
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
-const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones'];
+const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones','cst_base'];
 async function cargarNube(){
   const T=TABLAS;
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk,pt,tp,ct,co]=R;
+  const [pr,ma,ce,cl,fi,mk,pt,tp,ct,co,bs]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -2335,6 +2349,7 @@ async function cargarNube(){
   if(pt&&pt.length){PANTONES.length=0;pt.sort(porOrden).forEach(x=>{const {orden,...p}=x.data;PANTONES.push(p)})}
   if(tp&&tp.length){TEMPORADAS.length=0;tp.sort(porOrden).forEach(x=>TEMPORADAS.push(x.data.nombre))}
   if(co&&co.length){COLECCIONES.length=0;co.sort(porOrden).forEach(x=>COLECCIONES.push(x.data.nombre))}
+  if(bs&&bs.length){BASE.length=0;bs.sort(porOrden).forEach(x=>{const {orden,...b}=x.data;BASE.push(b)})}
   /* las categorías de la nube mandan; las del archivo solo rellenan lo que falte */
   if(ct&&ct.length){
     Object.keys(CATEG).forEach(k=>delete CATEG[k]);
@@ -2465,7 +2480,7 @@ async function guardarVersion(ref){
 
 /* ====== GUARDADO LOCAL Y RESPALDO ====== */
 const LKEY='costos_tempo_v1';
-function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,COLECCIONES,BORRADOS}}
+function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,COLECCIONES,BASE,BORRADOS}}
 function marcaSave(txt,cls){const e=$('autosave');if(!e)return;e.textContent=txt;e.className='asv '+(cls||'');e.title=ultimoError||''}
 let ultimoError='',avisado=false;
 /* Aviso que NO se borra con un guardado exitoso: mientras haya una tabla que no se pudo
@@ -2668,6 +2683,7 @@ function aplicarEstado(d){
   if(d.PANTONES&&d.PANTONES.length){PANTONES.length=0;d.PANTONES.forEach(x=>PANTONES.push(x))}
   if(d.TEMPORADAS&&d.TEMPORADAS.length){TEMPORADAS.length=0;d.TEMPORADAS.forEach(x=>TEMPORADAS.push(x))}
   if(d.COLECCIONES&&d.COLECCIONES.length){COLECCIONES.length=0;d.COLECCIONES.forEach(x=>COLECCIONES.push(x))}
+  if(d.BASE&&d.BASE.length){BASE.length=0;d.BASE.forEach(x=>BASE.push(x))}
   if(d.BORRADOS){BORRADOS.mat.length=0;BORRADOS.prod.length=0;
     (d.BORRADOS.mat||[]).forEach(c=>BORRADOS.mat.push(c));(d.BORRADOS.prod||[]).forEach(r=>BORRADOS.prod.push(r))}
   cur=(d.cur&&FICHAS[d.cur])?d.cur:(REFS[0]&&REFS[0].r);
@@ -3163,7 +3179,7 @@ function rowsTemporadas(){
     <td>${soloPrearmado()?'':`<button class="x" title="Borrar temporada" onclick="borrarTemporada(${i})">×</button>`}</td></tr>`).join('')
     ||'<tr><td colspan="2" class="empty">Sin temporadas todavía.</td></tr>';
   $('temp-sub').textContent=TEMPORADAS.length+' temporada'+(TEMPORADAS.length===1?'':'s');
-  rowsColecciones();
+  rowsColecciones();rowsBase();
 }
 function rowsColecciones(){
   const tb=$('tb-col');if(!tb)return;
@@ -3201,6 +3217,41 @@ function borrarColeccion(i){
   REFS.forEach(r=>{if(r.col===c)r.col=''});
   rowsColecciones();rowsProd();
   toast('Colección borrada',c+' se quitó de la lista.');
+}
+function rowsBase(){
+  const tb=$('tb-base');if(!tb)return;
+  const dl=$('dl-base');
+  if(dl)dl.innerHTML=CAT.filter(m=>m.k==='ins'||m.k==='srv').map(m=>`<option value="${escR(m.c)}">${escR(m.d)}</option>`).join('');
+  tb.innerHTML=BASE.map((b,i)=>{const m=byCode(b.c);
+    return `<tr>
+    <td class="l"><input class="fld may" list="dl-base" style="width:100%" value="${escR(b.c)}" onchange="setBase(${i},'c',this.value)">
+      <div class="cod">${m?escR(m.d):'<span style="color:var(--falta)">ese código no está en Materiales</span>'}</div></td>
+    <td><input class="fld n" style="width:90px;text-align:right" value="${b.q}" onchange="setBase(${i},'q',this.value)"></td>
+    <td><input class="fld n" style="width:80px;text-align:right" value="${b.d||0}" onchange="setBase(${i},'d',this.value)"></td>
+    <td style="text-align:right">${m?fmt4(m.p||0):'—'}</td>
+    <td>${soloPrearmado()?'':`<button class="x" title="Quitar de la base" onclick="borrarBase(${i})">×</button>`}</td></tr>`}).join('')
+    ||'<tr><td colspan="5" class="empty">Ninguno. Las fichas nuevas solo traerán las telas de su tipo.</td></tr>';
+  const falta=BASE.filter(b=>!byCode(b.c)).length;
+  $('base-sub').textContent=BASE.length+' insumo'+(BASE.length===1?'':'s')+(falta?' · '+falta+' sin código válido':'');
+}
+function setBase(i,f,v){
+  if(!BASE[i])return;
+  BASE[i][f]=(f==='c')?MAY((v||'').trim()):num(v);
+  rowsBase();
+}
+function agregarBase(){
+  BASE.push({c:'',q:1,d:0});
+  rowsBase();
+  const fila=document.querySelector('#tb-base tr:last-child input.fld');
+  if(fila){fila.scrollIntoView({block:'center'});fila.focus()}
+  toast('Fila agregada','Escribe o elige el código del insumo. Aparece la descripción para que compruebes que es el correcto.');
+}
+function borrarBase(i){
+  const b=BASE[i];if(!b)return;
+  const m=byCode(b.c);
+  if(!confirm('¿Quitar "'+((m&&m.d)||b.c)+'" de los insumos que lleva toda prenda? Las fichas ya hechas no cambian.'))return;
+  BASE.splice(i,1);rowsBase();
+  toast('Quitado de la base',((m&&m.d)||b.c)+' ya no entrará en las fichas nuevas.');
 }
 function setTemporada(i,v){
   const old=TEMPORADAS[i];v=v.trim();if(!v)return;
