@@ -4327,13 +4327,15 @@ function rowsRutas(){
    como centro, así que esas operaciones se avisan en vez de colarse en otro. */
 const LMO_CEN={COR:'corte',CON:'confeccion',EMP:'empaque',SER:'estampado',BOR:'bordado',TER:'empaque'};
 /* Cada categoría de la lista maestra con la familia de producto de la app.
-   Se decidió con Martha: JEANS es DENIM, y PANTALON (el deportivo, que lleva
-   pretina elástica) es JOGGER, porque PANTALON PLANO va aparte. */
+   Lo confirmó Martha: JEANS es DENIM, y PANTALON no es jogger sino PANTALONES
+   PLANOS, igual que PANTALON PLANO; las dos alimentan esa misma familia. Por
+   eso una familia puede tener más de una categoría de la lista maestra. */
 const LMO_CAT={'CAMISETA':'CAMISETAS','POLO':'POLOS','HENLEY':'HENLEY','BVD':'BVD','FITS':'FITS',
  'BODY':'BODY','BOXER':'BOXER','HODDIE':'HODDIE','CHOMPA':'CHOMPA','BOMBER':'BOMBER',
- 'SHORT FLEECE':'SHORT FLEECE','PANTALON':'JOGGER','JEANS':'DENIM','PANTALON PLANO':'PANTALONES PLANOS',
+ 'SHORT FLEECE':'SHORT FLEECE','PANTALON':'PANTALONES PLANOS','JEANS':'DENIM','PANTALON PLANO':'PANTALONES PLANOS',
  'SHORT PLANO':'SHORT PLANOS','SHORT CARGO':'SHORT PLANOS','CAMISA':'CAMISAS','VESTIDOS':'VESTIDOS'};
-const catDeFamilia=f=>Object.keys(LMO_CAT).find(k=>LMO_CAT[k]===f)||'';
+const catsDeFamilia=f=>Object.keys(LMO_CAT).filter(k=>LMO_CAT[k]===f);
+const catDeFamilia=f=>catsDeFamilia(f)[0]||'';
 const nomCen=c=>{const x=CEN.find(z=>z.id===LMO_CEN[c]);return x?x.n:c};
 function verRut(g){
   document.querySelectorAll('#rut-nav .subtab').forEach(b=>b.classList.toggle('on',b.dataset.rut===g));
@@ -4405,8 +4407,8 @@ function setLmo(i,f,v){
 function cargarRutaBase(){
   const cat=($('lmo-cat')&&$('lmo-cat').value)||'',ref=($('lmo-ref')&&$('lmo-ref').value)||'';
   if(!cat){toast('Elige una categoría','Arriba, en el filtro Categoría, para saber qué ruta cargar.');return}
-  const x=byRef(ref),esperada=x?catDeFamilia(x.cat):'';
-  if(esperada&&esperada!==cat&&!confirm(ref+' es de la familia '+x.cat+', que corresponde a "'+esperada+'".\n¿Cargarle igual la ruta de "'+cat+'"?'))return;
+  const x=byRef(ref),esperadas=x?catsDeFamilia(x.cat):[];
+  if(esperadas.length&&esperadas.indexOf(cat)<0&&!confirm(ref+' es de la familia '+x.cat+', que corresponde a "'+esperadas.join('" o "')+'".\n¿Cargarle igual la ruta de "'+cat+'"?'))return;
   if(!ref||!byRef(ref)){toast('Elige la referencia','Selecciona a qué producto le cargas la ruta.');return}
   const base=LMO.filter(o=>o.cat===cat&&o.base);
   if(!base.length){toast('No hay operaciones base','Marca primero con la casilla cuáles son las base de '+cat+'.');return}
