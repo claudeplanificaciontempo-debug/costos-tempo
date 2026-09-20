@@ -774,7 +774,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <thead><tr><th class="l">Nombre</th><th class="l">Correo</th><th class="l">Permiso</th></tr></thead>
       <tbody id="tb-usr"></tbody>
     </table>
-    <div class="addrow"><span class="mini" style="margin:0">Los usuarios los crea el administrador en el panel de Supabase (Authentication → Users → Add user). Aquí solo se les asigna el permiso.</span></div>
+    <div class="addrow"><span class="mini" style="margin:0">El nombre y el permiso se cambian aquí mismo. El correo es el usuario con el que entra la persona: se crea y se cambia en el panel de Supabase (Authentication → Users), y esta lista se actualiza sola con el correo nuevo.</span></div>
   </div>
   </div>
 
@@ -4013,11 +4013,23 @@ async function rowsUsr(){
   try{
     const r=await fetch(SB_URL+'/rest/v1/perfiles?select=id,email,nombre,rol&order=creado',{headers:hdr()});
     const us=await r.json();
-    $('tb-usr').innerHTML=us.map(u=>`<tr><td class="l"><b style="font-weight:600">${u.nombre||''}</b></td><td class="l ro">${u.email||''}</td>
+    $('tb-usr').innerHTML=us.map(u=>`<tr><td class="l"><input class="fld" style="width:auto;max-width:220px" value="${(u.nombre||'').replace(/"/g,'&quot;')}" onchange="setNombreUsr('${u.id}',this.value)"></td><td class="l ro">${u.email||''}</td>
       <td class="l"><select class="fld" style="border-color:var(--line);width:auto" onchange="setRol('${u.id}',this.value)" ${u.id===(SES.user&&SES.user.id)?'disabled':''}>
         ${['admin','planificacion','prearmado','consulta'].map(x=>`<option value="${x}" ${x===u.rol?'selected':''}>${x==='admin'?'Administrador':x==='planificacion'?'Edita costos':x==='prearmado'?'Prearmado · sin precios':'Solo consulta'}</option>`).join('')}
       </select></td></tr>`).join('');
   }catch(e){$('tb-usr').innerHTML='<tr><td colspan="3" class="empty">No se pudo leer la lista.</td></tr>'}
+}
+/* El nombre es solo la etiqueta que se ve aquí, se puede cambiar cuando sea.
+   El correo no: ese es el usuario con el que entra la persona y vive en
+   Authentication. Se cambia en el panel de Supabase y un disparador lo copia
+   solo a perfiles, así que aquí aparece el nuevo sin tocar nada. */
+async function setNombreUsr(id,nom){
+  const n=String(nom||'').trim();
+  try{
+    const r=await fetch(SB_URL+'/rest/v1/perfiles?id=eq.'+id,{method:'PATCH',headers:hdr({Prefer:'return=minimal'}),body:JSON.stringify({nombre:n})});
+    if(!r.ok)throw new Error(r.status);
+    toast('Nombre actualizado','Así se ve ahora en la lista de usuarios.');
+  }catch(e){toast('No se pudo cambiar','Solo el administrador puede editar usuarios.');rowsUsr()}
 }
 async function setRol(id,rol){
   try{
