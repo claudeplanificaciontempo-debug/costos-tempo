@@ -2349,6 +2349,18 @@ function setPrecio(i,v){
   const e=$('mf-'+i);if(e)e.textContent=x.f;
   draw(true);rowsProd();rowsExp();
 }
+/* El año se escoge de una lista, no se escribe: así no entran letras ni años
+   a medias. La lista va de dos años adelante a cinco atrás, y si alguna ficha
+   vieja trae un año fuera de ese rango se agrega para que se vea y se pueda
+   corregir, en vez de desaparecer sin avisar. */
+const ANIO_HOY=new Date().getFullYear();
+function aniosLista(){
+  const base=[];for(let a=ANIO_HOY+2;a>=ANIO_HOY-5;a--)base.push(String(a));
+  const usados=REFS.map(x=>String(x.anio||'')).filter(Boolean);
+  const num=v=>/^\d+$/.test(v);
+  return [...new Set(base.concat(usados))].sort((a,b)=>
+    (num(a)&&num(b))?(+b)-(+a):num(a)?-1:num(b)?1:a.localeCompare(b));
+}
 function setMat(i,f,v){
   const x=CAT[i];if(!x)return;
   if(f==='d'||f==='fam')v=MAY(v);
@@ -2792,7 +2804,9 @@ function filaProd({x,i}){
       <div><select class="fld${x.dep?'':' sindef'}" onchange="setP(${i},'dep',this.value)">
         <option value="" ${x.dep?'':'selected'}>sin definir</option>
         ${DEPS.map(d=>`<option ${d===x.dep?'selected':''}>${d}</option>`).join('')}</select></div>
-      <div><input class="fld${x.anio?'':' sindef'}" style="width:100%;text-align:center" value="${x.anio||''}" placeholder="sin definir" oninput="setP(${i},'anio',this.value)"></div>
+      <div><select class="fld${x.anio?'':' sindef'}" style="width:100%;text-align:center" onchange="setP(${i},'anio',this.value)">
+        <option value="" ${x.anio?'':'selected'}>sin definir</option>
+        ${aniosLista().map(a=>`<option ${String(a)===String(x.anio||'')?'selected':''}>${a}</option>`).join('')}</select></div>
       <div><select class="fld${x.temporada?'':' sindef'}" onchange="temporadaSel(${i},this)">
         <option value="" ${x.temporada?'':'selected'}>sin definir</option>
         ${TEMPORADAS.map(t=>`<option ${t===x.temporada?'selected':''}>${t}</option>`).join('')}
