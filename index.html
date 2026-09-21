@@ -767,7 +767,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <select id="bulk-dep" class="fld" style="width:170px"><option value="">Departamento…</option></select>
       <button class="btn ghost sm" onclick="aplicarMasivo('dep')">Aplicar departamento</button>
       <button class="btn ghost sm" title="Pone la fecha de hoy como día de entrega en los seleccionados" onclick="entregadasHoy()">Entregadas hoy</button>
-      <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelProd()">Cancelar selección</button>
+      <button class="btn ghost sm" style="margin-left:auto" onclick="borrarProdSel()" title="Borra los seleccionados con su ficha y su foto">× Borrar seleccionados</button>
+      <button class="btn ghost sm" onclick="limpiarSelProd()">Cancelar selección</button>
     </div>
     <div class="prow head"><div><input type="checkbox" id="pr-all" onchange="toggleAllProd(this.checked)"></div><div>Foto</div><div>Referencia</div><div>Código único</div><div>Nombre</div><div>Marca</div><div>Departamento</div><div>Año</div><div>Temporada</div><div>Colección</div><div>Categoría</div><div>Tipo de producto</div><div>Costo</div><div></div></div>
     <div id="pr-rows"></div>
@@ -3248,12 +3249,32 @@ function toggleArchivo(i){
   toast(x.arch?'Producto archivado':'Producto restaurado',x.r+' · '+x.n+(x.arch?' ya no aparece en precios ni exportaciones.':' vuelve a aparecer en precios y exportaciones.'));
   rowsProd();rowsExp();rowsLista();
 }
-function borrarProd(i){
-  const r=REFS[i].r;
-  REFS.splice(i,1);delete FICHAS[r];delete FOTO[r];
-  if(SEED&&SEED.REFS.some(x=>x.r===r)&&BORRADOS.prod.indexOf(r)<0)BORRADOS.prod.push(r);
+/* Quitar de verdad: el producto, su ficha y su foto. Sin preguntar nada, para
+   que lo usen tanto la × de la fila como el borrado de los seleccionados. */
+function quitarProd(i){
+  const x=REFS[i];if(!x)return;
+  const r=x.r;
+  REFS.splice(i,1);delete FICHAS[r];delete FOTO[r];SELP.delete(r);
+  if(SEED&&SEED.REFS.some(y=>y.r===r)&&BORRADOS.prod.indexOf(r)<0)BORRADOS.prod.push(r);
   if(cur===r&&REFS.length)cur=REFS[0].r;
-  rowsProd();rowsExp();if(REFS.length)draw();
+}
+function borrarProd(i){
+  const x=REFS[i];if(!x)return;
+  if(!confirm('¿Borrar '+x.r+(x.n?' · '+x.n:'')+'?\n\nSe borra también su ficha de costos y su foto, y no se puede deshacer.\nSi solo quieres sacarlo de la lista, archívalo con el botón de al lado.'))return;
+  quitarProd(i);
+  rowsProd();rowsExp();if(REFS.length)draw();autosave();
+  toast('Producto borrado · '+x.r,(x.n||'')+' salió del catálogo junto con su ficha.');
+}
+/* Borrado de los seleccionados: una sola confirmación para todos, con los
+   códigos a la vista, porque borrar de a uno invita a equivocarse. */
+function borrarProdSel(){
+  const refs=[...SELP].filter(r=>byRef(r));
+  if(!refs.length){toast('No hay nada seleccionado','Marca las casillas de los productos que quieres borrar.');return}
+  const lista=refs.slice(0,10).join(', ')+(refs.length>10?' y '+(refs.length-10)+' más':'');
+  if(!confirm('¿Borrar '+refs.length+' producto(s)?\n\n'+lista+'\n\nSe borran también sus fichas de costos y sus fotos, y no se puede deshacer.'))return;
+  refs.forEach(r=>{const i=REFS.findIndex(x=>x.r===r);if(i>=0)quitarProd(i)});
+  SELP.clear();rowsProd();rowsExp();if(REFS.length)draw();autosave();
+  toast(refs.length+' producto(s) borrado(s)','Se fueron con sus fichas: '+lista+'.');
 }
 async function guardarProductos(){
   rowsProd();rowsExp();head();
