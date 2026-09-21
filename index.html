@@ -944,6 +944,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="hint">Descarga un respaldo de vez en cuando (por ejemplo, antes de un cambio grande). Si necesitas restaurar uno, esta función SIEMPRE revisa primero qué hay en la nube: si algo se editó después de la fecha del respaldo, no se sobrescribe solo, para no perder trabajo reciente por accidente.</div>
     <div class="addrow">
       <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
+      <button class="btn" onclick="exportarCostos()">Descargar costos (Excel)</button>
       <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
       <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
     </div>
@@ -5483,6 +5484,42 @@ function exportar(todos){
   CSVNOM='TEMPO_Costos_'+(todos?'TODOS':CLI.find(c=>c.id===cliSel).cli.replace(/ /g,'_'))+'.csv';
   $('mo-t').textContent=CSVNOM;
   $('mo-s').textContent=(CSVTXT.trim().split('\n').length-1)+' líneas';
+  $('mo-b').textContent=CSVTXT;
+  $('ovl').classList.remove('hide');
+}
+/* ====== EXPORTAR TODOS LOS COSTOS ======
+   Una fila por producto con el desglose del costo y el PVP de cada cliente.
+   Los costos se calculan con los precios y tarifas de HOY, no con los que
+   tenía la ficha el día que se cerró: por eso va la fecha de la versión al
+   lado, para saber con qué se comparó. */
+function exportarCostos(){
+  const list=activos();
+  if(!list.length){toast('Nada que exportar','Todavía no hay productos en el catálogo.');return}
+  const g=cur;
+  const cab=['Codigo_unico','Referencia','Producto','Categoria','Tipo','Marca','Departamento','Anio',
+    'Temporada','Coleccion','Estado','Version','Fecha_costo','Entregada','Muestra_aprobada',
+    'Materia_prima','Insumos','Decoracion','Servicios','MO_directa','MO_indirecta','Costo_total','Minutos']
+    .concat(CLI.map(c=>'PVP_'+c.cli.replace(/[;\s]+/g,'_')))
+    .concat(CLI.map(c=>'Margen_'+c.cli.replace(/[;\s]+/g,'_')));
+  /* Excel en español espera coma decimal. El dinero va a dos decimales, que es
+     como se factura; los minutos también, que es como se miden en planta. */
+  const dec=n=>(+n||0).toFixed(2).replace('.',',');
+  let out=cab.join(';')+'\n';
+  list.forEach(x=>{
+    const f=FICHAS[x.r]||fichaVacia();
+    cur=x.r;calc();
+    const estado=f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?'Costeada':(f.edit?'Re-costeo':(enAvance(f)?'En avance':'Borrador')));
+    const fila=[x.cu||'',x.r,x.n,x.cat||'',x.sub||'',x.marca||'',x.dep||'',x.anio||'',
+      x.temporada||'',x.col||'',estado,f.saved?('v'+f.ver):'',f.fecha||'',x.ent||'',x.apr?'Si':'No',
+      dec(TOT.mp),dec(TOT.ins),dec(TOT.dec),dec(TOT.srv),dec(TOT.mo),dec(TOT.moi),dec(TOT.total),dec(TOT.sam)]
+      .concat(CLI.map((c,i)=>dec(plCalc(i,true).pvp)))
+      .concat(CLI.map((c,i)=>dec(plCalc(i,true).pct)));
+    out+=fila.map(v=>String(v).replace(/[;\n\r]+/g,' ')).join(';')+'\n';
+  });
+  cur=g;calc();
+  CSVTXT=out;CSVNOM='TEMPO_Costos_'+new Date().toISOString().slice(0,10)+'.csv';
+  $('mo-t').textContent=CSVNOM;
+  $('mo-s').textContent=list.length+' productos · '+cab.length+' columnas';
   $('mo-b').textContent=CSVTXT;
   $('ovl').classList.remove('hide');
 }
