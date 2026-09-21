@@ -572,7 +572,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <div class="save">
           <button id="bt-save" class="btn org wide" onclick="guardar()">Guardar costo</button>
           <button id="bt-aprobar" class="btn org wide hide" onclick="aprobar()">Aprobar y guardar costo</button>
-          <button id="bt-pend" class="btn ghost wide hide" style="margin-top:8px" onclick="guardarPendiente()">Guardar sin aprobar</button>
+          <button id="bt-pend" class="btn ghost wide hide" style="margin-top:8px" onclick="guardarAvance('bt-pend')">Guardar avance · sin aprobar</button>
           <button id="bt-rec" class="btn ghost wide hide" style="margin-top:8px" onclick="recostear()">Re-costear · abrir nueva versión</button>
           <p id="save-h">Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.</p>
         </div>
@@ -2650,15 +2650,6 @@ async function guardar(){
         'Costo congelado '+fmt(TOT.total)+' · '+TOT.sam.toFixed(2)+' min. Ya aparece en la lista de precios.'+(eV?' (Aviso: el historial no se pudo escribir · '+eV+')':''));
   }finally{if(b)b.disabled=false}
 }
-/* Guarda los cambios de una ficha que sigue por aprobar: no cierra la versión
-   ni congela el costo, solo deja lo trabajado a salvo para revisarlo después. */
-async function guardarPendiente(){
-  const f=F();
-  if(f.aprob!=='pendiente')return;
-  draw();rowsProd();rowsExp();
-  if(await forzarGuardado('bt-pend',false))
-    toast('Avance guardado · REF '+cur,'La ficha sigue por aprobar. Cuando la cierres con "Aprobar y guardar costo" entra a la lista de precios.');
-}
 async function aprobar(){
   const f=F();
   if(f.aprob!=='pendiente'||!puedeEditarCostos())return;
@@ -2702,14 +2693,18 @@ function rowsHist(){
     bs.classList.add('hide');br.classList.add('hide');ba.classList.remove('hide');
     if(bp)bp.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
-    ph.textContent='Prearmado envió esta ficha para aprobación. Revisa consumos y tiempos, y usa "Aprobar y guardar costo" para calcular el costo real y cerrar la versión. Si todavía no quieres cerrarla, "Guardar sin aprobar" deja los cambios guardados y la ficha sigue por aprobar.';
+    ph.textContent='Prearmado envió esta ficha para aprobación. Revisa consumos y tiempos, y usa "Aprobar y guardar costo" para calcular el costo real y cerrar la versión. Si todavía no quieres cerrarla, "Guardar avance" deja los cambios guardados y la ficha sigue por aprobar.';
   }else{
     bs.classList.remove('hide');br.classList.add('hide');
-    bs.textContent=soloPrearmado()?'Enviar para aprobación':(f.saved?'Guardar re-costeo · v'+(f.ver+1):'Guardar costo');
+    /* Dos pasos: se va guardando el avance las veces que haga falta, y solo al
+       final se aprueba, que es lo que congela el costo y cierra la versión. */
+    bs.textContent=soloPrearmado()?'Enviar para aprobación':(f.saved?'Aprobar re-costeo · cerrar v'+(f.ver+1):'Aprobar costo · cerrar v'+f.ver);
+    if(bp&&!soloPrearmado())bp.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
     ph.textContent=soloPrearmado()?'Llena consumos y tiempos. Al enviar, un administrador revisa y cierra el costo con los precios vigentes.'
-      :(f.saved?'Al guardar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy. La v'+f.ver+' queda en el historial.'
-      :'Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.');
+      :'Mientras trabajas usa "Guardar avance": queda guardado y la ficha sigue en borrador, sin entrar a la lista de precios. '
+      +(f.saved?'Al aprobar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy, y la v'+f.ver+' queda en el historial.'
+      :'Al aprobar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy, y la referencia pasa a Costeada.');
   }
 }
 async function guardarTarifas(){
@@ -3545,7 +3540,7 @@ async function forzarGuardado(btnId,etiqueta){
   if(b){b.disabled=false;b.textContent=txt||'Guardar'}
   return ok;
 }
-async function guardarAvance(){return forzarGuardado('bt-avance','Avance guardado')}
+async function guardarAvance(id){return forzarGuardado(id||'bt-avance','Avance guardado')}
 let SEED=null;
 function tomarSemilla(){SEED={CAT:CAT.map(x=>({...x})),CEN:CEN.map(x=>({...x})),CLI:CLI.map(x=>({...x})),
   REFS:REFS.map(x=>({...x})),FOTO:{...FOTO}}}
