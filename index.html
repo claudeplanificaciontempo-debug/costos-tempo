@@ -558,10 +558,13 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 (function(){
   var raiz=document.documentElement,a={};
   try{a=JSON.parse(localStorage.getItem('costos_tempo_aspecto')||'{}')}catch(e){}
-  raiz.dataset.tema=a.tema||'vino';
   var m=a.modo||'auto',oscuro=false;
   try{oscuro=matchMedia('(prefers-color-scheme: dark)').matches}catch(e){}
-  raiz.dataset.modo=m==='auto'?(oscuro?'oscuro':'claro'):m;
+  var esNoche=m==='auto'?oscuro:(m==='oscuro');
+  raiz.dataset.modo=esNoche?'oscuro':'claro';
+  /* cada modo tiene su propio tema; a.tema es lo que guardaban las versiones
+     anteriores, cuando el tema era uno solo */
+  raiz.dataset.tema=(esNoche?a.temaNoche:a.temaDia)||a.tema||'vino';
 })();
 </script>
 </head>
@@ -1193,11 +1196,14 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="modal" style="width:min(560px,100%)">
     <div class="modal-h"><h2>Apariencia</h2><div class="sub" style="margin-left:auto;font-size:11px;color:var(--ink-3)">solo cambia cómo se ve en este equipo</div></div>
     <div class="modal-b">
-      <div class="eyebrow">Colores</div>
-      <div id="asp-temas" class="temas"></div>
-      <div class="eyebrow" style="margin-top:16px">Modo</div>
-      <div id="asp-modos" class="subnav" style="margin:0"></div>
-      <p class="mini" style="margin-top:12px">Automático sigue lo que tenga configurado tu computadora: claro de día, oscuro de noche. Lo que imprimas o exportes sale siempre en papel blanco con tinta negra.</p>
+      <div class="eyebrow">Modo</div>
+      <div id="asp-modos" class="subnav" style="margin:0 0 6px"></div>
+      <p class="mini" id="asp-ahora" style="margin:0 0 16px"></p>
+      <div class="eyebrow">Colores de día</div>
+      <div id="asp-dia" class="temas"></div>
+      <div class="eyebrow" style="margin-top:16px">Colores de noche</div>
+      <div id="asp-noche" class="temas"></div>
+      <p class="mini" style="margin-top:12px">Puedes tener un color de día y otro de noche: la app cambia sola al cambiar de modo. Automático sigue lo que tenga configurado tu computadora. Lo que imprimas o exportes sale siempre en papel blanco con tinta negra.</p>
     </div>
     <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-aspecto')">Listo</button></div>
   </div>
@@ -2387,31 +2393,49 @@ const $=id=>document.getElementById(id);
    que nadie le cambia la pantalla a nadie. Automático sigue lo que tenga
    puesto la computadora. Al imprimir siempre sale en blanco y negro. */
 const TEMAS=[
-  {id:'vino',n:'Vino TEMPO',m:['#9c3b4e','#f0dfe2','#fdf8f8']},
-  {id:'indigo',n:'Índigo pizarra',m:['#3d4f9e','#e8ebf7','#f7f8fd']},
-  {id:'olivar',n:'Olivar',m:['#436d31','#e7ebda','#f8f8f0']}
+  {id:'vino',n:'Vino TEMPO',claro:['#9c3b4e','#f0dfe2','#fdf8f8'],oscuro:['#ba4763','#3a1f28','#181215']},
+  {id:'indigo',n:'Índigo pizarra',claro:['#3d4f9e','#e8ebf7','#f7f8fd'],oscuro:['#4163d2','#1d2740','#101624']},
+  {id:'olivar',n:'Olivar',claro:['#436d31','#e7ebda','#f8f8f0'],oscuro:['#448350','#26301d','#161a12']}
 ];
 const MODOS=[{id:'claro',n:'Claro'},{id:'oscuro',n:'Oscuro'},{id:'auto',n:'Automático'}];
 const ASPECTO_K='costos_tempo_aspecto';
-let ASPECTO={tema:'vino',modo:'auto'};
-try{ASPECTO=Object.assign(ASPECTO,JSON.parse(localStorage.getItem(ASPECTO_K)||'{}'))}catch(e){}
+let ASPECTO={temaDia:'vino',temaNoche:'vino',modo:'auto'};
+try{
+  const g=JSON.parse(localStorage.getItem(ASPECTO_K)||'{}');
+  if(g.tema&&!g.temaDia){g.temaDia=g.tema;g.temaNoche=g.tema}   // lo guardado antes, cuando el tema era uno solo
+  ASPECTO=Object.assign(ASPECTO,g);
+}catch(e){}
 function modoReal(){
   if(ASPECTO.modo!=='auto')return ASPECTO.modo;
   try{return matchMedia('(prefers-color-scheme: dark)').matches?'oscuro':'claro'}catch(e){return 'claro'}
 }
+const temaActual=()=>modoReal()==='oscuro'?ASPECTO.temaNoche:ASPECTO.temaDia;
 function aplicarAspecto(){
   const r=document.documentElement;
-  r.dataset.tema=ASPECTO.tema;r.dataset.modo=modoReal();
+  r.dataset.modo=modoReal();r.dataset.tema=temaActual();
   try{localStorage.setItem(ASPECTO_K,JSON.stringify(ASPECTO))}catch(e){}
   rowsAspecto();
 }
-function rowsAspecto(){
-  const t=$('asp-temas');if(!t)return;
-  t.innerHTML=TEMAS.map(x=>`<button class="tema ${x.id===ASPECTO.tema?'on':''}" onclick="setTema('${x.id}')">
-    <b>${x.n}</b><span class="muestras">${x.m.map(c=>`<span class="m" style="background:${c}"></span>`).join('')}</span></button>`).join('');
-  $('asp-modos').innerHTML=MODOS.map(m=>`<button class="subtab ${m.id===ASPECTO.modo?'on':''}" onclick="setModo('${m.id}')">${m.n}</button>`).join('');
+function tarjetaTema(x,cuando){
+  const sel=(cuando==='dia'?ASPECTO.temaDia:ASPECTO.temaNoche)===x.id;
+  const m=cuando==='dia'?x.claro:x.oscuro;
+  return `<button class="tema ${sel?'on':''}" onclick="setTema('${cuando}','${x.id}')">
+    <b>${x.n}</b><span class="muestras">${m.map(c=>`<span class="m" style="background:${c}"></span>`).join('')}</span></button>`;
 }
-function setTema(id){if(!TEMAS.some(x=>x.id===id))return;ASPECTO.tema=id;aplicarAspecto()}
+function rowsAspecto(){
+  if(!$('asp-dia'))return;
+  $('asp-dia').innerHTML=TEMAS.map(x=>tarjetaTema(x,'dia')).join('');
+  $('asp-noche').innerHTML=TEMAS.map(x=>tarjetaTema(x,'noche')).join('');
+  $('asp-modos').innerHTML=MODOS.map(m=>`<button class="subtab ${m.id===ASPECTO.modo?'on':''}" onclick="setModo('${m.id}')">${m.n}</button>`).join('');
+  const r=modoReal();
+  $('asp-ahora').textContent='Ahora mismo estás en modo '+(r==='oscuro'?'noche':'día')+
+    ', con '+(TEMAS.find(t=>t.id===temaActual())||{n:''}).n+'.';
+}
+function setTema(cuando,id){
+  if(!TEMAS.some(x=>x.id===id))return;
+  if(cuando==='dia')ASPECTO.temaDia=id; else ASPECTO.temaNoche=id;
+  aplicarAspecto();
+}
 function setModo(id){if(!MODOS.some(x=>x.id===id))return;ASPECTO.modo=id;aplicarAspecto()}
 function abrirAspecto(){rowsAspecto();$('ovl-aspecto').classList.remove('hide')}
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(ASPECTO.modo==='auto')aplicarAspecto()})}catch(e){}
