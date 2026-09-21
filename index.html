@@ -3242,15 +3242,34 @@ function subirFoto1(fs){
   if(!fs||!fs[0]||fotoIdx===null)return;
   leer(fs[0],d=>{FOTO[REFS[fotoIdx].r]=d;rowsProd();head();autosave();toast('Foto cargada','REF '+REFS[fotoIdx].r)});
 }
+/* Empareja el archivo con una referencia. El nombre exacto es lo normal, pero
+   al descargar los archivos el navegador suele dejarlos como "4823 (1).jpg", o
+   vienen como "foto_4823.jpg", así que también se busca la referencia dentro
+   del nombre. Nunca se adivina: solo empareja con una referencia que exista. */
+function refDeArchivo(nombre){
+  const base=String(nombre||'').replace(/\.[^.]+$/,'').trim();
+  if(byRef(base))return base;
+  const limpio=base.replace(/\s*\(\d+\)\s*$/,'').trim();     // la copia "(1)" que agrega el navegador
+  if(byRef(limpio))return limpio;
+  const porMayus=REFS.find(x=>String(x.r).toLowerCase()===limpio.toLowerCase());
+  if(porMayus)return porMayus.r;
+  /* la referencia metida dentro del nombre: se toma la más larga que encaje,
+     para que "4823" no le gane a "4823-2" si las dos existen */
+  const trozos=limpio.split(/[^A-Za-z0-9]+/).filter(Boolean).sort((a,b)=>b.length-a.length);
+  for(const t of trozos){const m=REFS.find(x=>String(x.r).toLowerCase()===t.toLowerCase());if(m)return m.r}
+  return '';
+}
 function subirFotos(fs){
-  if(!fs||!fs.length)return;
-  let ok=0,pend=fs.length;
-  Array.from(fs).forEach(f=>{
-    const ref=f.name.replace(/\.[^.]+$/,'').trim();
+  const archivos=Array.from(fs||[]);        /* copia: la lista del campo se vacía sola */
+  if(!archivos.length)return;
+  const total=archivos.length,sin=[];
+  let ok=0,pend=total;
+  archivos.forEach(f=>{
+    const ref=refDeArchivo(f.name);
     leer(f,d=>{
-      if(byRef(ref)){FOTO[ref]=d;ok++}
+      if(ref){FOTO[ref]=d;ok++} else sin.push(f.name);
       if(--pend===0){rowsProd();head();autosave();
-        toast('Fotos cargadas · '+ok+' de '+fs.length,ok<fs.length?'Las que no cargaron no coinciden con ninguna referencia.':'Emparejadas por el nombre del archivo.')}
+        toast('Fotos cargadas · '+ok+' de '+total,sin.length?'No coinciden con ninguna referencia: '+sin.slice(0,4).join(', ')+(sin.length>4?' y '+(sin.length-4)+' más.':'.'):'Emparejadas por el nombre del archivo.')}
     });
   });
   $('fotos-in').value='';
