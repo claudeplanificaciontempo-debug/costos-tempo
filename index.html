@@ -749,7 +749,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="crumb"><b>Productos</b></div>
   <div class="eyebrow">Ficha de productos · edición y carga masiva</div>
   <div class="kpis" id="kpis-prod"></div>
-  <div class="hint"><b>Aquí se editan los productos: referencia, nombre, categoría, tipo y foto.</b> Con <b>Carga masiva</b> se pegan varios de una vez desde Excel y se suben las fotos en lote. Clic en la foto o en el nombre para abrir su ficha de costos; el lápiz sobre la foto la reemplaza.</div>
+  <div class="hint"><b>Aquí se editan los productos: referencia, nombre, categoría, tipo y foto.</b> Con <b>Carga masiva</b> se pegan varios de una vez desde Excel. Con <b>Fotos</b> se suben las imágenes: si el archivo se llama <b>4831 SHORT DESFLECADO.jpg</b> y esa referencia no existe, el producto se crea solo con ese nombre. Clic en la foto o en el nombre para abrir su ficha de costos; el lápiz sobre la foto la reemplaza.</div>
   <div class="card">
     <div class="card-h"><h2>Productos</h2>
       <div class="mini" style="margin:0 0 0 14px">Agrupar por</div>
@@ -775,8 +775,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button id="bt-prod" class="btn org" onclick="guardarProductos()">Guardar productos</button>
       <button class="btn" onclick="abrirMasiva()">Carga masiva</button>
       <button class="btn ghost" onclick="nuevoProd()">+ Producto</button>
-      <button class="btn ghost" onclick="document.getElementById('fotos-in').click()">Subir fotos en lote</button>
-      <button class="btn ghost" onclick="abrirRecorte()">Recortar de una imagen</button>
+      <button class="btn ghost" onclick="abrirFotos()">Fotos</button>
       <button class="btn ghost" onclick="exportarBOM()">Exportar BOM (Excel)</button>
       <button class="btn ghost" onclick="csvOperaciones()">Exportar operaciones (Excel)</button>
       <input type="file" id="fotos-in" accept="image/*" multiple class="hide" onchange="subirFotos(this.files)">
@@ -1215,6 +1214,26 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </div>
   </div>
 </div>
+<div id="ovl-fotos" class="ovl hide">
+  <div class="modal" style="width:min(620px,100%)">
+    <div class="modal-h"><h2>Fotos de los productos</h2></div>
+    <div class="modal-b">
+      <div class="temas">
+        <button class="tema" onclick="cerrar('ovl-fotos');document.getElementById('fotos-in').click()">
+          <b>Subir fotos desde una carpeta</b>
+          <span class="mini" style="margin:0">Varias de una vez. Cada archivo se pega a su referencia por el nombre.</span></button>
+        <button class="tema" onclick="cerrar('ovl-fotos');abrirRecorte()">
+          <b>Recortar de una imagen</b>
+          <span class="mini" style="margin:0">Una sola imagen con varias prendas, como la ficha consolidada: se separan solas.</span></button>
+      </div>
+      <p class="mini" style="margin-top:14px"><b>Cómo nombrar los archivos.</b> El nombre manda:
+        <b>4797.jpg</b> le pone la foto a esa referencia; <b>4797 SHORT CORTO DESFLECADO.jpg</b> además
+        <b>crea el producto</b> con ese nombre si la referencia todavía no existe. Después le pones categoría y tipo,
+        y la ficha ya viene con los insumos base. Sirve igual si el archivo quedó como "4797 (1).jpg" o "foto_4797.jpg".</p>
+    </div>
+    <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-fotos')">Cancelar</button></div>
+  </div>
+</div>
 <div id="ovl-aspecto" class="ovl hide">
   <div class="modal" style="width:min(560px,100%)">
     <div class="modal-h"><h2>Apariencia</h2><div class="sub" style="margin-left:auto;font-size:11px;color:var(--ink-3)">solo cambia cómo se ve en este equipo</div></div>
@@ -1253,7 +1272,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <div class="mini" id="mm-h"></div>
       <textarea class="ta" id="mm-ta"></textarea>
       <div class="drop" id="mm-drop">
-        Las fotos se suben aparte con <b>Subir fotos en lote</b> (el nombre del archivo debe ser la referencia: 4831.jpg, 4832.png…) o con <b>Recortar de una imagen</b>, si vienen varias prendas en una sola imagen.
+        Las fotos se suben aparte con el botón <b>Fotos</b> (el nombre del archivo manda: 4831.jpg, o 4831 SHORT DESFLECADO.jpg para crear el producto con su nombre) o con <b>Recortar de una imagen</b>, si vienen varias prendas en una sola imagen.
       </div>
     </div>
     <div class="modal-f">
@@ -2507,8 +2526,12 @@ function head(){
     +`<br><span style="color:var(--ink-3)">Registrado ${fechaBonita(x.creado)}</span>`;
   $('rh-name').textContent=x.n;
   $('rh-cats').innerHTML=`${x.marca?`<span class="chip">${x.marca}</span>`:''}${x.dep?`<span class="chip">${x.dep}</span>`:''}`;
-  $('rh-cat-sel').innerHTML=Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
-  $('rh-sub-sel').innerHTML=(CATEG[x.cat]||[]).map(s=>`<option ${s===x.sub?'selected':''}>${s}</option>`).join('');
+  /* un producto creado desde la foto llega sin categoría: se muestra "sin definir"
+     en vez de dejar seleccionada la primera de la lista, que sería mentira */
+  $('rh-cat-sel').innerHTML=(x.cat?'':'<option value="" selected>sin definir</option>')
+    +Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
+  $('rh-sub-sel').innerHTML=(x.sub?'':'<option value="" selected>sin definir</option>')
+    +(CATEG[x.cat]||[]).map(s=>`<option ${s===x.sub?'selected':''}>${s}</option>`).join('');
   $('cr-ref').textContent=x.n+' · REF '+x.r;
   $('nav-ref').textContent=x.r;
   const b=$('rh-badge');
@@ -3113,9 +3136,11 @@ function filaProd({x,i}){
         <option value="" ${x.col?'':'selected'}>sin definir</option>
         ${COLECCIONES.map(c=>`<option ${c===x.col?'selected':''}>${c}</option>`).join('')}
         <option value="__nueva__">+ Nueva colección…</option></select></div>
-      <div><select class="fld" onchange="setP(${i},'cat',this.value)">
+      <div><select class="fld${x.cat?'':' sindef'}" onchange="setP(${i},'cat',this.value)">
+        ${x.cat?'':'<option value="" selected>sin definir</option>'}
         ${Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div>
-      <div><select class="fld" onchange="setP(${i},'sub',this.value)">
+      <div><select class="fld${x.sub?'':' sindef'}" onchange="setP(${i},'sub',this.value)">
+        ${x.sub?'':'<option value="" selected>sin definir</option>'}
         ${(CATEG[x.cat]||[]).map(s=>`<option ${s===x.sub?'selected':''}>${s}</option>`).join('')}</select></div>
       <div style="text-align:right"><b${t.total?'':' style="color:var(--falta)"'}>${fmt(t.total)}</b><br>
         ${f.aprob==='pendiente'?`<span class="pill pend">Por aprobar</span>`:
@@ -3259,17 +3284,42 @@ function refDeArchivo(nombre){
   for(const t of trozos){const m=REFS.find(x=>String(x.r).toLowerCase()===t.toLowerCase());if(m)return m.r}
   return '';
 }
+/* Si el archivo trae una referencia que no existe, se crea el producto ahí
+   mismo: la primera palabra es la referencia y el resto del nombre es la
+   descripción. Se exige que la referencia tenga algún número y poca longitud,
+   para no crear un producto llamado "IMG" con las fotos del celular. */
+function nuevoDeArchivo(nombre){
+  const base=String(nombre||'').replace(/\.[^.]+$/,'').replace(/\s*\(\d+\)\s*$/,'').trim();
+  const m=base.match(/^([A-Za-z0-9-]{3,12})[\s._-]*(.*)$/);
+  if(!m)return null;
+  const ref=m[1].toUpperCase(),resto=MAY(m[2].replace(/[._-]+/g,' ').trim());
+  if(!/[0-9]/.test(ref))return null;                       /* IMG, DSC, FOTO… */
+  if(/^(IMG|DSC|DCIM|PXL|WA|SCREENSHOT|CAPTURA|WHATSAPP)/i.test(ref))return null;
+  if(byRef(ref))return null;
+  return {r:ref,n:resto||'SIN NOMBRE'};
+}
 function subirFotos(fs){
   const archivos=Array.from(fs||[]);        /* copia: la lista del campo se vacía sola */
   if(!archivos.length)return;
-  const total=archivos.length,sin=[];
+  const total=archivos.length,sin=[],nuevos=[];
   let ok=0,pend=total;
   archivos.forEach(f=>{
-    const ref=refDeArchivo(f.name);
+    let ref=refDeArchivo(f.name);
+    if(!ref){
+      const n=nuevoDeArchivo(f.name);
+      if(n){
+        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',creado:hoyISO()});
+        FICHAS[n.r]=nuevaFicha(recetaDe('',''));
+        nuevos.push(n.r);ref=n.r;
+      }
+    }
     leer(f,d=>{
       if(ref){FOTO[ref]=d;ok++} else sin.push(f.name);
-      if(--pend===0){rowsProd();head();autosave();
-        toast('Fotos cargadas · '+ok+' de '+total,sin.length?'No coinciden con ninguna referencia: '+sin.slice(0,4).join(', ')+(sin.length>4?' y '+(sin.length-4)+' más.':'.'):'Emparejadas por el nombre del archivo.')}
+      if(--pend===0){rowsProd();rowsExp();head();autosave();
+        const avisos=[];
+        if(nuevos.length)avisos.push(nuevos.length+' producto(s) nuevo(s): '+nuevos.slice(0,6).join(', ')+(nuevos.length>6?'…':'')+'. Ponles categoría y tipo.');
+        if(sin.length)avisos.push('Sin pareja: '+sin.slice(0,4).join(', ')+(sin.length>4?' y '+(sin.length-4)+' más.':''));
+        toast('Fotos cargadas · '+ok+' de '+total, avisos.join(' · ')||'Emparejadas por el nombre del archivo.')}
     });
   });
   $('fotos-in').value='';
@@ -4091,6 +4141,7 @@ function respaldo(){
 
 /* ====== RECORTE DE UNA IMAGEN CON VARIAS FOTOS ====== */
 let RC=[];
+function abrirFotos(){$('ovl-fotos').classList.remove('hide')}
 function abrirRecorte(){RC=[];$('rc-grid').innerHTML='<div class="empty">Todavía no hay imagen.</div>';$('rc-s').textContent='';$('ovl3').classList.remove('hide')}
 let rcImg=null;
 function leerPlancha(fs){
