@@ -568,10 +568,11 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <div class="card">
         <div class="card-h"><h2>Precio por cliente</h2><div class="sub" id="precio-sub">margen sobre PVP</div></div>
         <div id="plists"></div>
-        <p id="precio-oculto" class="hide" style="padding:0 16px;font-size:11.5px;color:var(--ink-3)">Los precios y márgenes no están disponibles con tu permiso.</p>
+        <p id="precio-oculto" class="hide" style="padding:0 16px;font-size:11.5px;color:var(--ink-3)">Mueve el margen o el PVP para ver cómo queda el precio. Estos números son solo para probar: no se guardan. El costo lo cierra un administrador al aprobar.</p>
         <div class="save">
           <button id="bt-save" class="btn org wide" onclick="guardar()">Guardar costo</button>
           <button id="bt-aprobar" class="btn org wide hide" onclick="aprobar()">Aprobar y guardar costo</button>
+          <button id="bt-pend" class="btn ghost wide hide" style="margin-top:8px" onclick="guardarPendiente()">Guardar sin aprobar</button>
           <button id="bt-rec" class="btn ghost wide hide" style="margin-top:8px" onclick="recostear()">Re-costear · abrir nueva versión</button>
           <p id="save-h">Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.</p>
         </div>
@@ -2316,7 +2317,7 @@ function rowsLines(){
     if(m.k!==last){
       last=m.k;
       const sub=f.lines.filter(x=>byCode(x.c).k===m.k).reduce((s,x)=>s+x.q*(1+x.d/100)*precio(x,byCode(x.c)),0);
-      html+=`<tr class="cat"><td class="l" colspan="5"><b>${KN[m.k][0]}</b></td><td colspan="2"><span>${fmt(sub)}</span></td></tr>`;
+      html+=`<tr class="cat" data-k="${m.k}"><td class="l" colspan="5"><b>${KN[m.k][0]}</b></td><td colspan="2"><span>${fmt(sub)}</span></td></tr>`;
     }
     html+=`<tr>
       <td class="l"><div class="itm">${m.d}</div><span class="cod">${m.c}</span></td>
@@ -2480,15 +2481,29 @@ function rowsSum(){
    Lo escrito a mano manda siempre; lo demás se deriva del costo y del margen meta. */
 function pctDe(p){return p.man==='pct'?(p.pct==null?(p.meta||0):p.pct):(p.meta||0)}
 function upDe(p){return p.man==='up'?(p.up==null?(p.mas||0):p.up):(p.mas||0)}
-function basePvp(){
-  const b=F().pl[0],c=TOT.total,pc=pctDe(b);
+/* Prearmado puede mover los márgenes para ver cómo queda el precio, pero esos
+   números no se guardan: trabaja sobre una copia en memoria que se rehace al
+   abrir cada ficha y que nunca sale a la nube. Lo que se guarda y lo que entra
+   al historial se lee siempre de la ficha de verdad (plReal). */
+let SIM_PL=null,SIM_REF=null;
+function plF(real){
+  const f=F();
+  if(real||!soloPrearmado())return f.pl;
+  if(SIM_REF!==cur||!SIM_PL||SIM_PL.length!==f.pl.length){SIM_PL=f.pl.map(x=>({...x}));SIM_REF=cur}
+  return SIM_PL;
+}
+function basePvp(real){
+  const b=plF(real)[0],c=TOT.total;
+  if(!b)return 0;
+  const pc=pctDe(b);
   return b.man==='pvp'?(b.pvp||0):(pc>=100?0:c/(1-pc/100));
 }
-function plCalc(i){
-  const p=F().pl[i],c=TOT.total;
+function plCalc(i,real){
+  const p=plF(real)[i],c=TOT.total;
+  if(!p)return {pvp:0,up:0,pct:0,gan:0,minPvp:0,meta:null};
   let pvp,up=0;
   if(p.modo==='sobrebase'){
-    const bp=basePvp();
+    const bp=basePvp(real);
     if(p.man==='pvp'){pvp=p.pvp||0;up=bp?(pvp/bp-1)*100:0}
     else{up=upDe(p);pvp=bp*(1+up/100)}
   }else{const pc=pctDe(p);pvp=p.man==='pvp'?(p.pvp||0):(pc>=100?0:c/(1-pc/100))}
@@ -2498,7 +2513,7 @@ function plCalc(i){
 }
 const MARCA_MC='<span class="mk mano">a mano</span><span class="mk calc">calculado</span>';
 function noteHTML(i,r){
-  const p=F().pl[i];
+  const p=plF()[i];
   const soltar=p.man?`<div class="soltar-l"><button class="soltar" onclick="soltarPL(${i})" title="Descartar el valor escrito a mano y volver a calcularlo">↺ volver al calculado</button></div>`:'';
   const gain=r.gan<0?`<div class="gain neg">Pierdes <b>${fmt(Math.abs(r.gan))}</b> por prenda</div>`
                     :`<div class="gain">Ganas <b>${fmt(r.gan)}</b> por prenda</div>`;
@@ -2512,13 +2527,13 @@ function noteHTML(i,r){
   return soltar+gain+msg;
 }
 function relTxt(i,r){
-  const p=F().pl[i];
+  const p=plF()[i];
   if(p.base)return 'base · meta '+p.meta+'%';
   if(p.modo==='sobrebase')return '↳ Ecuador +'+r.up.toFixed(0)+'%';
   return 'meta '+p.meta+'%';
 }
 function rowsPL(){
-  $('plists').innerHTML=F().pl.map((p,i)=>{
+  $('plists').innerHTML=plF().map((p,i)=>{
     const r=plCalc(i),sb=p.modo==='sobrebase';
     const f2=sb
       ? `<div class="cellbox ${p.man==='up'?'':'auto'}"><label>% sobre Ecuador ${MARCA_MC}</label>
@@ -2537,7 +2552,7 @@ function rowsPL(){
 function paintPL(edited,field){
   const rows=document.querySelectorAll('.plrow');
   if(!rows.length)return;
-  F().pl.forEach((p,i)=>{
+  plF().forEach((p,i)=>{
     const r=plCalc(i),sb=p.modo==='sobrebase';
     const pi=$('p-'+i),bi=$('b-'+i);
     if(!pi||!bi)return;
@@ -2550,13 +2565,13 @@ function paintPL(edited,field){
   });
 }
 function setPL(i,f,v){
-  const n=num(v),p=F().pl[i];
+  const n=num(v),p=plF()[i];
   p[f]=n;p.man=f;          // lo escribió una persona: desde aquí nada lo recalcula
   paintPL(i,f);
 }
 /* suelta el valor manual y devuelve la fila al cálculo automático */
 function soltarPL(i){
-  const p=F().pl[i];if(!p.man)return;
+  const p=plF()[i];if(!p.man)return;
   p.man=null;
   if(p.modo==='sobrebase')p.up=p.mas||0; else p.pct=p.meta||0;
   p.pvp=0;
@@ -2571,12 +2586,22 @@ function draw(soft){
   else{
     const f=F(),order={mp:0,ins:1,dec:2,srv:3};
     const idx=f.lines.map((l,i)=>i).sort((a,b)=>order[byCode(f.lines[a].c).k]-order[byCode(f.lines[b].c).k]);
+    /* Solo se repinta el $ de cada línea y el subtotal de su grupo. El costo
+       unitario (celda 4) es el del catálogo y no se toca: escribirlo aquí era
+       lo que hacía "cambiar" el costo de la tela al editar el consumo. */
+    const subs={};
+    f.lines.forEach(l=>{const m=byCode(l.c);if(m)subs[m.k]=(subs[m.k]||0)+l.q*(1+l.d/100)*precio(l,m)});
     let r=0;
     Array.from($('tb-lines').rows).forEach(tr=>{
-      if(tr.classList.contains('cat')||!tr.cells[4])return;
+      if(tr.classList.contains('cat')){
+        const k=tr.dataset.k;
+        if(k&&tr.cells[1])tr.cells[1].textContent=fmt(subs[k]||0);
+        return;
+      }
+      if(!tr.cells[5])return;
       const l=f.lines[idx[r++]];if(!l)return;
       const m=byCode(l.c),real=l.q*(1+l.d/100);
-      tr.cells[4].textContent=fmt(real*precio(l,m));
+      tr.cells[5].textContent=fmt(real*precio(l,m));
     });
   }
   rowsCenFicha();rowsSum();rowsHist();rowsOps();autosave();
@@ -2616,7 +2641,7 @@ async function guardar(){
     if(f.saved&&f.edit)f.ver++;
     f.saved=true;f.edit=false;f.fecha=hoy();f.aprob=null;
     f.hist=f.hist||[];
-    f.hist.push({ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,pvp:plCalc(0).pvp});
+    f.hist.push({ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,pvp:plCalc(0,true).pvp});
     draw();rowsProd();rowsExp();
     const eV=await guardarVersion(ref);
     /* solo se confirma el guardado si Supabase respondió bien */
@@ -2624,6 +2649,15 @@ async function guardar(){
       toast('Costo guardado · REF '+ref+' v'+f.ver,
         'Costo congelado '+fmt(TOT.total)+' · '+TOT.sam.toFixed(2)+' min. Ya aparece en la lista de precios.'+(eV?' (Aviso: el historial no se pudo escribir · '+eV+')':''));
   }finally{if(b)b.disabled=false}
+}
+/* Guarda los cambios de una ficha que sigue por aprobar: no cierra la versión
+   ni congela el costo, solo deja lo trabajado a salvo para revisarlo después. */
+async function guardarPendiente(){
+  const f=F();
+  if(f.aprob!=='pendiente')return;
+  draw();rowsProd();rowsExp();
+  if(await forzarGuardado('bt-pend',false))
+    toast('Avance guardado · REF '+cur,'La ficha sigue por aprobar. Cuando la cierres con "Aprobar y guardar costo" entra a la lista de precios.');
 }
 async function aprobar(){
   const f=F();
@@ -2651,22 +2685,24 @@ function rowsHist(){
       <span class="ht">${fmt(v.total)}</span><span class="hs">${v.sam.toFixed(2)} min</span></div>`).join('')
     ||'<div class="empty">Todavía no hay versiones guardadas.</div>';
   $('hist-s').textContent=hs.length?hs.length+(hs.length===1?' versión':' versiones'):'';
-  const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h');
+  const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h'),bp=$('bt-pend');
   const cc=$('card-costo'),pl=$('plists'),po=$('precio-oculto'),psub=$('precio-sub');
-  const oculta=soloPrearmado();
-  if(cc)cc.classList.toggle('hide',oculta);
-  if(pl)pl.classList.toggle('hide',oculta);
-  if(po)po.classList.toggle('hide',!oculta);
-  if(psub)psub.textContent=oculta?'':'margen sobre PVP';
+  const sim=soloPrearmado();
+  if(cc)cc.classList.remove('hide');
+  if(pl)pl.classList.remove('hide');
+  if(po)po.classList.toggle('hide',!sim);
+  if(psub)psub.textContent=sim?'simulación · no se guarda':'margen sobre PVP';
   ba.classList.add('hide');
+  if(bp)bp.classList.add('hide');
   if(RO()){
     bs.classList.add('hide');br.classList.remove('hide');
     if(bg)bg.disabled=true; if(q){q.disabled=true;q.placeholder='Ficha cerrada · usa Re-costear para modificarla'}
     ph.textContent='La v'+f.ver+' está cerrada. Para cambiar consumos, precios o tiempos abre un re-costeo: se guarda como v'+(f.ver+1)+' y la anterior queda en el historial.';
   }else if(f.aprob==='pendiente'&&puedeEditarCostos()){
     bs.classList.add('hide');br.classList.add('hide');ba.classList.remove('hide');
+    if(bp)bp.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
-    ph.textContent='Prearmado envió esta ficha para aprobación. Revisa consumos y tiempos, y usa "Aprobar y guardar costo" para calcular el costo real y cerrar la versión.';
+    ph.textContent='Prearmado envió esta ficha para aprobación. Revisa consumos y tiempos, y usa "Aprobar y guardar costo" para calcular el costo real y cerrar la versión. Si todavía no quieres cerrarla, "Guardar sin aprobar" deja los cambios guardados y la ficha sigue por aprobar.';
   }else{
     bs.classList.remove('hide');br.classList.add('hide');
     bs.textContent=soloPrearmado()?'Enviar para aprobación':(f.saved?'Guardar re-costeo · v'+(f.ver+1):'Guardar costo');
@@ -3114,7 +3150,7 @@ async function entrar(){
   $('ovl-login').classList.add('hide');
   rowsCatMat();rowsCentros();rowsCli();rowsProd();rowsExp();draw();
   aplicarRolUI();
-  if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Los precios y márgenes no están disponibles con tu permiso.');go('prod')}
+  if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Mueve el margen o el PVP para ver cómo queda el precio. Estos números son solo para probar: no se guardan. El costo lo cierra un administrador al aprobar.');go('prod')}
   else if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
   setInterval(refrescar,45*60*1000);
 }
@@ -3346,7 +3382,7 @@ async function guardarVersion(ref){
   const f=FICHAS[ref];if(!f||!ONLINE||!puedeEditar())return;
   const g=cur;cur=ref;calc();
   const row={id:ref+'-v'+f.ver,data:{ref,ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,
-    pvp:CLI.map((c,i)=>({cli:c.cli,pvp:plCalc(i).pvp})),lines:f.lines,cen:f.cen}};
+    pvp:CLI.map((c,i)=>({cli:c.cli,pvp:plCalc(i,true).pvp})),lines:f.lines,cen:f.cen}};
   cur=g;calc();
   /* el error ya no se traga: se devuelve para poder avisar en pantalla */
   try{const r=await sbUpsert('cst_versiones',[row]);return (r&&r.falta)?'falta la tabla cst_versiones en Supabase':''}
