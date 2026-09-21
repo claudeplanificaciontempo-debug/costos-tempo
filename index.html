@@ -2512,7 +2512,7 @@ function head(){
   $('cr-ref').textContent=x.n+' · REF '+x.r;
   $('nav-ref').textContent=x.r;
   const b=$('rh-badge');
-  b.textContent=f.edit?'Re-costeo':(f.saved?'Costeada':'Borrador');
+  b.textContent=f.edit?'Re-costeo':(f.saved?'Costeada':(enAvance(f)?'En avance':'Borrador'));
   b.className='badge '+(f.saved&&!f.edit?'ok':'draft');
   $('rh-ver').textContent=f.edit?'Re-costeo en curso · se guardará como v'+(f.ver+1)
     :(f.saved?'Versión '+f.ver+' · guardada '+f.fecha:'Versión '+f.ver+' · sin guardar');
@@ -2889,7 +2889,7 @@ async function guardar(){
       return;
     }
     if(f.saved&&f.edit)f.ver++;
-    f.saved=true;f.edit=false;f.fecha=hoy();f.aprob=null;
+    f.saved=true;f.edit=false;f.fecha=hoy();f.aprob=null;f.av='';
     f.hist=f.hist||[];
     f.hist.push({ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,pvp:plCalc(0,true).pvp});
     draw();rowsProd();rowsExp();
@@ -2987,6 +2987,7 @@ function prodLista(){
     if(prodF==='arch')return !!x.arch;
     if(x.arch)return false;
     if(prodF==='pend')return (!f.saved||f.edit)&&f.aprob!=='pendiente';
+    if(prodF==='avance')return (!f.saved||f.edit)&&f.aprob!=='pendiente'&&enAvance(f);
     if(prodF==='ok')return f.saved&&!f.edit&&f.aprob!=='pendiente';
     if(prodF==='aprob')return f.aprob==='pendiente';
     if(prodF==='sinfoto')return !FOTO[x.r];
@@ -3029,6 +3030,19 @@ function entregadasHoy(){
 function activos(){return REFS.filter(x=>!x.arch)}
 function porAprobar(){return activos().filter(x=>FICHAS[x.r].aprob==='pendiente')}
 function pendientes(){return activos().filter(x=>(!FICHAS[x.r].saved||FICHAS[x.r].edit)&&FICHAS[x.r].aprob!=='pendiente')}
+/* Una ficha está "en avance" cuando ya se trabajó pero todavía no se cierra el
+   costo: tiene tela o tiempos, o se le dio a "Guardar avance". Los insumos base
+   (hilo, etiquetas) no cuentan, porque entran solos al crear el producto: si
+   contaran, toda ficha recién creada aparecería como empezada. */
+function enAvance(f){
+  if(!f)return false;
+  if(f.saved&&!f.edit)return false;
+  if(f.av)return true;
+  const conTela=(f.lines||[]).some(l=>{const m=byCode(l.c);return m&&m.k!=='ins'&&(+l.q||0)>0});
+  const conTiempo=Object.values(f.cen||{}).some(c=>c&&c.on&&(+c.val||0)>0);
+  return conTela||conTiempo;
+}
+function enAvanceLista(){return pendientes().filter(x=>enAvance(FICHAS[x.r]))}
 function filtrarProd(f){prodF=(prodF===f&&f!=='todos')?'todos':f;rowsProd();window.scrollTo(0,0)}
 function siguientePend(){
   const p=pendientes();
@@ -3038,6 +3052,7 @@ function siguientePend(){
 function kpis(){
   const act=activos();
   const tot=act.length,pen=pendientes().length,apr=porAprobar().length,ok=tot-pen-apr,sf=act.filter(x=>!FOTO[x.r]).length,arch=REFS.length-tot;
+  const avn=enAvanceLista().length;
   const scu=act.filter(x=>!String(x.cu||'').trim()).length;
   const pct=tot?Math.round(ok/tot*100):0;
   const k=(id,cls,label,val,hint,on)=>`<button class="kpi ${cls} ${on?'on':''}" onclick="filtrarProd('${id}')">
@@ -3045,6 +3060,7 @@ function kpis(){
   const html=k('todos','','Total productos',tot,'en el catálogo',prodF==='todos')+
     k('ok','ok','Costeados',ok,pct+'% del catálogo',prodF==='ok')+
     k('pend','pend','Pendientes',pen,pen?'clic para terminarlos':'nada por llenar',prodF==='pend')+
+    (avn?k('avance','pend','En avance',avn,'empezadas, sin cerrar el costo',prodF==='avance'):'')+
     (apr?k('aprob','pend','Por aprobar',apr,'fichas enviadas por prearmado',prodF==='aprob'):'')+
     k('sinfoto','','Sin foto',sf,'por cargar',prodF==='sinfoto')+
     k('sincu','','Sin código único',scu,scu?'no empatan con el otro sistema':'todos empatados',prodF==='sincu')+
@@ -3105,7 +3121,7 @@ function filaProd({x,i}){
         ${f.aprob==='pendiente'?`<span class="pill pend">Por aprobar</span>`:
           f.saved&&!f.edit
           ?`<button class="pill ok" style="border:0;cursor:pointer" title="Abrir un re-costeo (nueva versión)" onclick="recostearRef('${x.r}')">v${f.ver} · re-costear</button>`
-          :`<span class="pill ${f.edit?'':''}">${f.edit?'Re-costeo v'+(f.ver+1):'Borrador'}</span>`}</div>
+          :`<span class="pill" title="${f.av?'Último avance guardado el '+f.av:'Todavía sin empezar'}">${f.edit?'Re-costeo v'+(f.ver+1):(enAvance(f)?'En avance':'Borrador')}</span>`}</div>
       <div style="text-align:right;white-space:nowrap">
         <button class="vst ${x.apr?'on':''}" title="${x.apr?'Muestra aprobada el '+fechaBonita(x.aprFecha)+' · clic para quitar el visto':'Marcar la muestra como aprobada'}" onclick="toggleAprob(${i})">✓</button>
         <button class="x" title="${x.arch?'Restaurar':'Archivar'}" onclick="toggleArchivo(${i})">${x.arch?'⤴':'🗄'}</button>
@@ -3890,7 +3906,13 @@ async function forzarGuardado(btnId,etiqueta){
   if(b){b.disabled=false;b.textContent=txt||'Guardar'}
   return ok;
 }
-async function guardarAvance(id){return forzarGuardado(id||'bt-avance','Avance guardado')}
+async function guardarAvance(id){
+  const f=F();
+  /* queda la fecha del último avance: así la ficha se reconoce como empezada
+     aunque todavía no tenga tela ni tiempos */
+  if(f&&!(f.saved&&!f.edit)){f.av=hoy();draw();rowsProd()}   /* dibujo completo: la etiqueta de la ficha vive en head() */
+  return forzarGuardado(id||'bt-avance','Avance guardado');
+}
 let SEED=null;
 function tomarSemilla(){SEED={CAT:CAT.map(x=>({...x})),CEN:CEN.map(x=>({...x})),CLI:CLI.map(x=>({...x})),
   REFS:REFS.map(x=>({...x})),FOTO:{...FOTO}}}
