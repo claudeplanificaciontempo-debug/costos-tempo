@@ -578,7 +578,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         </div>
       </div>
       <div class="card">
-        <div class="card-h"><h2>Historial de versiones</h2><div class="sub" id="hist-s"></div></div>
+        <div class="card-h"><h2>Historial de versiones</h2><div class="sub" id="hist-s"></div>
+          <button id="bt-dif" class="btn ghost sm hide" style="margin-left:auto" onclick="abrirDif()">Comparar versiones</button></div>
         <div id="hist-list"></div>
       </div>
     </div>
@@ -1054,6 +1055,21 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost" onclick="cerrar('ovl-restore')">Cancelar</button>
       <button class="btn org" onclick="confirmarRestaurar()">Restaurar lo seguro</button>
     </div>
+  </div>
+</div>
+<div id="ovl-dif" class="ovl hide">
+  <div class="modal">
+    <div class="modal-h"><h2 id="dif-t">Qué cambió entre versiones</h2></div>
+    <div class="modal-b">
+      <div class="addrow" style="margin-bottom:12px">
+        <span class="mini" style="margin:0">Comparar</span>
+        <select id="dif-a" class="fld" style="width:auto" onchange="pintarDif()"></select>
+        <span class="mini" style="margin:0">con</span>
+        <select id="dif-b" class="fld" style="width:auto" onchange="pintarDif()"></select>
+      </div>
+      <div id="dif-cuerpo"></div>
+    </div>
+    <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-dif')">Cerrar</button></div>
   </div>
 </div>
 <div id="ovl2" class="ovl hide">
@@ -2671,11 +2687,12 @@ function recostear(){
 function rowsHist(){
   const f=F(),hl=$('hist-list');if(!hl)return;
   const hs=(f.hist||[]).slice().reverse();
-  hl.innerHTML=hs.map((v,k)=>`<div class="hrow ${k===0&&!f.edit?'now':''}">
+  hl.innerHTML=hs.map((v,k)=>`<div class="hrow ${k===0&&!f.edit?'now':''}" title="Ver qué cambió en esta versión" onclick="abrirDif(${v.ver})" style="cursor:pointer">
       <span class="hv">v${v.ver}</span><span class="hf">${v.fecha}</span>
       <span class="ht">${fmt(v.total)}</span><span class="hs">${v.sam.toFixed(2)} min</span></div>`).join('')
     ||'<div class="empty">Todavía no hay versiones guardadas.</div>';
   $('hist-s').textContent=hs.length?hs.length+(hs.length===1?' versión':' versiones'):'';
+  const bd=$('bt-dif');if(bd)bd.classList.toggle('hide',!hs.length);
   const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h'),bp=$('bt-pend');
   const cc=$('card-costo'),pl=$('plists'),po=$('precio-oculto'),psub=$('precio-sub');
   const sim=soloPrearmado();
@@ -3372,6 +3389,105 @@ async function recuperarDesdeVersiones(){
     ultimoError=String((e&&e.message)||e);pintarEstado('error');
     toast('Restaurado en pantalla, NO en la nube','Se restauró en pantalla pero Supabase rechazó el guardado: '+ultimoError+'. Se reintenta solo.');
   }
+}
+/* ====== COMPARAR VERSIONES ======
+   Cada versión guardada trae la foto completa de la ficha (líneas, tiempos,
+   totales y PVP). Aquí se ponen dos una al lado de la otra y se dice, en
+   palabras, qué cambió: qué material entró, cuál salió, qué consumo se movió
+   y qué pasó con el costo. Los $ de cada línea se calculan con el precio de
+   hoy, porque la versión guarda el consumo, no el precio de cada material. */
+let DIF=[];
+function difAhora(){
+  const f=F(),t=totRef(cur);
+  return {ver:'ahora',fecha:'sin guardar',total:t.total,sam:t.sam,
+    lines:f.lines.map(l=>({...l})),cen:JSON.parse(JSON.stringify(f.cen)),
+    pvp:CLI.map((c,i)=>({cli:c.cli,pvp:plCalc(i,true).pvp}))};
+}
+async function abrirDif(ver){
+  const f=F();
+  DIF=[];
+  try{
+    const filas=await sbGet('cst_versiones');
+    DIF=filas.map(x=>x.data).filter(v=>v&&v.ref===cur).sort((a,b)=>a.ver-b.ver);
+  }catch(e){ /* sin conexión se compara solo contra lo que hay en pantalla */ }
+  DIF.push(difAhora());
+  if(DIF.length<2){
+    toast('Todavía no hay con qué comparar','Esta referencia tiene una sola versión guardada.');
+    return;
+  }
+  const opc=DIF.map(v=>`<option value="${v.ver}">${v.ver==='ahora'?'Ahora · sin guardar':'v'+v.ver+' · '+(v.fecha||'')}</option>`).join('');
+  $('dif-a').innerHTML=opc;$('dif-b').innerHTML=opc;
+  /* Si se hizo clic en una versión, se compara con la anterior. Si no, se
+     comparan las dos últimas guardadas, que es lo que se quiere saber casi
+     siempre; solo cuando hay una sola guardada se compara contra lo de ahora. */
+  const guardadas=DIF.filter(v=>v.ver!=='ahora');
+  const i=ver?DIF.findIndex(v=>String(v.ver)===String(ver))
+    :(guardadas.length>1?DIF.indexOf(guardadas[guardadas.length-1]):DIF.length-1);
+  const b=i<0?DIF.length-1:i, a=Math.max(0,b-1);
+  $('dif-a').value=String(DIF[a].ver);$('dif-b').value=String(DIF[b].ver);
+  $('dif-t').textContent='Qué cambió · REF '+cur;
+  $('ovl-dif').classList.remove('hide');
+  pintarDif();
+}
+const difVer=v=>DIF.find(x=>String(x.ver)===String(v));
+function difLineas(a,b){
+  const codes=[...new Set(a.lines.concat(b.lines).map(l=>l.c))];
+  const val=(v,c)=>v.lines.find(l=>l.c===c);
+  const filas=[];
+  codes.forEach(c=>{
+    const x=val(a,c),y=val(b,c),m=byCode(c)||{d:c,um:'',p:0};
+    const qx=x?x.q*(1+(x.d||0)/100):0, qy=y?y.q*(1+(y.d||0)/100):0;
+    if(!x&&!y)return;
+    if(x&&y&&Math.abs(qx-qy)<1e-9)return;
+    filas.push({c,d:m.d,um:m.um,p:m.p||0,
+      tipo:!x?'entra':!y?'sale':'cambia',qx,qy,dif:(qy-qx)*(m.p||0)});
+  });
+  return filas;
+}
+function difCentros(a,b){
+  const ids=[...new Set(Object.keys(a.cen||{}).concat(Object.keys(b.cen||{})))];
+  const min=(v,id)=>{const s=(v.cen||{})[id];return (s&&s.on)?(+s.val||0):0};
+  return ids.map(id=>({id,n:(CEN.find(c=>c.id===id)||{n:id}).n,ax:min(a,id),bx:min(b,id)}))
+    .filter(r=>Math.abs(r.ax-r.bx)>1e-9);
+}
+function pintarDif(){
+  const a=difVer($('dif-a').value),b=difVer($('dif-b').value);
+  const cont=$('dif-cuerpo');if(!a||!b)return;
+  if(a.ver===b.ver){cont.innerHTML='<div class="empty">Elige dos versiones distintas.</div>';return}
+  const L=difLineas(a,b),C=difCentros(a,b);
+  const flecha=(x,y,dec)=>`${(x||0).toFixed(dec)} → <b>${(y||0).toFixed(dec)}</b>`;
+  const signo=n=>(n>0?'+':'')+fmt(n);
+  const nomA=a.ver==='ahora'?'ahora':'v'+a.ver, nomB=b.ver==='ahora'?'ahora':'v'+b.ver;
+  let h=`<table><thead><tr><th class="l">Costo</th><th>${nomA}</th><th>${nomB}</th><th>Diferencia</th></tr></thead><tbody>
+    <tr><td class="l"><b style="font-weight:600">Costo total</b></td><td>${fmt(a.total)}</td><td>${fmt(b.total)}</td>
+      <td class="tot" style="color:${b.total>a.total?'var(--red)':'var(--green-txt)'}">${signo(b.total-a.total)}</td></tr>
+    <tr><td class="l"><b style="font-weight:600">Minutos</b></td><td>${(a.sam||0).toFixed(2)}</td><td>${(b.sam||0).toFixed(2)}</td>
+      <td class="tot">${((b.sam||0)-(a.sam||0)>0?'+':'')+((b.sam||0)-(a.sam||0)).toFixed(2)} min</td></tr>
+    </tbody></table>`;
+  h+=`<div class="card-h" style="padding-left:0"><h2>Materiales</h2></div>`;
+  h+=L.length?`<table><thead><tr><th class="l">Material</th><th>Qué pasó</th><th>Consumo</th><th>$ con el precio de hoy</th></tr></thead><tbody>`
+     +L.map(r=>`<tr><td class="l"><b style="font-weight:600">${r.d}</b><br><span class="cod">${r.c}</span></td>
+        <td>${r.tipo==='entra'?'<span class="cod">se agregó</span>':r.tipo==='sale'?'<span class="cod">se quitó</span>':'<span class="cod">cambió el consumo</span>'}</td>
+        <td>${flecha(r.qx,r.qy,3)} ${r.um||''}</td>
+        <td class="tot" style="color:${r.dif>0?'var(--red)':'var(--green-txt)'}">${signo(r.dif)}</td></tr>`).join('')
+     +`</tbody></table>`
+     :'<div class="empty">Los materiales quedaron igual.</div>';
+  h+=`<div class="card-h" style="padding-left:0"><h2>Tiempos por centro</h2></div>`;
+  h+=C.length?`<table><thead><tr><th class="l">Centro</th><th>Minutos</th></tr></thead><tbody>`
+     +C.map(r=>`<tr><td class="l"><b style="font-weight:600">${r.n}</b></td><td>${flecha(r.ax,r.bx,2)} min</td></tr>`).join('')
+     +`</tbody></table>`
+     :'<div class="empty">Los tiempos quedaron igual.</div>';
+  const pv=(a.pvp||[]).map(x=>{const y=(b.pvp||[]).find(z=>z.cli===x.cli);
+    return y&&Math.abs((y.pvp||0)-(x.pvp||0))>0.005?{cli:x.cli,ax:x.pvp,bx:y.pvp}:null}).filter(Boolean);
+  if(!soloPrearmado()){
+    h+=`<div class="card-h" style="padding-left:0"><h2>Precio por cliente</h2></div>`;
+    h+=pv.length?`<table><thead><tr><th class="l">Cliente</th><th>PVP</th><th>Diferencia</th></tr></thead><tbody>`
+       +pv.map(r=>`<tr><td class="l"><b style="font-weight:600">${r.cli}</b></td><td>${fmt(r.ax)} → <b>${fmt(r.bx)}</b></td>
+          <td class="tot">${signo(r.bx-r.ax)}</td></tr>`).join('')
+       +`</tbody></table>`
+       :'<div class="empty">Los precios quedaron igual.</div>';
+  }
+  cont.innerHTML=h;
 }
 async function guardarVersion(ref){
   const f=FICHAS[ref];if(!f||!ONLINE||!puedeEditar())return;
