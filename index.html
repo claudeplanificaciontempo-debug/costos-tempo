@@ -51,6 +51,11 @@
   --cat-ins:#e9e6f2; --cat-ins-tx:#56497e;
   --cat-srv:#e4eef0; --cat-srv-tx:#356069;
   --cat-dec:#ece9e2; --cat-dec-tx:#6b6048;
+  --nav-bg:#6b2434;                  /* franja del menú */
+  --nav-txt:rgba(255,255,255,.74); --nav-txt-on:#fff;
+  --nav-line:#f0a5b5; --nav-line-soft:rgba(255,255,255,.18);
+  --nav-chip:rgba(255,255,255,.16);
+  --sw-fondo:#e8973a; --sw-borde:#d1802a; --sw-perilla:#fff;   /* interruptor de día */
 }
 
 /* ====== TEMAS ======
@@ -69,6 +74,7 @@
   --amber:#8a5a00; --amber-soft:#f9ebd2;
   --red:#ab1a3a; --red-soft:#fce0de; --falta:#ab1a3a;
   --vino-claro:#5a6fc4; --hover-soft:#dfe4f5; --apagado:#cdd3e6;
+  --nav-bg:#232f63; --nav-line:#a9b6ff;
 }
 :root[data-tema="olivar"]{
   --vino:#436d31; --vino-2:#375a28; --vino-deep:#2a4a22; --vino-medio:#4f6b48;
@@ -79,6 +85,7 @@
   --amber:#8f6200; --amber-soft:#fcf2dd;
   --red:#92270f; --red-soft:#fbe8de; --falta:#92270f;
   --vino-claro:#5c8a45; --hover-soft:#dde3cd; --apagado:#d2d6c3;
+  --nav-bg:#2a4a22; --nav-line:#b2d8a0;
 }
 
 /* De noche, lo que no depende del tema */
@@ -94,6 +101,10 @@
   --cat-ins:#2b2740; --cat-ins-tx:#c3baf0;
   --cat-srv:#1f333a; --cat-srv-tx:#9fd0dd;
   --cat-dec:#332f26; --cat-dec-tx:#ddd2b4;
+  --nav-txt:var(--ink-2); --nav-txt-on:var(--ink);
+  --nav-line:var(--vino); --nav-line-soft:rgba(255,255,255,.10);
+  --nav-chip:rgba(255,255,255,.10);
+  --sw-fondo:#141018; --sw-borde:#3d3237; --sw-perilla:#e8e2e4;   /* interruptor de noche */
 }
 :root[data-tema="vino"][data-modo="oscuro"]{
   --vino:#ba4763; --vino-2:#c44b66; --vino-deep:#f0a5b5; --vino-medio:#cb9aa6;
@@ -103,7 +114,7 @@
   --green:#3ddba1; --green-soft:#12301f; --green-txt:#3ddba1;
   --amber:#ffd166; --amber-soft:#332608;
   --red:#f26237; --red-soft:#3a1c12; --falta:#f26237;
-  --vino-claro:#8e3550;
+  --vino-claro:#8e3550; --nav-bg:#2e1b22;
 }
 :root[data-tema="indigo"][data-modo="oscuro"]{
   --vino:#4163d2; --vino-2:#556ed6; --vino-deep:#a9b6ff; --vino-medio:#8590c4;
@@ -113,7 +124,7 @@
   --green:#57cfae; --green-soft:#0c3b36; --green-txt:#57cfae;
   --amber:#e0a93a; --amber-soft:#352409;
   --red:#f08a72; --red-soft:#301213; --falta:#f08a72;
-  --vino-claro:#2f4aa5;
+  --vino-claro:#2f4aa5; --nav-bg:#182238;
 }
 :root[data-tema="olivar"][data-modo="oscuro"]{
   --vino:#448350; --vino-2:#36703f; --vino-deep:#b2d8a0; --vino-medio:#94b487;
@@ -123,7 +134,7 @@
   --green:#63d9b0; --green-soft:#11291f; --green-txt:#63d9b0;
   --amber:#f5c96b; --amber-soft:#2e2611;
   --red:#f07a4e; --red-soft:#331d15; --falta:#f07a4e;
-  --vino-claro:#2f6139;
+  --vino-claro:#2f6139; --nav-bg:#1f2818;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);
@@ -136,7 +147,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{ba
 .hide{display:none !important}
 
 .topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--barra);border-bottom:1px solid var(--barra-line)}
-.tb1{display:flex;align-items:center;gap:12px;padding:11px 26px 0;max-width:1560px;margin:0 auto}
+.tb1{display:flex;align-items:center;gap:12px;padding:10px 26px;max-width:1560px;margin:0 auto}
 .logo{width:28px;height:28px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:14px;font-weight:800;
   color:var(--sobre);background:linear-gradient(135deg,var(--vino),var(--vino-claro))}
 .brand{font-weight:800;font-size:16.5px;letter-spacing:-.01em;line-height:1.1;color:var(--vino-deep)}
@@ -147,19 +158,28 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{ba
 .who small{font-size:9px;color:var(--vino-medio);letter-spacing:.04em}
 .avatar{width:26px;height:26px;border-radius:50%;background:var(--barra-chip);color:var(--vino-deep);
   display:grid;place-items:center;font-size:11.5px;font-weight:700}
-.nav{display:flex;gap:2px;padding:8px 26px 0;max-width:1560px;margin:0 auto;overflow-x:auto}
-.nav-item{border:0;background:none;padding:7px 13px 11px;font-size:12.5px;font-weight:600;color:var(--vino-medio);
+/* El menú va en su propia franja, más oscura que la cabecera, para que se
+   separe de la marca y del nombre de quien entró. */
+.navband{background:var(--nav-bg);border-top:1px solid var(--nav-line-soft)}
+.nav{display:flex;gap:2px;padding:0 26px;max-width:1560px;margin:0 auto;overflow-x:auto}
+.nav-item{border:0;background:none;padding:10px 13px;font-size:12.5px;font-weight:600;color:var(--nav-txt);
   cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px}
-.nav-item:hover{color:var(--vino-deep)}
-.nav-item.on{color:var(--vino-deep);border-bottom-color:var(--vino)}
+.nav-item:hover{color:var(--nav-txt-on)}
+.nav-item.on{color:var(--nav-txt-on);border-bottom-color:var(--nav-line)}
+/* Interruptor de día y noche: pastilla con sol o luna, al lado del nombre */
+.swmodo{width:48px;height:25px;border-radius:20px;border:1px solid var(--sw-borde);background:var(--sw-fondo);
+  position:relative;cursor:pointer;padding:0;flex:none;transition:background .18s}
+.swmodo i{position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:var(--sw-perilla);
+  display:grid;place-items:center;font-size:11px;font-style:normal;line-height:1;transition:left .18s}
+:root[data-modo="oscuro"] .swmodo i{left:25px}
 .subnav{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 14px}
 .subtab{border:1px solid var(--line);background:var(--card);color:var(--ink-2);border-radius:20px;
   padding:6px 15px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 .subtab:hover{border-color:var(--vino);color:var(--vino-deep)}
 .subtab.on{background:var(--vino);border-color:var(--vino);color:var(--sobre)}
-.nav-item .cnt{font-size:10px;color:var(--vino-medio);background:var(--barra-chip);border-radius:20px;padding:1.5px 7px;font-weight:700}
-.nav-item.on .cnt{background:var(--vino);color:var(--sobre)}
-.navsep{width:1px;background:var(--barra-line);margin:5px 10px 11px;flex:none}
+.nav-item .cnt{font-size:10px;color:var(--nav-txt-on);background:var(--nav-chip);border-radius:20px;padding:1.5px 7px;font-weight:700}
+.nav-item.on .cnt{background:var(--nav-line);color:var(--nav-bg)}
+.navsep{width:1px;background:var(--nav-line-soft);margin:9px 10px;flex:none}
 .main{margin:92px auto 0;padding:18px 26px 80px;max-width:1560px}
 .crumb{font-size:11.5px;color:var(--ink-3);margin-bottom:10px}
 .crumb b{color:var(--ink-2);font-weight:600}
@@ -576,12 +596,14 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="brand">Costos<span>TEMPO · muestras y prendas</span></div>
     <div class="topbar-right">
       <span id="autosave" class="asv" onclick="verEstadoGuardado()" title="Estado del guardado">—</span>
-      <button id="bt-aspecto" class="btn ghost sm" onclick="abrirAspecto()" title="Colores y modo claro u oscuro">Apariencia</button>
+      <button id="bt-modo" class="swmodo" onclick="alternarModo()" title="Cambiar entre día y noche"><i id="bt-modo-i">☀</i></button>
+      <button id="bt-aspecto" class="btn ghost sm" onclick="abrirAspecto()" title="Colores de día y de noche">Apariencia</button>
       <button class="btn ghost sm" onclick="salir()" title="Cerrar sesión">Salir</button>
       <div class="who"><b id="who-n">—</b><small id="who-r">TEMPO</small></div>
       <div class="avatar" id="who-a">·</div>
     </div>
   </div>
+  <div class="navband">
   <nav class="nav">
     <button class="nav-item" data-screen="prod">Productos <span class="cnt" id="nav-prod">38</span></button>
     <button class="nav-item on" data-screen="ficha">Ficha de costos <span class="cnt" id="nav-ref">4823</span></button>
@@ -595,6 +617,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <button class="nav-item" data-screen="exp">Exportar por cliente</button>
     <button class="nav-item" data-screen="rep">Reportes</button>
   </nav>
+  </div>
 </header>
 
 <main class="main">
@@ -2412,7 +2435,10 @@ function modoReal(){
 const temaActual=()=>modoReal()==='oscuro'?ASPECTO.temaNoche:ASPECTO.temaDia;
 function aplicarAspecto(){
   const r=document.documentElement;
-  r.dataset.modo=modoReal();r.dataset.tema=temaActual();
+  const m=modoReal();
+  r.dataset.modo=m;r.dataset.tema=temaActual();
+  const ic=$('bt-modo-i');if(ic)ic.textContent=m==='oscuro'?'☾':'☀';
+  const bm=$('bt-modo');if(bm)bm.title=m==='oscuro'?'Estás en modo noche · cambiar a día':'Estás en modo día · cambiar a noche';
   try{localStorage.setItem(ASPECTO_K,JSON.stringify(ASPECTO))}catch(e){}
   rowsAspecto();
 }
@@ -2437,6 +2463,9 @@ function setTema(cuando,id){
   aplicarAspecto();
 }
 function setModo(id){if(!MODOS.some(x=>x.id===id))return;ASPECTO.modo=id;aplicarAspecto()}
+/* El interruptor de la cabecera deja el modo fijo: si estaba en automático,
+   toma el que se ve ahora y lo cambia al otro. */
+function alternarModo(){setModo(modoReal()==='oscuro'?'claro':'oscuro')}
 function abrirAspecto(){rowsAspecto();$('ovl-aspecto').classList.remove('hide')}
 try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',()=>{if(ASPECTO.modo==='auto')aplicarAspecto()})}catch(e){}
 
