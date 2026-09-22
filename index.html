@@ -5538,9 +5538,10 @@ const XL_ESTILOS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
  '<xf xfId="0" numFmtId="165" applyNumberFormat="1"/>'+
  '<xf xfId="0" fontId="2" applyFont="1"/></cellXfs>'+
  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-function hojaXml(filas,anchos){
+function hojaXml(filas,anchos,conFoto){
   let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
-    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">';
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'+
+    ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
   if(anchos&&anchos.length){x+='<cols>'+anchos.map((a,i)=>'<col min="'+(i+1)+'" max="'+(i+1)+'" width="'+a+'" customWidth="1"/>').join('')+'</cols>'}
   x+='<sheetData>';
   filas.forEach((fila,i)=>{
@@ -5555,7 +5556,9 @@ function hojaXml(filas,anchos){
     });
     if(cs)x+='<row r="'+r+'">'+cs+'</row>';
   });
-  return x+'</sheetData></worksheet>';
+  x+='</sheetData>';
+  if(conFoto)x+='<drawing r:id="rId1"/>';       /* la foto va después de los datos */
+  return x+'</worksheet>';
 }
 /* Excel no admite : \ / ? * [ ] en el nombre de una hoja, ni más de 31 letras */
 function nombreHoja(t,usados){
@@ -5563,9 +5566,27 @@ function nombreHoja(t,usados){
   let base=n,k=2;while(usados.has(n.toLowerCase())){n=(base.slice(0,28)+'_'+k);k++}
   usados.add(n.toLowerCase());return n;
 }
+/* Una imagen dentro de un .xlsx son tres piezas: el archivo en xl/media, un
+   "dibujo" que dice dónde va y de qué tamaño, y la relación entre la hoja y ese
+   dibujo. Se ancla a una celda, así que la foto acompaña a la ficha sin taparla. */
+function dibujoXml(col,fila,ancho,alto){
+  const EMU=9525;
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+  '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+
+  '<xdr:oneCellAnchor>'+
+  '<xdr:from><xdr:col>'+col+'</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'+fila+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'+
+  '<xdr:ext cx="'+Math.round(ancho*EMU)+'" cy="'+Math.round(alto*EMU)+'"/>'+
+  '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Foto"/><xdr:cNvPicPr/></xdr:nvPicPr>'+
+  '<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId1"/>'+
+  '<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'+
+  '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+Math.round(ancho*EMU)+'" cy="'+Math.round(alto*EMU)+'"/></a:xfrm>'+
+  '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic>'+
+  '<xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>';
+}
 function libroXlsx(hojas,nombreArchivo){
   const usados=new Set();
-  const h=hojas.map((x,i)=>({nom:nombreHoja(x.nombre,usados),xml:hojaXml(x.filas,x.anchos),id:i+1}));
+  const h=hojas.map((x,i)=>({nom:nombreHoja(x.nombre,usados),
+    xml:hojaXml(x.filas,x.anchos,!!x.foto),id:i+1,foto:x.foto||null}));
   const arch=[
     {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
@@ -5574,6 +5595,8 @@ function libroXlsx(hojas,nombreArchivo){
       '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
       '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
       h.map(x=>'<Override PartName="/xl/worksheets/sheet'+x.id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+
+      '<Default Extension="jpeg" ContentType="image/jpeg"/>'+
+      h.filter(x=>x.foto).map(x=>'<Override PartName="/xl/drawings/drawing'+x.id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>').join('')+
       '</Types>'},
     {nombre:'_rels/.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
@@ -5587,14 +5610,46 @@ function libroXlsx(hojas,nombreArchivo){
       '<Relationship Id="rId'+(h.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
     {nombre:'xl/styles.xml',datos:XL_ESTILOS}
   ].concat(h.map(x=>({nombre:'xl/worksheets/sheet'+x.id+'.xml',datos:x.xml})));
-  return {blob:zipAlmacenado(arch),nombre:nombreArchivo,hojas:h.length};
+  h.filter(x=>x.foto).forEach(x=>{
+    arch.push({nombre:'xl/worksheets/_rels/sheet'+x.id+'.xml.rels',
+      datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing'+x.id+'.xml"/></Relationships>'});
+    arch.push({nombre:'xl/drawings/drawing'+x.id+'.xml',
+      datos:dibujoXml(x.foto.col,x.foto.fila,x.foto.ancho,x.foto.alto)});
+    arch.push({nombre:'xl/drawings/_rels/drawing'+x.id+'.xml.rels',
+      datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/imagen'+x.id+'.jpeg"/></Relationships>'});
+    arch.push({nombre:'xl/media/imagen'+x.id+'.jpeg',datos:x.foto.datos});
+  });
+  return {blob:zipAlmacenado(arch),nombre:nombreArchivo,hojas:h.length,
+    fotos:h.filter(x=>x.foto).length};
 }
 /* Libro con una hoja por referencia, como la hoja de costos de siempre: el
    consumo, el desperdicio, el costo unitario y el total de cada línea, con
    FÓRMULAS de verdad, para que en Excel se pueda mover un consumo y ver cómo
    cambia todo. Es el respaldo de papel: si un día se pierde la app, ahí está
    cada ficha con sus números. */
-function xlsxFichas(){
+/* Excel solo entiende JPG y PNG, y las fotos de la app son WebP, así que hay
+   que convertirlas aquí. Se bajan con fetch (no con una etiqueta <img>) para
+   que el lienzo no quede "manchado" por venir de otro dominio y se pueda
+   exportar. Si una falla, esa ficha va sin foto y se avisa cuántas fueron. */
+async function fotoParaExcel(url,maxAlto){
+  if(!url)return null;
+  try{
+    const blob=await (await fetch(url)).blob();
+    const im=await createImageBitmap(blob);
+    const e=Math.min(1,(maxAlto||300)/im.height);
+    const w=Math.max(1,Math.round(im.width*e)),h=Math.max(1,Math.round(im.height*e));
+    const c=document.createElement('canvas');c.width=w;c.height=h;
+    const cx=c.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,w,h);cx.drawImage(im,0,0,w,h);
+    const jpg=await new Promise(r=>c.toBlob(r,'image/jpeg',0.82));
+    if(!jpg)return null;
+    return {datos:new Uint8Array(await jpg.arrayBuffer()),ancho:w,alto:h};
+  }catch(e){return null}
+}
+async function xlsxFichas(){
   const list=activos();
   if(!list.length){toast('Nada que exportar','Todavía no hay productos en el catálogo.');return}
   const g=cur,hojas=[];
@@ -5686,14 +5741,26 @@ function xlsxFichas(){
     });
     fl.push([]);
     fl.push([{v:'Los consumos y tiempos son los de la app; los costos unitarios y las tarifas, los del día que se exportó ('+hoy()+').',s:1}]);
-    hojas.push({nombre:x.r,filas:fl,anchos:[34,18,20,8,12,12,14,13,13]});
+    hojas.push({nombre:x.r,filas:fl,anchos:[34,18,20,8,12,12,14,13,13],ref:x.r});
   });
   cur=g;calc();
+  /* las fotos, una por hoja, a la derecha de la tabla */
+  marcaSave('Armando el Excel…','');
+  let sinFoto=0;
+  for(const hj of hojas){
+    if(!hj.ref)continue;
+    const f=await fotoParaExcel(FOTO[hj.ref],300);
+    if(f)hj.foto={datos:f.datos,ancho:f.ancho,alto:f.alto,col:10,fila:1};
+    else if(FOTO[hj.ref])sinFoto++;
+  }
+  estadoOk();
   const lib=libroXlsx(hojas,'TEMPO_Fichas_de_costos_'+new Date().toISOString().slice(0,10)+'.xlsx');
   try{
     const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
-    toast('Excel generado · '+lib.hojas+' hojas',lib.nombre+' · una hoja por referencia, con las fórmulas del costo.');
+    toast('Excel generado · '+lib.hojas+' hojas',
+      lib.nombre+' · una hoja por referencia, con las fórmulas del costo y '+lib.fotos+' fotos.'+
+      (sinFoto?' '+sinFoto+' foto(s) no se pudieron leer y esa ficha quedó sin imagen.':''));
   }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
   return lib;
 }
