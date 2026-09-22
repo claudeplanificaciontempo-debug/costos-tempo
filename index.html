@@ -3622,8 +3622,13 @@ async function cargarNube(){
       CATEG[d.cat]=(d.tipos||[]).slice();if(d.foto)CATFOTO[d.cat]=d.foto;
       Object.keys(d.fotos||{}).forEach(t=>{if(d.fotos[t])CATFOTO[kFoto(d.cat,t)]=d.fotos[t]})});
   }
-  // fotos del archivo que la nube no tiene
-  Object.keys(FOTO).forEach(k=>{if(pr.some(x=>x.data.r===k&&x.data.foto)&&FOTO[k].startsWith('data:'))delete FOTO[k]});
+  /* Se descarta la foto local (del archivo) solo cuando la nube ya tiene una foto
+     subida de verdad. Si la nube guarda la foto incrustada (data:), esa es la buena
+     y no se borra: antes se perdía y el producto salía "sin foto". */
+  Object.keys(FOTO).forEach(k=>{
+    if(!FOTO[k].startsWith('data:'))return;
+    if(pr.some(x=>x.data.r===k&&x.data.foto&&!String(x.data.foto).startsWith('data:')))delete FOTO[k];
+  });
   cur=(FICHAS[cur]?cur:(REFS[0]&&REFS[0].r));
   const n=fusionarSemilla();aplicarMargenes();
   // lo que ya estaba en la nube se considera al día; solo se envía lo que el archivo trae de nuevo
