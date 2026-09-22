@@ -3770,18 +3770,27 @@ function nombreArchivo(clave,blob){
   const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
   return String(clave).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
 }
+/* Imágenes que el navegador no logra leer (un archivo que llegó cortado, por
+   ejemplo). Se apartan: si no, cada guardado las reintenta y falla para siempre. */
+const fotosDanadas=new Set();
+async function leerIncrustada(clave,d){
+  let blob;
+  try{blob=await (await fetch(d)).blob()}catch(e){blob=null}
+  if(!blob||!blob.size){fotosDanadas.add(clave);throw new Error('la imagen de '+clave+' está dañada · vuelve a subirla')}
+  return blob;
+}
 async function subirFotoNube(ref){
   const d=FOTO[ref];if(!d||!d.startsWith('data:'))return;
-  const blob=await (await fetch(d)).blob();
+  const blob=await leerIncrustada(ref,d);
   try{
     FOTO[ref]=await subirAlmacen(nombreArchivo(ref,blob),blob);
   }catch(e){throw new Error('foto de '+ref+' · '+(e&&e.message||e))}
   FOTO_NUBE[ref]=FOTO[ref];
 }
 async function subirFotosPendientes(){
-  const p=Object.keys(FOTO).filter(k=>FOTO[k]&&FOTO[k].startsWith('data:')&&byRef(k));
+  const p=Object.keys(FOTO).filter(k=>FOTO[k]&&FOTO[k].startsWith('data:')&&byRef(k)&&!fotosDanadas.has(k));
   const vive=k=>{const [c,t]=String(k).split('||');return !!CATEG[c]&&(!t||CATEG[c].includes(t))};
-  const pc=Object.keys(CATFOTO).filter(k=>CATFOTO[k]&&String(CATFOTO[k]).startsWith('data:')&&vive(k));
+  const pc=Object.keys(CATFOTO).filter(k=>CATFOTO[k]&&String(CATFOTO[k]).startsWith('data:')&&vive(k)&&!fotosDanadas.has(k));
   if(!p.length&&!pc.length)return 0;
   await sesionViva();          /* permiso fresco antes de empezar la tanda */
   marcaSave('Subiendo fotos '+(p.length+pc.length)+'…','');
@@ -3790,8 +3799,14 @@ async function subirFotosPendientes(){
   for(const c of pc){try{await subirFotoCatNube(c);n++}catch(e){console.error(e);fallos.push(String((e&&e.message)||e))}}
   /* el fallo ya no se esconde: la foto sigue en pantalla y se avisa del motivo real */
   if(fallos.length){
-    ultimoError='No se pudieron subir '+fallos.length+' foto(s) · '+fallos[0];
-    setTimeout(()=>toast('Fotos sin subir',ultimoError+' — siguen en pantalla y se reintentan solas. La foto que ya estaba en la nube no se borró.'),300);
+    /* el motivo se guarda en una variable propia: la global se limpia sola en
+       cuanto termina el guardado y el aviso salía sin explicación */
+    const motivo='No se pudieron subir '+fallos.length+' foto(s) · '+fallos.slice(0,2).join(' · ');
+    const rotas=[...fotosDanadas];
+    ultimoError=motivo;
+    setTimeout(()=>toast('Fotos sin subir',
+      rotas.length?(motivo+' — esa(s) imagen(es) llegaron dañadas: vuelve a subir la foto de '+rotas.slice(0,6).join(', ')+'.')
+                  :(motivo+' — siguen en pantalla y se reintentan solas. La foto que ya estaba en la nube no se borró.')),300);
   }
   return n;
 }
@@ -5299,7 +5314,7 @@ function fotosPorNombre(fs){
 async function subirFotoCatNube(k){
   const d=CATFOTO[k];if(!d||!d.startsWith('data:'))return;
   const [c,t]=String(k).split('||');
-  const blob=await (await fetch(d)).blob();
+  const blob=await leerIncrustada(k,d);
   try{
     CATFOTO[k]=await subirAlmacen(nombreArchivo('cat_'+k,blob),blob);
   }catch(e){throw new Error('foto de '+(t?t+' ('+c+')':'la familia '+c)+' · '+(e&&e.message||e))}
