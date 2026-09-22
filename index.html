@@ -3454,11 +3454,42 @@ async function sbAuth(path,body){
   const r=await fetchT(SB_URL+'/auth/v1/'+path,{method:'POST',headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(body)});
   const j=await r.json();if(!r.ok)throw new Error(j.error_description||j.msg||j.error||('auth '+r.status));return j;
 }
+/* Cuándo vence el permiso de esta sesión. Supabase manda expires_at (en segundos),
+   pero si no viniera se saca del propio token o de expires_in. */
+function sesVence(){
+  if(!SES)return 0;
+  if(SES.expires_at)return SES.expires_at*1000;
+  try{const p=JSON.parse(atob(String(SES.access_token).split('.')[1]));if(p.exp)return p.exp*1000}catch(e){}
+  if(SES.expires_in&&SES.guardada)return SES.guardada+SES.expires_in*1000;
+  return 0;
+}
+/* El permiso dura una hora. Si se pide justo antes de que venza, el servidor
+   rechaza la subida con un 400 y la foto se queda sin subir; eso es lo que
+   pasaba cuando la pestaña quedaba en segundo plano o el equipo se dormía y el
+   refresco cada 45 minutos se saltaba su turno. Por eso, antes de escribir en la
+   nube se comprueba y, si le quedan menos de 5 minutos, se renueva al momento. */
+let refrescando=null;
+async function sesionViva(margenMs=5*60*1000){
+  if(!SES)return false;
+  const v=sesVence();
+  if(v&&Date.now()<v-margenMs)return true;
+  if(!refrescando)refrescando=refrescar().finally(()=>{refrescando=null});
+  return refrescando;
+}
 async function refrescar(){
   let s=null;try{s=JSON.parse(localStorage.getItem(SKEY)||'null')}catch(e){}
   if(!s||!s.refresh_token)return false;
-  try{SES=await sbAuth('token?grant_type=refresh_token',{refresh_token:s.refresh_token});localStorage.setItem(SKEY,JSON.stringify(SES));return true}
-  catch(e){localStorage.removeItem(SKEY);return false}
+  try{
+    SES=await sbAuth('token?grant_type=refresh_token',{refresh_token:s.refresh_token});
+    SES.guardada=Date.now();
+    localStorage.setItem(SKEY,JSON.stringify(SES));
+    return true;
+  }catch(e){
+    /* Solo se descarta la sesión cuando el servidor dice que el refresco ya no
+       vale. Un corte de red no puede dejar a la usuaria sin sesión y sin avisar. */
+    if(/invalid|expired|not found|revoked/i.test(String(e&&e.message)))localStorage.removeItem(SKEY);
+    return false;
+  }
 }
 async function sbGet(t,q=''){const r=await fetchT(SB_URL+'/rest/v1/'+t+'?select=id,data'+q,{headers:hdr()});if(r.status===404)return[];if(!r.ok)throw new Error(t+' '+r.status);return r.json()}
 /* El motivo real que devuelve Supabase se conserva entero para poder enseñárselo al usuario. */
@@ -3499,6 +3530,7 @@ async function hacerLogin(){
   try{
     const email=$('lg-email').value.trim(),password=$('lg-pass').value;
     SES=await sbAuth('token?grant_type=password',{email,password});
+    SES.guardada=Date.now();
     localStorage.setItem(SKEY,JSON.stringify(SES));
     await entrar();
   }catch(e){$('lg-err').textContent=/invalid login/i.test(e.message)?'Correo o contraseña incorrectos.':e.message}
@@ -3577,7 +3609,11 @@ async function entrar(){
   aplicarRolUI();
   if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Mueve el margen o el PVP para ver cómo queda el precio. Estos números son solo para probar: no se guardan. El costo lo cierra un administrador al aprobar.');go('prod')}
   else if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
-  setInterval(refrescar,45*60*1000);
+  setInterval(()=>sesionViva(20*60*1000),15*60*1000);
+  /* Al volver a la pestaña (o al despertar el equipo) los temporizadores pueden
+     haberse saltado su turno: se comprueba el permiso al reaparecer. */
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sesionViva()});
+  window.addEventListener('pageshow',()=>sesionViva());
 }
 function aplicarRolUI(){
   const oculta=soloPrearmado();
@@ -3587,9 +3623,13 @@ function aplicarRolUI(){
   });
 }
 function filas(){
-  /* Si la foto local todavía no se ha subido, se conserva la que ya estaba en la nube.
-     Antes se mandaba null y una subida fallida borraba la foto buena del producto. */
-  const url=r=>{const f=FOTO[r];if(f&&!f.startsWith('data:'))return f;return FOTO_NUBE[r]||null};
+  /* La foto NUNCA se manda vacía si hay algo en pantalla:
+     - si ya está subida al almacén, va su dirección;
+     - si todavía no se pudo subir, va la imagen incrustada, para que quede
+       guardada aunque el almacén esté rechazando (antes se mandaba null y la
+       foto recién puesta se perdía al recargar);
+     - si no hay nada en pantalla, se conserva la que ya estaba en la nube. */
+  const url=r=>{const f=FOTO[r];if(f)return f;return FOTO_NUBE[r]||null};
   return {
     /* se manda el objeto entero (...x), no una lista de campos escrita a mano:
        así un campo nuevo se guarda solo, sin tocar esta función */
@@ -3712,15 +3752,30 @@ async function cargarNube(){
   if(n.nm||n.np){SUCIO=true;pendiente=true;marcarPend(true);pintarEstado('guardando');programar(600)}
   else{pendiente=false;marcarPend(false);pintarEstado('ok')}
 }
+/* Sube un archivo al almacén. Si el servidor rechaza el permiso (el token venció
+   entre medias), se renueva y se reintenta una vez antes de darlo por fallido. */
+async function subirAlmacen(path,blob){
+  const manda=()=>fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
+    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
+  let r=await manda();
+  if(!r.ok&&[400,401,403].includes(r.status)){
+    const txt=await r.text();
+    if(/jwt|exp|token|denied|autor/i.test(txt)&&await refrescar())r=await manda();
+    else throw new Error('HTTP '+r.status+' · '+txt.slice(0,160));
+  }
+  if(!r.ok)throw new Error('HTTP '+r.status+' · '+(await r.text()).slice(0,160));
+  return SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
+}
+function nombreArchivo(clave,blob){
+  const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
+  return String(clave).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
+}
 async function subirFotoNube(ref){
   const d=FOTO[ref];if(!d||!d.startsWith('data:'))return;
   const blob=await (await fetch(d)).blob();
-  const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
-  const path=ref.replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
-  const r=await fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
-    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
-  if(!r.ok)throw new Error('foto de '+ref+' · HTTP '+r.status+' · '+(await r.text()).slice(0,160));
-  FOTO[ref]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
+  try{
+    FOTO[ref]=await subirAlmacen(nombreArchivo(ref,blob),blob);
+  }catch(e){throw new Error('foto de '+ref+' · '+(e&&e.message||e))}
   FOTO_NUBE[ref]=FOTO[ref];
 }
 async function subirFotosPendientes(){
@@ -3728,6 +3783,7 @@ async function subirFotosPendientes(){
   const vive=k=>{const [c,t]=String(k).split('||');return !!CATEG[c]&&(!t||CATEG[c].includes(t))};
   const pc=Object.keys(CATFOTO).filter(k=>CATFOTO[k]&&String(CATFOTO[k]).startsWith('data:')&&vive(k));
   if(!p.length&&!pc.length)return 0;
+  await sesionViva();          /* permiso fresco antes de empezar la tanda */
   marcaSave('Subiendo fotos '+(p.length+pc.length)+'…','');
   let n=0;const fallos=[];
   for(const r of p){try{await subirFotoNube(r);n++}catch(e){console.error(e);fallos.push(String((e&&e.message)||e))}}
@@ -3745,6 +3801,7 @@ const tablasFaltantes=new Set();
 const noConfiables=new Set();
 let sinBorrarUnaVez=false;   // en la recuperación de cambios pendientes no se borra nada en la nube
 async function syncPush(){
+  await sesionViva();          /* el mismo permiso vencido dejaba de guardar las tablas */
   const Fs=filas();let n=0;const omitidas=[],errores=[];
   const LOTE=300;
   for(const t in Fs){
@@ -5243,12 +5300,9 @@ async function subirFotoCatNube(k){
   const d=CATFOTO[k];if(!d||!d.startsWith('data:'))return;
   const [c,t]=String(k).split('||');
   const blob=await (await fetch(d)).blob();
-  const ext=blob.type.includes('png')?'png':blob.type.includes('webp')?'webp':'jpg';
-  const path='cat_'+String(k).replace(/[^A-Za-z0-9_-]/g,'_')+'_'+Date.now()+'.'+ext;
-  const r=await fetchT(SB_URL+'/storage/v1/object/cst-fotos/'+path,{method:'POST',
-    headers:{apikey:SB_KEY,Authorization:'Bearer '+SES.access_token,'Content-Type':blob.type,'x-upsert':'true'},body:blob},30000);
-  if(!r.ok)throw new Error('foto de '+(t?t+' ('+c+')':'la familia '+c)+' · HTTP '+r.status+' · '+(await r.text()).slice(0,160));
-  CATFOTO[k]=SB_URL+'/storage/v1/object/public/cst-fotos/'+path;
+  try{
+    CATFOTO[k]=await subirAlmacen(nombreArchivo('cat_'+k,blob),blob);
+  }catch(e){throw new Error('foto de '+(t?t+' ('+c+')':'la familia '+c)+' · '+(e&&e.message||e))}
 }
 
 /* ====== REPORTES ====== */
