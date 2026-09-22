@@ -780,6 +780,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost" onclick="exportarBOM()">Exportar BOM (Excel)</button>
       <button class="btn ghost" onclick="csvOperaciones()">Exportar operaciones (Excel)</button>
       <input type="file" id="fotos-in" accept="image/*" multiple class="hide" onchange="subirFotos(this.files)">
+      <input type="file" id="col-fotos-in" accept="image/*" multiple webkitdirectory directory class="hide" onchange="cargarColeccion(this.files)">
       <input type="file" id="foto-1" accept="image/*" class="hide" onchange="subirFoto1(this.files)">
     </div>
   </div>
@@ -1225,11 +1226,18 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="tema" onclick="cerrar('ovl-fotos');document.getElementById('fotos-in').click()">
           <b>Subir fotos desde una carpeta</b>
           <span class="mini" style="margin:0">Varias de una vez. Cada archivo se pega a su referencia por el nombre.</span></button>
+        <button class="tema" onclick="cerrar('ovl-fotos');document.getElementById('col-fotos-in').click()">
+          <b>Cargar una colección entera</b>
+          <span class="mini" style="margin:0">Eliges la carpeta: su nombre pasa a ser la colección. Lo que ya existe se actualiza y lo que no, se crea.</span></button>
         <button class="tema" onclick="cerrar('ovl-fotos');abrirRecorte()">
           <b>Recortar de una imagen</b>
           <span class="mini" style="margin:0">Una sola imagen con varias prendas, como la ficha consolidada: se separan solas.</span></button>
       </div>
-      <p class="mini" style="margin-top:14px"><b>Cómo nombrar los archivos.</b> El nombre manda:
+      <p class="mini" style="margin-top:14px"><b>Cargar una colección.</b> Pon las fotos de la colección en una carpeta
+        y ll&aacute;mala como la colección (por ejemplo <b>BULL DOG</b>). Cada archivo lleva su referencia por delante:
+        <b>4936.jpg</b>. La app crea los que falten dentro de esa colección y actualiza la foto de los que ya existen;
+        la descripción queda pendiente y los encuentras con el filtro <b>Sin describir</b>.</p>
+      <p class="mini" style="margin-top:10px"><b>Cómo nombrar los archivos.</b> El nombre manda:
         <b>4797.jpg</b> le pone la foto a esa referencia; <b>4797 SHORT CORTO DESFLECADO.jpg</b> además
         <b>crea el producto</b> con ese nombre si la referencia todavía no existe. Después le pones categoría y tipo,
         y la ficha ya viene con los insumos base. Sirve igual si el archivo quedó como "4797 (1).jpg" o "foto_4797.jpg".</p>
@@ -3017,9 +3025,16 @@ function prodLista(){
     if(prodF==='ok')return f.saved&&!f.edit&&f.aprob!=='pendiente';
     if(prodF==='aprob')return f.aprob==='pendiente';
     if(prodF==='sinfoto')return !FOTO[x.r];
+    if(prodF==='sindesc')return sinDescribir(x);
     if(prodF==='sincu')return !String(x.cu||'').trim();
     return true;
   });
+}
+/* Producto creado por la carga de una colección: tiene foto y referencia, pero
+   todavía no tiene con qué costearse. */
+function sinDescribir(x){
+  const n=String(x.n||'').trim().toUpperCase();
+  return !n||n==='SIN NOMBRE'||n==='PRODUCTO NUEVO'||!String(x.cat||'').trim();
 }
 function toggleProd(r,v){if(v)SELP.add(r);else SELP.delete(r);pintarBulkProd()}
 function toggleAllProd(v){
@@ -3080,6 +3095,7 @@ function kpis(){
   const tot=act.length,pen=pendientes().length,apr=porAprobar().length,ok=tot-pen-apr,sf=act.filter(x=>!FOTO[x.r]).length,arch=REFS.length-tot;
   const avn=enAvanceLista().length;
   const scu=act.filter(x=>!String(x.cu||'').trim()).length;
+  const sd=act.filter(sinDescribir).length;
   const pct=tot?Math.round(ok/tot*100):0;
   const k=(id,cls,label,val,hint,on)=>`<button class="kpi ${cls} ${on?'on':''}" onclick="filtrarProd('${id}')">
       <div class="k">${label}</div><div class="v">${val}</div><div class="h">${hint}</div></button>`;
@@ -3089,6 +3105,7 @@ function kpis(){
     (avn?k('avance','pend','En avance',avn,'empezadas, sin cerrar el costo',prodF==='avance'):'')+
     (apr?k('aprob','pend','Por aprobar',apr,'fichas enviadas por prearmado',prodF==='aprob'):'')+
     k('sinfoto','','Sin foto',sf,'por cargar',prodF==='sinfoto')+
+    (sd?k('sindesc','pend','Sin describir',sd,'falta nombre o categoría',prodF==='sindesc'):'')+
     k('sincu','','Sin código único',scu,scu?'no empatan con el otro sistema':'todos empatados',prodF==='sincu')+
     (arch?k('arch','','Archivados',arch,'clic para verlos',prodF==='arch'):'');
   if($('kpis-prod'))$('kpis-prod').innerHTML=html;
@@ -3115,7 +3132,7 @@ function filaProd({x,i}){
       <div><input class="fld cod may" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
       <div>
-        <div class="pname" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n}</div>
+        <div class="pname${x.n?'':' sindef'}" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n||'sin describir'}</div>
         <div class="reg">Registrado ${fechaBonita(x.creado)} ·
           <span class="ent${x.ent?' si':''}">Entregada
             <input type="date" value="${x.ent||''}" title="Día en que el taller entregó la muestra terminada" onchange="setP(${i},'ent',this.value)">
@@ -3320,6 +3337,60 @@ function nuevoDeArchivo(nombre){
   if(/^(IMG|DSC|DCIM|PXL|WA|SCREENSHOT|CAPTURA|WHATSAPP)/i.test(ref))return null;
   if(byRef(ref))return null;
   return {r:ref,n:resto||'SIN NOMBRE'};
+}
+/* Una carpeta = una colección. El nombre de la carpeta es la colección; cada
+   archivo lleva su referencia por delante. Lo que ya existe se actualiza (solo
+   la foto: no se le mueve la colección que ya tenga) y lo que no existe se crea
+   dentro de esa colección, sin descripción: esa se pone después. */
+function carpetaDe(fs){
+  for(const f of fs){const p=f.webkitRelativePath||'';const c=p.split('/')[0];if(c&&c!==f.name)return MAY(c.replace(/[._-]+/g,' ').trim())}
+  return '';
+}
+function refDeArchivoNueva(nombre){
+  const base=String(nombre||'').replace(/\.[^.]+$/,'').replace(/\s*\(\d+\)\s*$/,'').trim();
+  const m=base.match(/^([A-Za-z0-9-]{3,12})[\s._-]*(.*)$/);
+  if(!m)return null;
+  const ref=m[1].toUpperCase(),resto=MAY(m[2].replace(/[._-]+/g,' ').trim());
+  if(!/[0-9]/.test(ref))return null;                       /* IMG, DSC, FOTO… */
+  if(/^(IMG|DSC|DCIM|PXL|WA|SCREENSHOT|CAPTURA|WHATSAPP)/i.test(ref))return null;
+  if(byRef(ref))return null;
+  return {r:ref,n:resto};
+}
+function cargarColeccion(fs){
+  const archivos=Array.from(fs||[]).filter(f=>/^image\//.test(f.type)||/\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(f.name));
+  $('col-fotos-in').value='';
+  if(!archivos.length){toast('No encontré fotos','La carpeta que elegiste no tiene imágenes.','warn');return}
+  const col=carpetaDe(archivos);
+  if(!col){toast('No pude leer la carpeta','Usa "Subir fotos desde una carpeta" y elige los archivos.','warn');return}
+  if(!COLECCIONES.some(c=>c===col))COLECCIONES.push(col);
+  const total=archivos.length,sin=[],nuevos=[],otraCol=[];
+  let act=0,pend=total;
+  archivos.forEach(f=>{
+    let ref=refDeArchivo(f.name);
+    if(ref){
+      const x=byRef(ref);
+      if(x){ if(!String(x.col||'').trim())x.col=col; else if(x.col!==col)otraCol.push(ref); }
+      act++;
+    }else{
+      const n=refDeArchivoNueva(f.name);
+      if(n){
+        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',col,creado:hoyISO()});
+        FICHAS[n.r]=nuevaFicha(recetaDe('',''));
+        nuevos.push(n.r);ref=n.r;
+      }
+    }
+    leer(f,d=>{
+      if(ref)FOTO[ref]=d; else sin.push(f.name);
+      if(--pend===0){rowsProd();rowsExp();head();autosave();
+        const avisos=[];
+        if(nuevos.length)avisos.push(nuevos.length+' nuevo(s): '+nuevos.slice(0,6).join(', ')+(nuevos.length>6?'…':'')+'. Falta la descripción.');
+        if(act)avisos.push(act+' ya existían: solo se les cambió la foto.');
+        if(otraCol.length)avisos.push('Con otra colección puesta (no se les movió): '+otraCol.slice(0,4).join(', ')+(otraCol.length>4?'…':''));
+        if(sin.length)avisos.push('Sin referencia en el nombre: '+sin.slice(0,4).join(', ')+(sin.length>4?' y '+(sin.length-4)+' más.':''));
+        toast('Colección '+col+' · '+(total-sin.length)+' de '+total,avisos.join(' · '));
+      }
+    });
+  });
 }
 function subirFotos(fs){
   const archivos=Array.from(fs||[]);        /* copia: la lista del campo se vacía sola */
