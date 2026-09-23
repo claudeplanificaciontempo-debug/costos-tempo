@@ -777,6 +777,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn" onclick="abrirMasiva()">Carga masiva</button>
       <button class="btn ghost" onclick="nuevoProd()">+ Producto</button>
       <button class="btn ghost" onclick="abrirFotos()">Fotos</button>
+      <button id="bt-arch-del" class="btn ghost hide" onclick="borrarArchivados()" title="Elimina de verdad los productos archivados, con su ficha y su foto">× Eliminar los archivados</button>
       <button class="btn ghost" onclick="exportarBOM()">Exportar BOM (Excel)</button>
       <button class="btn ghost" onclick="csvOperaciones()">Exportar operaciones (Excel)</button>
       <input type="file" id="fotos-in" accept="image/*" multiple class="hide" onchange="subirFotos(this.files)">
@@ -1243,6 +1244,37 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         y la ficha ya viene con los insumos base. Sirve igual si el archivo quedó como "4797 (1).jpg" o "foto_4797.jpg".</p>
     </div>
     <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-fotos')">Cancelar</button></div>
+  </div>
+</div>
+<div id="ovl-clasif" class="ovl hide">
+  <div class="modal" style="width:min(780px,100%)">
+    <div class="modal-h"><h2>Clasificar producto</h2><div class="sub" id="cl-cuenta" style="margin-left:auto"></div></div>
+    <div class="modal-b">
+      <div style="display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start">
+        <div class="photo"><div class="im"><img id="cl-img" alt=""></div></div>
+        <div>
+          <div class="eyebrow" style="margin-bottom:2px">Referencia</div>
+          <div id="cl-ref" style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:12px"></div>
+          <div class="mini" style="margin:0 0 3px"><b>Nombre</b> · con qué se reconoce la prenda</div>
+          <input id="cl-nom" class="fld may" style="border-color:var(--line)" placeholder="CAMISETA MC BLANCA CON ENCAJE"
+            onkeydown="if(event.key==='Enter')guardarClasif(true)">
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div style="flex:1;min-width:0"><div class="mini" style="margin:0 0 3px"><b>Categoría</b></div>
+              <select id="cl-cat" class="fld" onchange="clasifCat()"></select></div>
+            <div style="flex:1;min-width:0"><div class="mini" style="margin:0 0 3px"><b>Tipo de producto</b></div>
+              <select id="cl-sub" class="fld"></select></div>
+          </div>
+          <label class="mini" style="display:flex;gap:8px;align-items:center;margin-top:12px;cursor:pointer">
+            <input type="checkbox" id="cl-rec" checked> Cargar los materiales sugeridos del tipo si la ficha está vacía</label>
+          <p class="mini" style="margin-top:10px">El consumo de la tela y los tiempos por centro se revisan después en la ficha.</p>
+        </div>
+      </div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="cerrar('ovl-clasif')">Cancelar</button>
+      <button class="btn ghost" onclick="guardarClasif(true)">Guardar y siguiente</button>
+      <button class="btn org" onclick="guardarClasif(false)">Guardar</button>
+    </div>
   </div>
 </div>
 <div id="ovl-aspecto" class="ovl hide">
@@ -3036,6 +3068,18 @@ function sinDescribir(x){
   const n=String(x.n||'').trim().toUpperCase();
   return !n||n==='SIN NOMBRE'||n==='PRODUCTO NUEVO'||!String(x.cat||'').trim();
 }
+/* Archivar es quitar de en medio; esto es quitar de verdad. Solo aparece cuando
+   se está mirando el archivo, para no borrar nada por descuido. */
+function borrarArchivados(){
+  const arch=REFS.filter(x=>x.arch);
+  if(!arch.length){toast('No hay archivados','El archivo está vacío.');return}
+  const lista=arch.map(x=>x.r+' · '+(x.n||'sin nombre'));
+  if(!confirm('Vas a eliminar definitivamente '+arch.length+' producto(s) archivado(s), con su ficha de costos y su foto:\n\n'+
+    lista.slice(0,12).join('\n')+(lista.length>12?'\n…y '+(lista.length-12)+' más':'')+'\n\nEsto no se puede deshacer. ¿Seguir?'))return;
+  arch.map(x=>x.r).forEach(r=>{const i=REFS.findIndex(y=>y.r===r);if(i>=0)quitarProd(i)});
+  SELP.clear();rowsProd();rowsExp();rowsLista();autosave();
+  toast('Archivados eliminados',arch.length+' producto(s) salieron del catálogo para siempre.');
+}
 function toggleProd(r,v){if(v)SELP.add(r);else SELP.delete(r);pintarBulkProd()}
 function toggleAllProd(v){
   const refs=prodLista().map(({x})=>x.r);
@@ -3133,6 +3177,7 @@ function filaProd({x,i}){
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
       <div>
         <div class="pname${x.n?'':' sindef'}" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n||'sin describir'}</div>
+        ${sinDescribir(x)?`<button class="btn ghost sm" style="margin:2px 0 4px" title="Ponerle nombre, categoría y tipo" onclick="event.stopPropagation();abrirClasificar('${x.r}')">Clasificar</button>`:''}
         <div class="reg">Registrado ${fechaBonita(x.creado)} ·
           <span class="ent${x.ent?' si':''}">Entregada
             <input type="date" value="${x.ent||''}" title="Día en que el taller entregó la muestra terminada" onchange="setP(${i},'ent',this.value)">
@@ -3176,6 +3221,8 @@ function filaProd({x,i}){
 }
 function rowsProd(){
   kpis();
+  /* borrar de verdad solo se ofrece mientras se mira el archivo */
+  const bda=$('bt-arch-del');if(bda)bda.classList.toggle('hide',prodF!=='arch');
   const lista=prodLista();
   SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
   let html;
@@ -4313,6 +4360,53 @@ function respaldo(){
 /* ====== RECORTE DE UNA IMAGEN CON VARIAS FOTOS ====== */
 let RC=[];
 function abrirFotos(){$('ovl-fotos').classList.remove('hide')}
+/* Clasificar: ponerle nombre, categoría y tipo a lo que entró solo con foto y
+   referencia. Encadena con "Guardar y siguiente" para despachar una tanda. */
+let CLASIF='';
+const porClasificar=()=>activos().filter(sinDescribir);
+function abrirClasificar(ref){
+  const x=byRef(ref)||porClasificar()[0];
+  if(!x){toast('No queda ninguno','Todos los productos tienen nombre y categoría.');return}
+  CLASIF=x.r;pintarClasif();
+  $('ovl-clasif').classList.remove('hide');
+  setTimeout(()=>$('cl-nom').focus(),60);
+}
+function pintarClasif(){
+  const x=byRef(CLASIF);if(!x){cerrar('ovl-clasif');return}
+  $('cl-ref').textContent=x.r;
+  const f=FOTO[x.r]||'';$('cl-img').src=f;$('cl-img').style.display=f?'':'none';
+  const generico=/^(SIN NOMBRE|PRODUCTO NUEVO)$/i.test(String(x.n||'').trim());
+  $('cl-nom').value=generico?'':(x.n||'');
+  const cats=Object.keys(CATEG);
+  $('cl-cat').innerHTML=(x.cat?'':'<option value="" selected>sin definir</option>')+
+    cats.map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
+  clasifCat(x.sub);
+  const n=porClasificar().length;
+  $('cl-cuenta').textContent=n>1?('quedan '+n+' sin describir'):'es el último sin describir';
+}
+function clasifCat(sub){
+  const c=$('cl-cat').value,tipos=CATEG[c]||[];
+  $('cl-sub').innerHTML=tipos.length?tipos.map(t=>`<option ${t===sub?'selected':''}>${t}</option>`).join('')
+    :'<option value="">—</option>';
+}
+function guardarClasif(siguiente){
+  const x=byRef(CLASIF);if(!x)return;
+  const n=MAY($('cl-nom').value.trim()),c=$('cl-cat').value,t=$('cl-sub').value;
+  if(!n){toast('Falta el nombre','Escribe con qué nombre se reconoce la prenda.');$('cl-nom').focus();return}
+  if(!c){toast('Falta la categoría','Elige en qué familia entra la prenda.');return}
+  const pc=x.cat,ps=x.sub;
+  x.n=n;x.cat=c;x.sub=t||(CATEG[c]||[])[0]||'';
+  const f=FICHAS[x.r];
+  if($('cl-rec').checked&&f&&!(f.lines||[]).length)
+    f.lines=recetaDe(x.cat,x.sub).lines.map(l=>({c:l[0],q:l[1],d:l[2]}));
+  else reajustarReceta(x,pc,ps);
+  rowsProd();rowsExp();head();if(cur===x.r)draw();autosave();
+  toast('Clasificado',x.r+' · '+x.n+' · '+x.cat+(x.sub?' · '+x.sub:''));
+  if(!siguiente){cerrar('ovl-clasif');return}
+  const p=porClasificar();
+  if(!p.length){cerrar('ovl-clasif');toast('No queda ninguno','Todos los productos tienen nombre y categoría.');return}
+  CLASIF=p[0].r;pintarClasif();$('cl-nom').focus();
+}
 function abrirRecorte(){RC=[];$('rc-grid').innerHTML='<div class="empty">Todavía no hay imagen.</div>';$('rc-s').textContent='';$('ovl3').classList.remove('hide')}
 let rcImg=null;
 function leerPlancha(fs){
