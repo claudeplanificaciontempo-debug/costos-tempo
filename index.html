@@ -3701,6 +3701,20 @@ function filas(){
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
+/* La misma fila, pero sin el número de orden y con los campos en orden alfabético:
+   sirve para saber si lo único que cambió fue la posición en la lista. */
+function sinOrden(o){
+  if(!o||typeof o!=='object')return '';
+  return JSON.stringify(Object.keys(o).filter(k=>k!=='orden').sort().reduce((a,k)=>(a[k]=o[k],a),{}));
+}
+/* Borrar o crear un producto renumera a todos los demás. Antes eso marcaba el
+   catálogo entero como "cambiado" y se volvía a mandar completo, pisando lo que
+   otra pestaña -o quien esté cargando datos- hubiera escrito mientras tanto.
+   Una fila cuyo único cambio es su posición ya no se reenvía. */
+function soloCambioDeOrden(antes,ahora){
+  if(antes===undefined||antes===null)return false;
+  try{return sinOrden(JSON.parse(antes))===sinOrden(ahora)}catch(e){return false}
+}
 const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones','cst_base','cst_lmo'];
 async function cargarNube(){
   const T=TABLAS;
@@ -3869,7 +3883,7 @@ async function syncPush(){
   for(const t in Fs){
     if(noConfiables.has(t))continue;   // no se pudo leer: no se escribe encima
     const cur_=snapshot(Fs[t]),prev=lastSent[t]||{};
-    const up=Fs[t].filter(row=>prev[row.id]!==cur_[row.id]);
+    const up=Fs[t].filter(row=>prev[row.id]!==cur_[row.id]&&!soloCambioDeOrden(prev[row.id],row.data));
     const del=sinBorrarUnaVez?[]:Object.keys(prev).filter(id=>!(id in cur_));
     if(!up.length&&!del.length){lastSent[t]=cur_;continue}
     /* Cada tabla se intenta por separado: que una falle no puede impedir que se
