@@ -321,7 +321,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 .save p{font-size:10.5px;color:var(--ink-3);margin-top:8px;line-height:1.4}
 
 /* productos */
-.prow{display:grid;grid-template-columns:22px 56px 88px 100px minmax(120px,1fr) 128px 104px 78px 116px 130px 138px 138px 96px 70px;gap:10px;align-items:center;
+.prow{display:grid;grid-template-columns:22px 56px 88px 100px minmax(120px,1fr) 128px 104px 78px 116px 130px 138px 138px 96px 98px;gap:10px;align-items:center;
   padding:9px 14px;border-bottom:1px solid var(--line-soft)}
 /* rayado alterno también en Productos, que usa divs y no una tabla */
 .prow:nth-of-type(even){background:var(--zebra)}
@@ -646,6 +646,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <button id="bt-aprmuestra" class="vst-l" onclick="toggleAprobFicha()"><i>✓</i><span>Muestra aprobada</span></button>
           <select class="refsel" id="rh-sel" onchange="setRef(this.value)"></select>
           <button id="bt-avance" class="btn org sm" style="width:100%;margin-top:7px" onclick="guardarAvance()">Guardar avance</button>
+          <button class="btn ghost sm" style="width:100%;margin-top:7px" onclick="duplicarActual()">Duplicar esta referencia</button>
           <button class="btn ghost sm" style="width:100%;margin-top:7px" onclick="go('prod')">Editar producto</button>
         </div>
       </div>
@@ -3214,6 +3215,7 @@ function filaProd({x,i}){
           :`<span class="pill" title="${f.av?'Último avance guardado el '+f.av:'Todavía sin empezar'}">${f.edit?'Re-costeo v'+(f.ver+1):(enAvance(f)?'En avance':'Borrador')}</span>`}</div>
       <div style="text-align:right;white-space:nowrap">
         <button class="vst ${x.apr?'on':''}" title="${x.apr?'Muestra aprobada el '+fechaBonita(x.aprFecha)+' · clic para quitar el visto':'Marcar la muestra como aprobada'}" onclick="toggleAprob(${i})">✓</button>
+        <button class="x" title="Duplicar con su ficha de costos" onclick="duplicarProd(${i})">⧉</button>
         <button class="x" title="${x.arch?'Restaurar':'Archivar'}" onclick="toggleArchivo(${i})">${x.arch?'⤴':'🗄'}</button>
         <button class="x" title="Borrar" onclick="borrarProd(${i})">×</button>
       </div>
@@ -3324,6 +3326,38 @@ function quitarProd(i){
   if(SEED&&SEED.REFS.some(y=>y.r===r)&&BORRADOS.prod.indexOf(r)<0)BORRADOS.prod.push(r);
   if(cur===r&&REFS.length)cur=REFS[0].r;
 }
+/* Duplicar: la misma prenda con un cambio (sin bordado, sin estampado…). Se
+   copia todo lo que cuesta -materiales, tiempos, operaciones y márgenes- y la
+   foto, para no volver a armar la ficha desde cero. Lo que NO se copia es lo
+   que identifica a la otra prenda o certifica su costo: el código único, el
+   visto de muestra aprobada, la fecha de entrega y el historial de versiones.
+   La copia nace como borrador: su costo se aprueba aparte. */
+function refCopia(r){
+  const base=String(r||'').replace(/-\d+$/,'');
+  let n=2;while(byRef(base+'-'+n))n++;
+  return base+'-'+n;
+}
+function duplicarProd(i){
+  const x=REFS[i];if(!x)return;
+  if(!puedeEditar()){toast('Sin permiso','Tu usuario no puede crear productos.');return}
+  const sug=refCopia(x.r);
+  let r=prompt('Referencia de la copia de '+x.r+(x.n?' · '+x.n:'')+':',sug);
+  if(r===null)return;
+  r=MAY(String(r).trim());
+  if(!r){toast('Falta la referencia','La copia necesita su propia referencia.');return}
+  if(byRef(r)){toast('Esa referencia ya existe','Ya hay un producto con la referencia '+r+'.');return}
+  const {apr,aprFecha,ent,...resto}=x;
+  REFS.splice(i+1,0,{...resto,r,cu:'',arch:false,creado:hoyISO()});
+  const f=JSON.parse(JSON.stringify(FICHAS[x.r]||nuevaFicha()));
+  f.ver=1;f.saved=false;f.edit=false;f.fecha='';f.hist=[];f.aprob=null;f.av='';
+  FICHAS[r]=f;
+  if(FOTO[x.r])FOTO[r]=FOTO[x.r];
+  rowsProd();rowsExp();rowsLista();autosave();
+  verFicha(r);
+  toast('Copiado en '+r,'Tiene los mismos materiales, tiempos y márgenes que '+x.r+
+    '. Quita lo que no lleve esta versión y cambia el nombre; el costo se aprueba aparte.');
+}
+function duplicarActual(){const i=REFS.findIndex(x=>x.r===cur);if(i<0){toast('Sin referencia abierta','Abre una ficha primero.');return}duplicarProd(i)}
 function borrarProd(i){
   const x=REFS[i];if(!x)return;
   if(!confirm('¿Borrar '+x.r+(x.n?' · '+x.n:'')+'?\n\nSe borra también su ficha de costos y su foto, y no se puede deshacer.\nSi solo quieres sacarlo de la lista, archívalo con el botón de al lado.'))return;
