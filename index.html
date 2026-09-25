@@ -1257,7 +1257,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <div class="eyebrow" style="margin-bottom:2px">Referencia</div>
           <div id="cl-ref" style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:12px"></div>
           <div class="mini" style="margin:0 0 3px"><b>Nombre</b> · con qué se reconoce la prenda</div>
-          <input id="cl-nom" class="fld may" style="border-color:var(--line)" placeholder="CAMISETA MC BLANCA CON ENCAJE"
+          <input id="cl-nom" class="fld may" style="border-color:var(--line)" placeholder="Ejemplo: CAMISETA MC BLANCA CON ENCAJE"
             onkeydown="if(event.key==='Enter')guardarClasif(true)">
           <div style="display:flex;gap:10px;margin-top:12px">
             <div style="flex:1;min-width:0"><div class="mini" style="margin:0 0 3px"><b>Categoría</b></div>
@@ -4417,14 +4417,20 @@ function abrirClasificar(ref){
   if(!x){toast('No queda ninguno','Todos los productos tienen nombre y categoría.');return}
   CLASIF=x.r;pintarClasif();
   $('ovl-clasif').classList.remove('hide');
-  setTimeout(()=>$('cl-nom').focus(),60);
+  setTimeout(()=>{const n=$('cl-nom');n.focus();n.select()},60);
+}
+/* Un nombre para empezar, sacado del tipo de prenda: llega escrito de verdad
+   (no en gris), para que baste con completarlo o guardarlo tal cual. */
+function nombrePropuesto(x){
+  const t=String((x&&x.sub)||'').trim(),c=String((x&&x.cat)||'').trim();
+  return MAY(t||c||'');
 }
 function pintarClasif(){
   const x=byRef(CLASIF);if(!x){cerrar('ovl-clasif');return}
   $('cl-ref').textContent=x.r;
   const f=FOTO[x.r]||'';$('cl-img').src=f;$('cl-img').style.display=f?'':'none';
   const generico=/^(SIN NOMBRE|PRODUCTO NUEVO)$/i.test(String(x.n||'').trim());
-  $('cl-nom').value=generico?'':(x.n||'');
+  $('cl-nom').value=(generico||!x.n)?nombrePropuesto(x):x.n;
   const cats=Object.keys(CATEG);
   $('cl-cat').innerHTML=(x.cat?'':'<option value="" selected>sin definir</option>')+
     cats.map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
@@ -4436,6 +4442,11 @@ function clasifCat(sub){
   const c=$('cl-cat').value,tipos=CATEG[c]||[];
   $('cl-sub').innerHTML=tipos.length?tipos.map(t=>`<option ${t===sub?'selected':''}>${t}</option>`).join('')
     :'<option value="">—</option>';
+  /* si todavía está el nombre propuesto (nadie escribió encima), se acompasa
+     con la categoría recién elegida */
+  const n=$('cl-nom'),x=byRef(CLASIF);
+  if(n&&x&&(!n.value.trim()||n.value.trim()===nombrePropuesto(x)||n.value.trim()===nombrePropuesto({cat:c,sub:$('cl-sub').value})))
+    n.value=MAY($('cl-sub').value||c);
 }
 function guardarClasif(siguiente){
   const x=byRef(CLASIF);if(!x)return;
@@ -4453,7 +4464,7 @@ function guardarClasif(siguiente){
   if(!siguiente){cerrar('ovl-clasif');return}
   const p=porClasificar();
   if(!p.length){cerrar('ovl-clasif');toast('No queda ninguno','Todos los productos tienen nombre y categoría.');return}
-  CLASIF=p[0].r;pintarClasif();$('cl-nom').focus();
+  CLASIF=p[0].r;pintarClasif();$('cl-nom').focus();$('cl-nom').select();
 }
 function abrirRecorte(){RC=[];$('rc-grid').innerHTML='<div class="empty">Todavía no hay imagen.</div>';$('rc-s').textContent='';$('ovl3').classList.remove('hide')}
 let rcImg=null;
