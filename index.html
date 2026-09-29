@@ -948,7 +948,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="addrow">
       <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
       <button class="btn" onclick="xlsxFichas()">Descargar fichas por referencia (Excel)</button>
-      <button class="btn" onclick="xlsxPrecios()">Descargar lista de precios (Excel)</button>
+      <button class="btn" onclick="xlsxPrecios(true)">Lista de precios con costo (Excel)</button>
+      <button class="btn" onclick="xlsxPrecios(false)">Lista de precios para el cliente (Excel)</button>
       <button class="btn ghost" onclick="exportarCostos()">Descargar resumen (CSV)</button>
       <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
       <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
@@ -971,7 +972,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="card-h"><h2>Precios por referencia</h2>
       <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
       <button class="btn org sm" style="margin-left:8px" onclick="pdfListaPrecios()">Exportar PDF</button>
-      <button class="btn sm" style="margin-left:6px" title="Una hoja horizontal con la foto, el detalle y una columna por cliente" onclick="xlsxPrecios()">Exportar Excel</button>
+      <button class="btn sm" style="margin-left:6px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios(true)">Excel con costo</button>
+      <button class="btn sm" style="margin-left:6px" title="La misma hoja sin el costo de TEMPO ni el estado de la ficha: para mandarla al cliente" onclick="xlsxPrecios(false)">Excel para el cliente</button>
       <div class="sub" id="lp-s"></div></div>
     <div class="lpwrap"><table class="lptab">
       <thead id="lp-head"></thead>
@@ -6095,27 +6097,33 @@ async function xlsxFichas(){
 /* ====== LISTA DE PRECIOS DE TODOS LOS CLIENTES ======
    Una sola hoja horizontal: la foto de la prenda, su detalle, y a la derecha
    una columna por cliente con su precio. Es la que se lleva a la reunión. */
-async function xlsxPrecios(){
+/* conCosto=false arma la misma hoja para mandarla al cliente: sin el costo de
+   TEMPO y sin el estado interno de la ficha. */
+async function xlsxPrecios(conCosto){
+  const interna=conCosto!==false;
   const list=activos();
   if(!list.length){toast('Nada que exportar','Todavía no hay productos en el catálogo.');return}
   const g=cur,fl=[],altos={};
   fl.push([{v:'LISTA DE PRECIOS · TEMPO',s:5},'','',{v:'generado el '+hoy(),s:1}]);
   fl.push([]);
-  fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN','ESTADO','COSTO TEMPO']
+  fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN']
+    .concat(interna?['ESTADO','COSTO TEMPO']:[])
     .concat(CLI.map(c=>c.cli+' · '+c.zona)).map(t=>({v:t,s:3})));
   const estadoDe=f=>f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?('Costeada v'+f.ver):(f.edit?'Re-costeo':(enAvance(f)?'En avance':'Borrador')));
   const conFoto=[];
   list.forEach(x=>{
     const f=FICHAS[x.r]||fichaVacia();cur=x.r;calc();
     const r=fl.length+1;
-    fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'',estadoDe(f),{v:TOT.total,s:2}]
+    fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'']
+      .concat(interna?[estadoDe(f),{v:TOT.total,s:2}]:[])
       .concat(CLI.map((c,i)=>({v:plCalc(i,true).pvp,s:2}))));
     altos[r]=54;                       /* alto de fila para que quepa la foto */
     if(FOTO[x.r])conFoto.push({ref:x.r,fila:r-1});
   });
   fl.push([]);
-  fl.push([{v:'Precios calculados con los costos y márgenes de hoy ('+hoy()+'). '+
-    'Los clientes atados a otro llevan su recargo ya aplicado.',s:1}]);
+  fl.push([{v:interna
+    ?('Precios calculados con los costos y márgenes de hoy ('+hoy()+'). Los clientes atados a otro llevan su recargo ya aplicado.')
+    :('Precios en dólares por prenda, vigentes al '+hoy()+'. TEMPOCODECA.'),s:1}]);
   cur=g;calc();
 
   marcaSave('Armando la lista…','');
@@ -6127,13 +6135,16 @@ async function xlsxPrecios(){
   }
   estadoOk();
   const hoja={nombre:'PRECIOS',filas:fl,
-    anchos:[11,13,40,17,17,17,13,13].concat(CLI.map(()=>15)),altos,fotos};
-  const lib=libroXlsx([hoja],'TEMPO_Lista_de_precios_'+new Date().toISOString().slice(0,10)+'.xlsx');
+    anchos:[11,13,40,17,17,17].concat(interna?[13,13]:[]).concat(CLI.map(()=>15)),altos,fotos};
+  const lib=libroXlsx([hoja],'TEMPO_Lista_de_precios'+(interna?'':'_para_cliente')+'_'+
+    new Date().toISOString().slice(0,10)+'.xlsx');
   try{
     const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
-    toast('Lista de precios generada',lib.nombre+' · '+list.length+' productos, '+CLI.length+
-      ' clientes y '+lib.fotos+' fotos.'+(sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
+    toast(interna?'Lista de precios generada':'Lista para el cliente generada',
+      lib.nombre+' · '+list.length+' productos, '+CLI.length+' clientes y '+lib.fotos+' fotos.'+
+      (interna?'':' Sin el costo de TEMPO ni el estado de la ficha.')+
+      (sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
   }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
   return lib;
 }
