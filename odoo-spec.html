@@ -1,0 +1,998 @@
+<title>Costos TEMPO en Odoo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@600;700;900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Documento técnico a una columna: texto medido a ~68ch, maquetas a sangre dentro
+   de su propio contenedor con scroll horizontal. Acento vino: el de la app real. */
+:root{
+  --papel:#faf7f6;          /* fondo, blanco con sesgo rosado */
+  --tinta:#221b1e;
+  --tinta-2:#6b5a5f;
+  --tinta-3:#9b8a8f;
+  --vino:#9c3b4e;
+  --vino-hondo:#6b2434;
+  --linea:#e6dcdd;
+  --linea-suave:#f0e9ea;
+  --caja:#ffffff;
+  --suave:#f6eff0;
+  --verde:#14663a; --verde-suave:#e7f4ec;
+  --ambar:#6b4708; --ambar-suave:#fdf6e7;
+  --rojo:#a8331a; --rojo-suave:#fbeae5;
+  --azul:#2c4f73; --azul-suave:#e9eff6;
+  --display:'Chivo','Helvetica Neue',Arial,sans-serif;
+  --texto:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --papel:#171315; --tinta:#f4ecee; --tinta-2:#bda9ae; --tinta-3:#8d7a80;
+    --vino:#d4788c; --vino-hondo:#f0a5b5; --linea:#3a2f33; --linea-suave:#2a2226;
+    --caja:#1f191b; --suave:#2a2226;
+    --verde:#5fd6a0; --verde-suave:#11301f;
+    --ambar:#f0c674; --ambar-suave:#332608;
+    --rojo:#f08b6c; --rojo-suave:#3a1c14;
+    --azul:#9dc0e8; --azul-suave:#1c2735;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --papel:#171315; --tinta:#f4ecee; --tinta-2:#bda9ae; --tinta-3:#8d7a80;
+  --vino:#d4788c; --vino-hondo:#f0a5b5; --linea:#3a2f33; --linea-suave:#2a2226;
+  --caja:#1f191b; --suave:#2a2226;
+  --verde:#5fd6a0; --verde-suave:#11301f;
+  --ambar:#f0c674; --ambar-suave:#332608;
+  --rojo:#f08b6c; --rojo-suave:#3a1c14;
+  --azul:#9dc0e8; --azul-suave:#1c2735;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);
+  font-family:var(--texto);font-size:16px;line-height:1.6;
+  font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+.envoltura{max-width:1140px;margin:0 auto;padding-inline:20px;padding-block:0 72px}
+.medida{max-width:68ch}
+
+/* ---------- portada ---------- */
+.portada{padding-block:56px 40px;border-bottom:3px solid var(--vino)}
+.sello{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--vino);font-weight:600}
+h1{font-family:var(--display);font-weight:900;font-size:clamp(34px,6vw,58px);line-height:1.02;
+  letter-spacing:-.025em;margin:12px 0 0;text-wrap:balance}
+.bajada{font-size:clamp(17px,2.2vw,20px);color:var(--tinta-2);margin:16px 0 0;max-width:60ch}
+.ficha-doc{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:2px 26px;
+  margin-top:32px;font-size:13.5px}
+.ficha-doc div{padding-block:7px;border-top:1px solid var(--linea)}
+.ficha-doc dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--tinta-3);margin-bottom:2px}
+.ficha-doc dd{margin:0;font-weight:500}
+
+/* ---------- índice ---------- */
+.indice{margin-block:36px;padding:22px 24px;background:var(--caja);border:1px solid var(--linea);border-radius:4px}
+.indice h2{margin:0 0 12px;font-size:12px}
+.indice ol{margin:0;padding-left:20px;columns:2;column-gap:32px;font-size:14.5px}
+@media(max-width:620px){.indice ol{columns:1}}
+.indice li{margin-bottom:5px;break-inside:avoid}
+.indice a{color:var(--tinta);text-decoration:none;border-bottom:1px solid var(--linea)}
+.indice a:hover{color:var(--vino);border-color:var(--vino)}
+
+/* ---------- jerarquía ---------- */
+section{padding-block:44px 8px;border-top:1px solid var(--linea);margin-top:36px}
+section:first-of-type{border-top:0}
+h2{font-family:var(--display);font-weight:700;font-size:clamp(23px,3.4vw,31px);line-height:1.12;
+  letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h2 .num{font-family:var(--mono);font-size:.55em;font-weight:600;color:var(--vino);
+  letter-spacing:0;margin-right:12px;vertical-align:.18em}
+h3{font-family:var(--display);font-weight:700;font-size:19px;letter-spacing:-.01em;
+  margin:34px 0 8px;text-wrap:balance}
+h4{font-size:14px;font-weight:600;margin:22px 0 6px;color:var(--tinta)}
+p{margin:0 0 14px}
+ul,ol{margin:0 0 14px;padding-left:22px}
+li{margin-bottom:6px}
+strong{font-weight:600}
+code,.campo{font-family:var(--mono);font-size:.87em;background:var(--suave);
+  padding:1.5px 5px;border-radius:3px;color:var(--vino-hondo)}
+:root[data-theme="dark"] code,:root[data-theme="dark"] .campo{color:var(--vino)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) code,
+  :root:not([data-theme="light"]) .campo{color:var(--vino)}}
+.eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--tinta-3);font-weight:600;margin-bottom:8px}
+
+/* ---------- avisos ---------- */
+.nota{border-left:3px solid var(--vino);background:var(--caja);padding:14px 18px;
+  margin:20px 0;font-size:14.5px;border-radius:0 4px 4px 0}
+.nota.ojo{border-color:var(--ambar);background:var(--ambar-suave)}
+.nota.regla{border-color:var(--azul);background:var(--azul-suave)}
+.nota p:last-child{margin-bottom:0}
+.nota .et{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  font-weight:600;display:block;margin-bottom:4px;color:var(--tinta-2)}
+
+/* ---------- tablas ---------- */
+.tabla-caja{overflow-x:auto;margin:18px 0 22px;border:1px solid var(--linea);border-radius:4px;background:var(--caja)}
+table{width:100%;border-collapse:collapse;font-size:13.5px;min-width:520px}
+th{text-align:left;font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--vino-hondo);font-weight:600;padding:10px 14px;background:var(--suave);
+  border-bottom:1px solid var(--linea);white-space:nowrap}
+td{padding:9px 14px;border-bottom:1px solid var(--linea-suave);vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right}
+.mini{font-size:12.5px;color:var(--tinta-2)}
+
+/* ---------- fórmulas ---------- */
+.formula{font-family:var(--mono);font-size:14px;line-height:1.75;background:var(--caja);
+  border:1px solid var(--linea);border-left:3px solid var(--vino);border-radius:0 4px 4px 0;
+  padding:16px 18px;margin:16px 0;overflow-x:auto}
+.formula b{color:var(--vino-hondo);font-weight:600}
+:root[data-theme="dark"] .formula b{color:var(--vino)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .formula b{color:var(--vino)}}
+.formula .cmt{color:var(--tinta-3)}
+
+/* ---------- maquetas ---------- */
+figure{margin:26px 0 30px}
+figcaption{font-size:13px;color:var(--tinta-2);margin-top:10px;padding-left:2px}
+figcaption b{color:var(--tinta);font-weight:600}
+.maqueta-caja{overflow-x:auto;border:1px solid var(--linea);border-radius:6px;background:var(--suave);
+  padding:18px}
+.app{min-width:860px;background:var(--caja);border:1px solid var(--linea);border-radius:5px;
+  overflow:hidden;font-size:12px;color:var(--tinta)}
+.app-barra{background:#f0dfe2;color:#6b2434;padding:9px 14px;display:flex;align-items:center;gap:10px}
+.app-logo{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,#9c3b4e,#b95568);
+  color:#fff;display:grid;place-items:center;font-weight:700;font-size:11px}
+.app-marca{font-weight:700;font-size:13px;line-height:1}
+.app-marca span{display:block;font-size:8.5px;font-weight:500;letter-spacing:.06em;
+  text-transform:uppercase;color:#85505c;margin-top:2px}
+.app-derecha{margin-left:auto;display:flex;align-items:center;gap:8px;font-size:10px;color:#85505c}
+.chip-ok{background:#e7f4ec;color:#14663a;border-radius:20px;padding:2px 9px;font-weight:600}
+.app-nav{background:#6b2434;display:flex;gap:2px;padding:0 14px;overflow:hidden}
+.app-nav div{padding:8px 11px;font-size:11px;font-weight:600;color:rgba(255,255,255,.74);white-space:nowrap}
+.app-nav div.on{color:#fff;box-shadow:inset 0 -2.5px 0 #f0a5b5}
+.app-cuerpo{padding:14px;background:#fdf8f8}
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:12px}
+.kpi{background:#fff;border:1px solid #e6dcdd;border-radius:9px;padding:9px 11px}
+.kpi .k{font-size:8.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:#9d8b8f}
+.kpi .v{font-size:21px;font-weight:800;letter-spacing:-.02em;line-height:1.2;color:#31262a}
+.kpi .h{font-size:9px;color:#9d8b8f}
+.kpi.ok .k,.kpi.ok .v{color:#14663a}
+.kpi.pend .k,.kpi.pend .v{color:#6b4708}
+.kpi.sel{box-shadow:inset 3px 0 0 #9c3b4e;border-color:#9c3b4e}
+.tabla-app{background:#fff;border:1px solid #e6dcdd;border-radius:9px;overflow:hidden}
+.fila-cab,.fila{display:grid;grid-template-columns:46px 62px 1fr 108px 96px 96px 82px 74px;
+  gap:9px;align-items:center;padding:8px 12px}
+.fila-cab{background:#f7eff0;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;
+  font-weight:700;color:#6b2434}
+.fila{border-top:1px solid #f0e9ea}
+.fila:nth-child(even){background:#fdf8f8}
+.mini-foto{width:38px;height:44px;border-radius:6px;background:#f0e9ea;display:grid;place-items:center;overflow:hidden}
+.mini-foto svg{width:30px;height:34px}
+.ref{font-family:var(--mono);font-weight:600;font-size:11px;color:#31262a}
+.nom{font-weight:600;font-size:11.5px;color:#31262a;line-height:1.25}
+.sub{font-size:9px;color:#9d8b8f;margin-top:2px}
+.select{border:1px solid #e6dcdd;border-radius:6px;padding:4px 7px;font-size:10px;background:#fff;
+  color:#31262a;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.select em{font-style:italic;color:#9d8b8f}
+.costo{text-align:right;font-weight:700;font-size:13px;color:#31262a}
+.pill{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.05em;border-radius:20px;
+  padding:2px 8px;background:#f0e9ea;color:#6d5a5f;text-transform:uppercase}
+.pill.ok{background:#e7f4ec;color:#14663a}
+.pill.av{background:#fdf6e7;color:#6b4708}
+.acciones{display:flex;gap:5px;justify-content:flex-end;color:#9d8b8f;font-size:12px}
+.boton{background:#9c3b4e;color:#fff;border-radius:7px;padding:6px 12px;font-size:10.5px;
+  font-weight:600;display:inline-block}
+.boton.fantasma{background:#fff;color:#6d5a5f;border:1px solid #e6dcdd}
+.barra-botones{display:flex;gap:7px;padding:10px 12px;background:#f7eff0;border-top:1px solid #e6dcdd;
+  flex-wrap:wrap}
+
+/* ficha en 3 bloques */
+.tri{display:grid;grid-template-columns:200px minmax(0,1fr) 250px;gap:12px;align-items:start}
+.bloque-t{display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.bloque-t i{width:17px;height:17px;border-radius:5px;background:#9c3b4e;color:#fff;
+  display:grid;place-items:center;font-size:9.5px;font-weight:800;font-style:normal}
+.bloque-t span{font-size:9px;letter-spacing:.1em;text-transform:uppercase;font-weight:800;color:#6d5a5f}
+.tarjeta{background:#fff;border:1px solid #e6dcdd;border-radius:9px;overflow:hidden}
+.tarjeta-cab{padding:8px 12px;border-bottom:1px solid #f0e9ea;font-weight:700;font-size:11px;
+  display:flex;align-items:center;gap:7px;color:#31262a}
+.tarjeta-cab .paso{width:16px;height:16px;border-radius:4px;background:#9c3b4e;color:#fff;
+  display:grid;place-items:center;font-size:9px;font-weight:700}
+.foto-grande{aspect-ratio:3/4;background:#f7eff0;display:grid;place-items:center}
+.foto-grande svg{width:82px;height:96px}
+.pb{padding:10px 12px}
+.pb .pr{font-family:var(--mono);font-size:9px;color:#9d8b8f}
+.pb h5{margin:2px 0 7px;font-size:12.5px;font-weight:700;line-height:1.25;color:#31262a}
+.chips{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:7px}
+.chip{font-size:8px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;
+  padding:2px 7px;background:#f0e9ea;color:#6d5a5f}
+.chip.o{background:#f0dfe2;color:#6b2434}
+.mat-cab,.mat{display:grid;grid-template-columns:1fr 46px 62px 62px 62px;gap:8px;padding:6px 12px;font-size:10.5px}
+.mat-cab{background:#f7eff0;font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;
+  font-weight:700;color:#6b2434}
+.mat{border-top:1px solid #f0e9ea;color:#31262a}
+.mat.grupo{background:#f7eff0;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
+  font-weight:800;color:#6b2434;grid-template-columns:1fr}
+.mat .d{text-align:right;font-variant-numeric:tabular-nums}
+.mat .campo-n{border:1px solid #e6dcdd;border-radius:5px;padding:2px 6px;text-align:right;background:#fff}
+.cen,.cen-cab{display:grid;grid-template-columns:34px 1fr 64px 92px 62px 62px;gap:8px;padding:6px 12px;font-size:10.5px}
+.cen-cab{background:#f7eff0;font-size:8.5px;letter-spacing:.07em;text-transform:uppercase;font-weight:700;color:#6b2434}
+.cen{border-top:1px solid #f0e9ea;align-items:center}
+.sw{display:inline-block;width:26px;height:15px;border-radius:20px;background:#9c3b4e;position:relative}
+.sw:after{content:"";position:absolute;width:11px;height:11px;border-radius:50%;background:#fff;top:2px;right:2px}
+.sw.off{background:#d9cdcf}
+.sw.off:after{right:auto;left:2px}
+.barra-costo{display:flex;height:7px;border-radius:20px;overflow:hidden;margin-bottom:9px}
+.linea-costo{display:flex;align-items:center;gap:7px;font-size:10.5px;padding:3px 0;color:#6d5a5f}
+.punto{width:8px;height:8px;border-radius:2px;flex:none}
+.linea-costo .g{flex:1}
+.linea-costo .v{font-weight:600;color:#31262a}
+.total{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid #e6dcdd;
+  margin-top:8px;padding-top:9px}
+.total span{font-size:10.5px;color:#6d5a5f;font-weight:600}
+.total b{font-size:20px;font-weight:800;letter-spacing:-.02em;color:#31262a}
+.cliente{padding:9px 12px;border-bottom:1px solid #f0e9ea}
+.cliente.base{background:#f7eff0}
+.cli-top{display:flex;align-items:baseline;gap:6px;margin-bottom:5px}
+.cli-top b{font-size:11px;color:#31262a}
+.cli-top span{font-size:8px;letter-spacing:.07em;text-transform:uppercase;color:#9d8b8f;font-weight:700}
+.cli-in{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.caja-val{border:1px solid #e6dcdd;border-radius:7px;padding:3px 8px;background:#fff}
+.caja-val.auto{background:#f7eff0}
+.caja-val label{display:block;font-size:7.5px;letter-spacing:.07em;text-transform:uppercase;
+  color:#9d8b8f;font-weight:700}
+.caja-val b{font-size:12.5px;font-weight:700;color:#31262a}
+.gana{font-size:10px;color:#14663a;margin-top:5px}
+
+/* ventana modal de la maqueta */
+.modal-m{background:#fff;border:1px solid #e6dcdd;border-radius:10px;max-width:560px;margin:0 auto;
+  overflow:hidden;box-shadow:0 14px 40px rgba(59,66,82,.14)}
+.modal-cab{padding:10px 14px;border-bottom:1px solid #e6dcdd;display:flex;align-items:center;
+  font-weight:700;font-size:12px;color:#31262a}
+.modal-cab .cuenta{margin-left:auto;font-size:10px;font-weight:500;color:#9d8b8f}
+.modal-cuerpo{padding:14px;display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px}
+.campo-form{border:1px solid #e6dcdd;border-radius:7px;padding:6px 9px;font-size:11px;background:#fff;
+  color:#31262a;margin-bottom:8px}
+.campo-form.gris{color:#9d8b8f;font-style:italic}
+.et-form{font-size:9.5px;color:#6d5a5f;margin-bottom:3px}
+.et-form b{color:#31262a}
+.modal-pie{padding:10px 14px;border-top:1px solid #e6dcdd;background:#f7eff0;display:flex;
+  gap:7px;justify-content:flex-end}
+
+/* hoja de excel */
+.hoja{min-width:720px;background:#fff;border:1px solid #d5d0cc;font-size:11.5px;color:#222;
+  font-family:var(--texto)}
+.hoja .fila-x{display:grid;grid-template-columns:34px 1.6fr .9fr .7fr .4fr .6fr .7fr .7fr;
+  border-bottom:1px solid #eceae7}
+.hoja .fila-x>div{padding:5px 8px;border-right:1px solid #eceae7;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hoja .col-n{background:#f3f2f0;color:#8a8580;font-size:10px;text-align:center}
+.hoja .cabx{background:#f7d9de;font-weight:700;font-size:10px;letter-spacing:.04em}
+.hoja .grupox{background:#f7eff0;font-weight:700;font-size:10.5px}
+.hoja .num{text-align:right;font-variant-numeric:tabular-nums}
+.hoja .tot{font-weight:700;background:#f7eff0}
+.hoja-marco{overflow-x:auto;border:1px solid var(--linea);border-radius:6px;background:var(--suave);padding:14px}
+
+/* flujo de estados */
+.flujo{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;margin:22px 0}
+.paso-f{flex:1 1 150px;min-width:150px;background:var(--caja);border:1px solid var(--linea);
+  padding:13px 15px;position:relative}
+.paso-f+.paso-f{border-left:0}
+.paso-f .est{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;
+  font-weight:600;color:var(--vino);margin-bottom:5px}
+.paso-f b{display:block;font-size:14px;margin-bottom:3px}
+.paso-f p{font-size:12.5px;color:var(--tinta-2);margin:0;line-height:1.45}
+@media(max-width:700px){.paso-f{border-left:1px solid var(--linea)!important}}
+
+/* listas de criterios */
+.criterios{list-style:none;padding:0;margin:16px 0}
+.criterios li{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid var(--linea-suave);margin:0}
+.criterios li:last-child{border-bottom:0}
+.criterios .cod{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--vino);
+  flex:none;width:52px;padding-top:2px}
+.criterios .txt{flex:1;min-width:0;font-size:14.5px}
+.criterios .txt small{display:block;color:var(--tinta-2);font-size:13px;margin-top:2px}
+
+.dos{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;margin:18px 0}
+.pie{margin-top:52px;padding-top:20px;border-top:1px solid var(--linea);font-size:13px;color:var(--tinta-3)}
+:focus-visible{outline:2px solid var(--vino);outline-offset:2px}
+@media (prefers-reduced-motion:no-preference){a{transition:color .12s}}
+</style>
+
+<div class="envoltura">
+
+<header class="portada">
+  <div class="sello">TEMPOCODECA · Especificación funcional</div>
+  <h1>Costos TEMPO en Odoo</h1>
+  <p class="bajada">Qué hace hoy el sistema de costeo de prendas, con qué fórmulas, y cómo debe verse
+    una vez implementado en Odoo.</p>
+  <dl class="ficha-doc">
+    <div><dt>Para</dt><dd>Equipo de desarrollo Odoo</dd></div>
+    <div><dt>De</dt><dd>TEMPOCODECA · Planificación</dd></div>
+    <div><dt>Versión</dt><dd>1.0</dd></div>
+    <div><dt>Estado</dt><dd>Para cotizar</dd></div>
+    <div><dt>Sistema actual</dt><dd>App web propia, en uso</dd></div>
+    <div><dt>Datos a migrar</dt><dd>110 productos · 171 materiales</dd></div>
+  </dl>
+</header>
+
+<nav class="indice" aria-label="Contenido">
+  <h2 class="eyebrow">Contenido</h2>
+  <ol>
+    <li><a href="#contexto">Qué se pide</a></li>
+    <li><a href="#glosario">Glosario</a></li>
+    <li><a href="#alcance">Alcance funcional</a></li>
+    <li><a href="#calculo">Reglas de cálculo</a></li>
+    <li><a href="#estados">Estados y flujo de aprobación</a></li>
+    <li><a href="#pantallas">Pantallas</a></li>
+    <li><a href="#datos">Modelo de datos y mapeo a Odoo</a></li>
+    <li><a href="#roles">Roles y permisos</a></li>
+    <li><a href="#exportar">Exportaciones</a></li>
+    <li><a href="#duras">Reglas que no se negocian</a></li>
+    <li><a href="#aceptacion">Criterios de aceptación</a></li>
+    <li><a href="#pendiente">Fuera de alcance y decisiones</a></li>
+  </ol>
+</nav>
+
+<!-- ============================================================ -->
+<section id="contexto">
+  <h2><span class="num">01</span>Qué se pide</h2>
+  <div class="medida">
+    <p>TEMPOCODECA fabrica prendas para marcas como Aeropostale. Antes de producir una referencia hay
+      que costearla: cuánta tela lleva, qué insumos, qué decoración, cuántos minutos en cada centro, y
+      a qué precio sale para cada cliente según su margen.</p>
+    <p>Hoy eso se hace en una aplicación web propia que ya está en uso, con 110 productos costeados y
+      171 materiales. Lo que se pide es <strong>llevar esa funcionalidad a Odoo</strong>, conservando
+      las fórmulas, los estados y la forma de trabajar que ya está probada en piso.</p>
+    <p>Este documento describe el comportamiento esperado, no la implementación. Donde hay una manera
+      natural de resolverlo con los módulos estándar de Odoo se indica; donde el estándar no alcanza,
+      se dice qué falta y por qué.</p>
+  </div>
+
+  <div class="nota regla">
+    <span class="et">Criterio de éxito</span>
+    <p>Una persona de planificación debe poder costear una referencia nueva completa —desde la foto
+      hasta el precio por cliente— en menos de 10 minutos, sin salir de una sola pantalla y sin
+      calculadora aparte.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="glosario">
+  <h2><span class="num">02</span>Glosario</h2>
+  <p class="medida">Términos del taller que se usan en todo el documento. Conviene respetarlos en la
+    interfaz: son las palabras con las que la gente de planta habla.</p>
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Término</th><th>Qué significa</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Referencia</strong></td><td>Código del estilo: <code>4864</code>. Es la llave con la que todos hablan de una prenda.</td></tr>
+        <tr><td><strong>Ficha de costos</strong></td><td>El detalle completo de una referencia: materiales con su consumo, tiempos por centro y precios por cliente.</td></tr>
+        <tr><td><strong>Centro</strong></td><td>Etapa de producción con tarifa propia: corte, estampado, bordado, confección, empaque.</td></tr>
+        <tr><td><strong>MOD / MOI</strong></td><td>Mano de obra directa e indirecta. Cada centro tiene una tarifa para cada una.</td></tr>
+        <tr><td><strong>SAM</strong></td><td>Minutos totales de la prenda. Suma solo los centros que se miden en minutos.</td></tr>
+        <tr><td><strong>Consumo</strong></td><td>Cantidad de material por prenda, en la unidad del material (kg de tela, unidades de etiqueta, metros de cordón).</td></tr>
+        <tr><td><strong>En avance</strong></td><td>Ficha empezada pero sin cerrar: ya tiene tela o tiempos, todavía no está aprobada.</td></tr>
+        <tr><td><strong>Versión</strong></td><td>Costo cerrado y congelado. Al re-costear se abre la siguiente (v1 → v2) y la anterior queda en el historial.</td></tr>
+        <tr><td><strong>Margen sobre PVP</strong></td><td>El margen se calcula sobre el precio de venta, no sobre el costo. Ver la fórmula en la sección 4.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="alcance">
+  <h2><span class="num">03</span>Alcance funcional</h2>
+  <p class="medida">Nueve bloques. Los tres primeros son catálogos que alimentan al resto.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th style="width:52px">#</th><th>Bloque</th><th>Qué debe permitir</th></tr></thead>
+      <tbody>
+        <tr><td><strong>A1</strong></td><td><strong>Catálogo de productos</strong></td>
+          <td>Crear y editar referencias con foto, nombre, marca, departamento, año, temporada, colección, categoría y tipo. Archivar, eliminar y duplicar. Carga masiva desde Excel y creación automática a partir de un lote de fotos nombradas con la referencia.</td></tr>
+        <tr><td><strong>A2</strong></td><td><strong>Materiales</strong></td>
+          <td>Catálogo con código, descripción, unidad, precio vigente y familia: materia prima, insumos, decoración o servicios. El precio del material se toma en el momento de costear.</td></tr>
+        <tr><td><strong>A3</strong></td><td><strong>Categorías y tipos</strong></td>
+          <td>24 categorías (CAMISETAS, HODDIE, DENIM…) cada una con sus tipos (Camiseta CR, Hoodies, Jeans…). Cada tipo tiene una <strong>receta sugerida</strong>: los materiales típicos con su consumo de arranque.</td></tr>
+        <tr><td><strong>A4</strong></td><td><strong>Centros y tarifas</strong></td>
+          <td>Cinco centros, cada uno con tarifa MOD y MOI y una base de medida (minutos o puntadas). Las tarifas tienen fecha de vigencia y se cambian sin tocar los costos ya cerrados.</td></tr>
+        <tr><td><strong>A5</strong></td><td><strong>Ficha de costos</strong></td>
+          <td>Por referencia: líneas de material con consumo y desperdicio, tiempos por centro, cálculo en vivo del costo, guardar avance, aprobar y cerrar versión, re-costear y comparar versiones.</td></tr>
+        <tr><td><strong>A6</strong></td><td><strong>Precio por cliente</strong></td>
+          <td>Cinco clientes con margen meta. El PVP se calcula del costo y el margen, o se escribe a mano. Un cliente puede ir atado a otro con un recargo (ver 4.4).</td></tr>
+        <tr><td><strong>A7</strong></td><td><strong>Operaciones</strong></td>
+          <td>Secuencia de operaciones por referencia, con centro y minutos, sobre un catálogo maestro de 595 operaciones. <strong>No afecta el costo</strong>: es la base de ingeniería, para consulta y exportación.</td></tr>
+        <tr><td><strong>A8</strong></td><td><strong>Reportes y exportaciones</strong></td>
+          <td>Lista de precios por cliente, avance del costeo, y tres exportaciones a Excel (ver sección 9).</td></tr>
+        <tr><td><strong>A9</strong></td><td><strong>Roles</strong></td>
+          <td>Cuatro perfiles con permisos distintos sobre la ficha y el precio (ver sección 8).</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="calculo">
+  <h2><span class="num">04</span>Reglas de cálculo</h2>
+  <p class="medida">Esta es la parte que no puede salir distinta ni en un centavo. El costo se
+    recalcula en vivo cada vez que se toca un consumo o un minuto.</p>
+
+  <h3>4.1 Materiales</h3>
+  <p class="medida">Cada línea de la ficha apunta a un material del catálogo y guarda un consumo y un
+    porcentaje de desperdicio (normalmente 0).</p>
+  <div class="formula">
+    <b>costo de la línea</b> = consumo × (1 + desperdicio / 100) × precio unitario del material<br>
+    <b>materiales</b> = Σ de todas las líneas, agrupadas por familia<br>
+    <span class="cmt">— las familias son: materia prima, insumos, decoración, servicios</span>
+  </div>
+
+  <h3>4.2 Mano de obra</h3>
+  <p class="medida">Cada centro activo en la ficha aporta MOD y MOI. Hay dos bases de medida: casi
+    todos los centros se miden en <strong>minutos</strong>; bordado se mide en <strong>puntadas</strong>
+    y su tarifa es por cada mil.</p>
+  <div class="formula">
+    <span class="cmt">— centro medido en minutos</span><br>
+    <b>MOD</b> = minutos × tarifa MOD &nbsp;·&nbsp; <b>MOI</b> = minutos × tarifa MOI<br>
+    <b>SAM</b> += minutos<br><br>
+    <span class="cmt">— centro medido en puntadas (bordado)</span><br>
+    <b>MOD</b> = (puntadas / 1000) × tarifa MOD &nbsp;·&nbsp; <b>MOI</b> = (puntadas / 1000) × tarifa MOI<br>
+    <span class="cmt">— no suma minutos al SAM</span>
+  </div>
+
+  <h4>Tarifas vigentes desde el 01-ago-2026</h4>
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Centro</th><th>Base</th><th class="num">Tarifa MOD</th><th class="num">Tarifa MOI</th></tr></thead>
+      <tbody>
+        <tr><td>Corte</td><td>minutos</td><td class="num">0,2252</td><td class="num">0,0680</td></tr>
+        <tr><td>Estampado / Serigrafía</td><td>minutos</td><td class="num">0,1980</td><td class="num">0,0600</td></tr>
+        <tr><td>Bordado</td><td>puntadas (por 1000)</td><td class="num">0,1200</td><td class="num">0,0000</td></tr>
+        <tr><td>Confección</td><td>minutos</td><td class="num">0,1649</td><td class="num">0,0495</td></tr>
+        <tr><td>Empaque</td><td>minutos</td><td class="num">0,3130</td><td class="num">0,0940</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nota ojo">
+    <span class="et">Ojo con Odoo</span>
+    <p>Odoo maneja el costo del centro de trabajo <strong>por hora y en un solo valor</strong>. Aquí las
+      tarifas son <strong>por minuto</strong> y están <strong>separadas en MOD y MOI</strong>, y una de
+      ellas se mide en puntadas. No sirve convertir a costo/hora: hay que guardar las dos tarifas con su
+      base, y mantener el historial por fecha de vigencia para no alterar costos ya cerrados.</p>
+  </div>
+
+  <h3>4.3 Costo total</h3>
+  <div class="formula">
+    <b>costo total</b> = materiales + MOD + MOI
+  </div>
+
+  <h3>4.4 Precio por cliente</h3>
+  <p class="medida">El margen es <strong>sobre el precio de venta</strong>, no sobre el costo. Es el
+    error más común al portar esta lógica: un 30% aquí no es multiplicar el costo por 1,30.</p>
+  <div class="formula">
+    <b>PVP</b> = costo total / (1 − margen / 100)<br>
+    <b>margen resultante</b> = (PVP − costo) / PVP × 100<br>
+    <b>ganancia por prenda</b> = PVP − costo<br><br>
+    <span class="cmt">— cliente atado a otro (Aero Dep va sobre Fashion Club)</span><br>
+    <b>PVP</b> = PVP del cliente base × (1 + recargo / 100)<br><br>
+    <span class="cmt">— si alguien escribe el PVP a mano, manda ese número y el margen se recalcula al revés</span>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Cliente</th><th>Zona</th><th>Regla</th><th class="num">Meta</th></tr></thead>
+      <tbody>
+        <tr><td>Fashion Club</td><td>Ecuador</td><td>Margen sobre PVP · <strong>cliente base</strong></td><td class="num">30 %</td></tr>
+        <tr><td>Aero Dep</td><td>Ecuador</td><td>PVP de Fashion Club + 5 %</td><td class="num">—</td></tr>
+        <tr><td>JL Fashion Club</td><td>Colombia</td><td>Margen sobre PVP</td><td class="num">15 %</td></tr>
+        <tr><td>Price</td><td>Ecuador</td><td>Margen sobre PVP</td><td class="num">20 %</td></tr>
+        <tr><td>Otros clientes</td><td>Ecuador</td><td>Margen sobre PVP</td><td class="num">40 %</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>4.5 Ejemplo completo para validar</h3>
+  <p class="medida">Referencia <strong>4864 · HOODIE CREMA CON CORDON Y BOLSILLO CANGURO</strong>. Si la
+    implementación da estos mismos números, el cálculo está bien.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Material</th><th>Código</th><th>UM</th><th class="num">Consumo</th><th class="num">Costo unit.</th><th class="num">$ Total</th></tr></thead>
+      <tbody>
+        <tr><td colspan="6" style="background:var(--suave);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--vino-hondo)">Materia prima</td></tr>
+        <tr><td>Fleece perchado</td><td><code>MP-FLEECEPERCHA</code></td><td>kg</td><td class="num">0,600</td><td class="num">8,80</td><td class="num">5,28</td></tr>
+        <tr><td>Ribb 2x2 liviano</td><td><code>MP-RIBB2X2LIVIA</code></td><td>kg</td><td class="num">0,070</td><td class="num">8,70</td><td class="num">0,61</td></tr>
+        <tr><td colspan="6" style="background:var(--suave);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:var(--vino-hondo)">Insumos</td></tr>
+        <tr><td>Cordón redondo</td><td><code>IN-CORDONREDOND</code></td><td>m</td><td class="num">1,400</td><td class="num">0,20</td><td class="num">0,28</td></tr>
+        <tr><td>Hilo para coser</td><td><code>IN-HILOPARACOSE</code></td><td>u</td><td class="num">0,010</td><td class="num">7,00</td><td class="num">0,07</td></tr>
+        <tr><td>Etiquetas tallas</td><td><code>IN-ETIQUETAS</code></td><td>u</td><td class="num">1,000</td><td class="num">0,02</td><td class="num">0,02</td></tr>
+        <tr><td>Etiqueta de lavado</td><td><code>IN-INS001</code></td><td>u</td><td class="num">1,000</td><td class="num">0,02</td><td class="num">0,02</td></tr>
+        <tr><td colspan="5"><strong>Total materiales</strong></td><td class="num"><strong>6,28</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Centro</th><th class="num">Minutos</th><th class="num">Tarifa MOD</th><th class="num">Tarifa MOI</th><th class="num">$ MOD</th><th class="num">$ MOI</th></tr></thead>
+      <tbody>
+        <tr><td>Corte</td><td class="num">1,10</td><td class="num">0,2252</td><td class="num">0,0680</td><td class="num">0,2477</td><td class="num">0,0748</td></tr>
+        <tr><td>Confección</td><td class="num">14,50</td><td class="num">0,1649</td><td class="num">0,0495</td><td class="num">2,3911</td><td class="num">0,7178</td></tr>
+        <tr><td>Empaque</td><td class="num">1,30</td><td class="num">0,3130</td><td class="num">0,0940</td><td class="num">0,4069</td><td class="num">0,1222</td></tr>
+        <tr><td><strong>Total mano de obra</strong></td><td class="num"><strong>16,90</strong></td><td></td><td></td><td class="num"><strong>3,0457</strong></td><td class="num"><strong>0,9148</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="formula">
+    <b>costo total</b> = 6,28 + 3,0457 + 0,9148 = <b>10,24</b> &nbsp;<span class="cmt">(SAM 16,90 min)</span>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Cliente</th><th>Cálculo</th><th class="num">PVP</th><th class="num">Gana</th></tr></thead>
+      <tbody>
+        <tr><td>Fashion Club</td><td>10,24 / (1 − 0,30)</td><td class="num">14,63</td><td class="num">4,39</td></tr>
+        <tr><td>Aero Dep</td><td>14,63 × 1,05</td><td class="num">15,36</td><td class="num">5,12</td></tr>
+        <tr><td>JL Fashion Club</td><td>10,24 / (1 − 0,15)</td><td class="num">12,05</td><td class="num">1,81</td></tr>
+        <tr><td>Price</td><td>10,24 / (1 − 0,20)</td><td class="num">12,80</td><td class="num">2,56</td></tr>
+        <tr><td>Otros clientes</td><td>10,24 / (1 − 0,40)</td><td class="num">17,07</td><td class="num">6,83</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="estados">
+  <h2><span class="num">05</span>Estados y flujo de aprobación</h2>
+  <p class="medida">Una ficha pasa por estos estados. El costo solo se considera firme cuando está
+    aprobado y su versión queda cerrada.</p>
+
+  <div class="flujo">
+    <div class="paso-f"><div class="est">Borrador</div><b>Recién creada</b>
+      <p>El producto existe con su foto y su clasificación, pero la ficha está vacía.</p></div>
+    <div class="paso-f"><div class="est">En avance</div><b>Empezada</b>
+      <p>Ya tiene tela o tiempos cargados. Se guarda cuantas veces haga falta sin cerrar nada.</p></div>
+    <div class="paso-f"><div class="est">Por aprobar</div><b>Enviada</b>
+      <p>Prearmado terminó de llenar consumos y tiempos y la manda a revisión.</p></div>
+    <div class="paso-f"><div class="est">Costeada v1</div><b>Cerrada</b>
+      <p>Un administrador aprueba: el costo se congela, se guarda la versión con sus precios y la ficha queda de solo lectura.</p></div>
+    <div class="paso-f"><div class="est">Re-costeo</div><b>v2 abierta</b>
+      <p>Cambió un precio o un consumo: se abre la versión siguiente. La v1 queda íntegra en el historial y se pueden comparar.</p></div>
+  </div>
+
+  <div class="nota">
+    <span class="et">Comparar versiones</span>
+    <p>Al abrir el historial se debe poder ver <strong>qué cambió</strong> entre dos versiones:
+      líneas agregadas, quitadas y modificadas, con el consumo y el costo de antes y de después, y lo
+      mismo para los minutos de cada centro. Es lo que sustenta una subida de precio ante el cliente.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="pantallas">
+  <h2><span class="num">06</span>Pantallas</h2>
+  <p class="medida">Maquetas de cómo debe verse. No son una propuesta gráfica cerrada: lo que importa
+    es qué información aparece junta, qué se edita en línea y qué se ve de un vistazo.</p>
+
+  <h3>6.1 Lista de productos</h3>
+  <p class="medida">Es la pantalla de trabajo diaria. Arriba, indicadores que además son filtros: al
+    tocar uno, la lista se reduce a esos productos. Todo lo de la fila se edita ahí mismo, sin abrir
+    el registro.</p>
+
+  <figure>
+    <div class="maqueta-caja">
+      <div class="app">
+        <div class="app-barra">
+          <div class="app-logo">$</div>
+          <div class="app-marca">Costos<span>TEMPO · muestras y prendas</span></div>
+          <div class="app-derecha"><span class="chip-ok">Guardado 09:14</span><span>ADMIN · TEMPO</span></div>
+        </div>
+        <div class="app-nav">
+          <div class="on">Productos 110</div><div>Ficha de costos 4864</div><div>Materiales 171</div>
+          <div>Categorías</div><div>Operaciones</div><div>Configuración</div><div>Lista de precios</div><div>Reportes</div>
+        </div>
+        <div class="app-cuerpo">
+          <div class="kpis">
+            <div class="kpi sel"><div class="k">Total productos</div><div class="v">110</div><div class="h">en el catálogo</div></div>
+            <div class="kpi ok"><div class="k">Costeados</div><div class="v">44</div><div class="h">40% del catálogo</div></div>
+            <div class="kpi pend"><div class="k">Pendientes</div><div class="v">66</div><div class="h">clic para terminarlos</div></div>
+            <div class="kpi pend"><div class="k">En avance</div><div class="v">62</div><div class="h">sin cerrar el costo</div></div>
+            <div class="kpi"><div class="k">Sin foto</div><div class="v">9</div><div class="h">por cargar</div></div>
+            <div class="kpi"><div class="k">Sin describir</div><div class="v">5</div><div class="h">falta nombre o categoría</div></div>
+          </div>
+          <div class="tabla-app">
+            <div class="fila-cab">
+              <div>Foto</div><div>Referencia</div><div>Nombre</div><div>Colección</div>
+              <div>Categoría</div><div>Tipo</div><div style="text-align:right">Costo</div><div></div>
+            </div>
+            <div class="fila">
+              <div class="mini-foto"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M20 6 L12 12 L6 22 L14 27 L14 62 L46 62 L46 27 L54 22 L48 12 L40 6 L30 13 Z" fill="#c9b7bb"/></svg></div>
+              <div class="ref">4864</div>
+              <div><div class="nom">HOODIE CREMA CON CORDON Y BOLSILLO CANGURO</div><div class="sub">Registrado 22-sep-2026</div></div>
+              <div class="select">SOCKIES <span>▾</span></div>
+              <div class="select">HODDIE <span>▾</span></div>
+              <div class="select">Hoodies <span>▾</span></div>
+              <div><div class="costo">$10,24</div><div style="text-align:right;margin-top:3px"><span class="pill av">En avance</span></div></div>
+              <div class="acciones"><span>✓</span><span>⧉</span><span>🗄</span><span>×</span></div>
+            </div>
+            <div class="fila">
+              <div class="mini-foto"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M18 8 L10 14 L5 24 L13 28 L13 60 L47 60 L47 28 L55 24 L50 14 L42 8 L30 15 Z" fill="#d6c6ca"/></svg></div>
+              <div class="ref">4865</div>
+              <div><div class="nom">CAMISETA MC NEGRA ENTALLADA CUELLO REDONDO</div><div class="sub">Registrado 22-sep-2026</div></div>
+              <div class="select">SOCKIES <span>▾</span></div>
+              <div class="select">CAMISETAS <span>▾</span></div>
+              <div class="select">Camiseta CR <span>▾</span></div>
+              <div><div class="costo">$4,27</div><div style="text-align:right;margin-top:3px"><span class="pill ok">v1 · re-costear</span></div></div>
+              <div class="acciones"><span>✓</span><span>⧉</span><span>🗄</span><span>×</span></div>
+            </div>
+            <div class="fila">
+              <div class="mini-foto"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M16 10 L10 16 L6 26 L13 29 L13 58 L47 58 L47 29 L54 26 L50 16 L44 10 L30 16 Z" fill="#c9b7bb"/></svg></div>
+              <div class="ref">4866</div>
+              <div><div class="nom">BVD BLANCO ACANALADO CROP</div><div class="sub">Registrado 22-sep-2026</div></div>
+              <div class="select"><em>sin definir</em> <span>▾</span></div>
+              <div class="select">BVD <span>▾</span></div>
+              <div class="select">BVD <span>▾</span></div>
+              <div><div class="costo">$1,74</div><div style="text-align:right;margin-top:3px"><span class="pill">Borrador</span></div></div>
+              <div class="acciones"><span>✓</span><span>⧉</span><span>🗄</span><span>×</span></div>
+            </div>
+          </div>
+          <div class="barra-botones">
+            <span class="boton">Guardar productos</span>
+            <span class="boton">Carga masiva</span>
+            <span class="boton fantasma">+ Producto</span>
+            <span class="boton fantasma">Fotos</span>
+            <span class="boton fantasma">Exportar BOM (Excel)</span>
+            <span class="boton fantasma">Exportar operaciones (Excel)</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Lista de productos.</b> Los seis indicadores son filtros. Las acciones de cada fila,
+      en orden: aprobar muestra, duplicar, archivar, eliminar. El costo se muestra siempre, con el
+      estado debajo.</figcaption>
+  </figure>
+
+  <h3>6.2 Ficha de costos</h3>
+  <p class="medida">Tres bloques en una sola pantalla: <strong>qué prenda es</strong>, <strong>qué
+    lleva</strong> y <strong>cuánto cuesta</strong>. El costo y los precios se recalculan mientras se
+    escribe; no hay botón de calcular.</p>
+
+  <figure>
+    <div class="maqueta-caja">
+      <div class="app">
+        <div class="app-cuerpo">
+          <div class="tri">
+
+            <div>
+              <div class="bloque-t"><i>1</i><span>Foto</span></div>
+              <div class="tarjeta">
+                <div class="foto-grande"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M20 6 L12 12 L6 22 L14 27 L14 62 L46 62 L46 27 L54 22 L48 12 L40 6 L30 13 Z" fill="#c9b7bb"/><path d="M24 6 L30 13 L36 6" fill="none" stroke="#a88e95" stroke-width="1.4"/></svg></div>
+                <div class="pb">
+                  <div class="pr">REF 4864</div>
+                  <h5>HOODIE CREMA CON CORDON Y BOLSILLO CANGURO</h5>
+                  <div class="chips"><span class="chip o">HODDIE</span><span class="chip">Hoodies</span><span class="chip">SOCKIES</span></div>
+                  <span class="pill av">En avance</span>
+                  <div style="margin-top:9px"><span class="boton" style="display:block;text-align:center">Guardar avance · sin aprobar</span></div>
+                  <div style="margin-top:6px"><span class="boton fantasma" style="display:block;text-align:center">Duplicar esta referencia</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="bloque-t"><i>2</i><span>Materiales y tiempos</span></div>
+              <div class="tarjeta" style="margin-bottom:10px">
+                <div class="tarjeta-cab">Materiales
+                  <span style="margin-left:auto;font-weight:500;font-size:9.5px;color:#9d8b8f">Cargar sugeridas del tipo</span></div>
+                <div class="mat-cab"><div>Material</div><div>UM</div><div class="d">Consumo</div><div class="d">Costo unit.</div><div class="d">$ Material</div></div>
+                <div class="mat grupo">Materia prima</div>
+                <div class="mat"><div>FLEECE PERCHADO</div><div>kg</div><div class="d"><span class="campo-n">0,600</span></div><div class="d">8,80</div><div class="d">5,28</div></div>
+                <div class="mat"><div>RIBB 2X2 LIVIANO</div><div>kg</div><div class="d"><span class="campo-n">0,070</span></div><div class="d">8,70</div><div class="d">0,61</div></div>
+                <div class="mat grupo">Insumos</div>
+                <div class="mat"><div>CORDON REDONDO</div><div>m</div><div class="d"><span class="campo-n">1,400</span></div><div class="d">0,20</div><div class="d">0,28</div></div>
+                <div class="mat"><div>HILO PARA COSER</div><div>u</div><div class="d"><span class="campo-n">0,010</span></div><div class="d">7,00</div><div class="d">0,07</div></div>
+                <div class="mat"><div>ETIQUETAS TALLAS</div><div>u</div><div class="d"><span class="campo-n">1,000</span></div><div class="d">0,02</div><div class="d">0,02</div></div>
+                <div class="mat"><div>ETIQUETA DE LAVADO</div><div>u</div><div class="d"><span class="campo-n">1,000</span></div><div class="d">0,02</div><div class="d">0,02</div></div>
+              </div>
+              <div class="tarjeta">
+                <div class="tarjeta-cab">Tiempos por centro</div>
+                <div class="cen-cab"><div>Aplica</div><div>Centro</div><div class="d">Tiempo</div><div>Tarifa vigente</div><div class="d">MOD</div><div class="d">MOI</div></div>
+                <div class="cen"><div><span class="sw"></span></div><div>Corte</div><div class="d"><span class="campo-n">1,10</span></div><div style="font-size:9px;color:#6d5a5f">0,2252 / 0,0680</div><div class="d">0,25</div><div class="d">0,07</div></div>
+                <div class="cen"><div><span class="sw"></span></div><div>Confección</div><div class="d"><span class="campo-n">14,50</span></div><div style="font-size:9px;color:#6d5a5f">0,1649 / 0,0495</div><div class="d">2,39</div><div class="d">0,72</div></div>
+                <div class="cen"><div><span class="sw off"></span></div><div style="color:#9d8b8f">Bordado <span style="font-size:8.5px">(puntadas)</span></div><div class="d"><span class="campo-n">0</span></div><div style="font-size:9px;color:#9d8b8f">0,1200 / 0,0000</div><div class="d">—</div><div class="d">—</div></div>
+                <div class="cen"><div><span class="sw"></span></div><div>Empaque</div><div class="d"><span class="campo-n">1,30</span></div><div style="font-size:9px;color:#6d5a5f">0,3130 / 0,0940</div><div class="d">0,41</div><div class="d">0,12</div></div>
+                <div style="display:flex;gap:10px;align-items:center;padding:8px 12px;background:#f7eff0;border-top:1px solid #e6dcdd">
+                  <b style="font-size:11px">Mano de obra</b>
+                  <span style="margin-left:auto;font-size:10px;color:#6d5a5f">16,90 min</span>
+                  <span style="font-size:13px;font-weight:800">$3,96</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div class="bloque-t"><i>3</i><span>Costos</span></div>
+              <div class="tarjeta" style="margin-bottom:10px">
+                <div class="tarjeta-cab">Costo de la prenda</div>
+                <div class="pb">
+                  <div class="barra-costo">
+                    <i style="background:#b05a72;width:57%"></i><i style="background:#e0a9b5;width:4%"></i>
+                    <i style="background:#c2926a;width:30%"></i><i style="background:#d8c9bd;width:9%"></i>
+                  </div>
+                  <div class="linea-costo"><span class="punto" style="background:#b05a72"></span><span class="g">Materia prima</span><span class="v">5,89</span></div>
+                  <div class="linea-costo"><span class="punto" style="background:#e0a9b5"></span><span class="g">Insumos</span><span class="v">0,39</span></div>
+                  <div class="linea-costo"><span class="punto" style="background:#c2926a"></span><span class="g">Mano de obra directa</span><span class="v">3,05</span></div>
+                  <div class="linea-costo"><span class="punto" style="background:#d8c9bd"></span><span class="g">Mano de obra indirecta</span><span class="v">0,91</span></div>
+                  <div class="total"><span>Costo total</span><b>$10,24</b></div>
+                  <div style="display:flex;justify-content:space-between;font-size:10px;color:#9d8b8f;margin-top:5px">
+                    <span>Tiempo total de la ruta</span><b>16,90 min</b></div>
+                </div>
+              </div>
+              <div class="tarjeta">
+                <div class="tarjeta-cab">Precio por cliente
+                  <span style="margin-left:auto;font-weight:500;font-size:9.5px;color:#9d8b8f">margen sobre PVP</span></div>
+                <div class="cliente base">
+                  <div class="cli-top"><b class="cli-nom">Fashion Club</b><span>Ecuador</span></div>
+                  <div class="cli-in">
+                    <div class="caja-val"><label>Margen %</label><b>30,00</b></div>
+                    <div class="caja-val auto"><label>PVP</label><b>14,63</b></div>
+                  </div>
+                  <div class="gana">Ganas <b>$4,39</b> por prenda</div>
+                </div>
+                <div class="cliente">
+                  <div class="cli-top"><b class="cli-nom">Aero Dep</b><span>Ecuador</span>
+                    <span style="margin-left:auto;font-size:9px;color:#9d8b8f">= base + 5%</span></div>
+                  <div class="cli-in">
+                    <div class="caja-val"><label>Recargo %</label><b>5,00</b></div>
+                    <div class="caja-val auto"><label>PVP</label><b>15,36</b></div>
+                  </div>
+                  <div class="gana">Ganas <b>$5,12</b> por prenda</div>
+                </div>
+                <div class="cliente">
+                  <div class="cli-top"><b class="cli-nom">JL Fashion Club</b><span>Colombia</span></div>
+                  <div class="cli-in">
+                    <div class="caja-val"><label>Margen %</label><b>15,00</b></div>
+                    <div class="caja-val auto"><label>PVP</label><b>12,05</b></div>
+                  </div>
+                  <div class="gana">Ganas <b>$1,81</b> por prenda</div>
+                </div>
+                <div style="padding:10px 12px">
+                  <span class="boton" style="display:block;text-align:center">Aprobar costo · cerrar v1</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Ficha de costos.</b> Las casillas con recuadro son las únicas que se escriben:
+      consumo y tiempo. Todo lo demás se calcula. El interruptor de cada centro decide si entra o no en
+      el costo; bordado está apagado en este ejemplo.</figcaption>
+  </figure>
+
+  <h3>6.3 Crear desde la foto</h3>
+  <p class="medida">Las colecciones llegan como una carpeta de fotos nombradas con la referencia
+    (<code>4864.jpg</code>). Al cargarlas, el sistema crea los productos que falten —con la carpeta
+    como colección— y actualiza la foto de los que ya existan. Después, esta ventana termina de
+    clasificar lo que quedó a medias, uno tras otro.</p>
+
+  <figure>
+    <div class="maqueta-caja">
+      <div class="modal-m">
+        <div class="modal-cab">Clasificar producto <span class="cuenta">quedan 5 sin describir</span></div>
+        <div class="modal-cuerpo">
+          <div class="tarjeta"><div class="foto-grande"><svg viewBox="0 0 60 70" aria-hidden="true"><path d="M20 6 L12 12 L6 22 L14 27 L14 62 L46 62 L46 27 L54 22 L48 12 L40 6 L30 13 Z" fill="#c9b7bb"/></svg></div></div>
+          <div>
+            <div class="et-form" style="font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#9d8b8f">Referencia</div>
+            <div style="font-size:19px;font-weight:800;letter-spacing:-.01em;margin-bottom:10px;color:#31262a">4864</div>
+            <div class="et-form"><b>Nombre</b> · con qué se reconoce la prenda</div>
+            <div class="campo-form">HOODIE CREMA CON CORDON Y BOLSILLO CANGURO</div>
+            <div style="display:flex;gap:8px">
+              <div style="flex:1"><div class="et-form"><b>Categoría</b></div><div class="campo-form">HODDIE ▾</div></div>
+              <div style="flex:1"><div class="et-form"><b>Tipo de producto</b></div><div class="campo-form">Hoodies ▾</div></div>
+            </div>
+            <div style="font-size:10px;color:#6d5a5f">☑ Cargar los materiales sugeridos del tipo si la ficha está vacía</div>
+          </div>
+        </div>
+        <div class="modal-pie">
+          <span class="boton fantasma">Cancelar</span>
+          <span class="boton fantasma">Guardar y siguiente</span>
+          <span class="boton">Guardar</span>
+        </div>
+      </div>
+    </div>
+    <figcaption><b>Clasificar.</b> Solo pide lo que falta. Al guardar carga la receta sugerida del tipo,
+      y <b>Guardar y siguiente</b> encadena con el próximo producto sin describir.</figcaption>
+  </figure>
+
+  <h3>6.4 Duplicar una referencia</h3>
+  <p class="medida">Caso frecuente: el cliente pide la misma prenda pero sin el bordado. Se duplica la
+    referencia con toda su ficha y solo se quita lo que no lleva.</p>
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Se copia</th><th>No se copia</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Nombre, categoría, tipo, marca, colección, temporada, año y foto. Líneas de material con su consumo, tiempos por centro, operaciones y márgenes por cliente.</td>
+          <td>Código único, visto de muestra aprobada, fecha de entrega e historial de versiones. La copia nace en borrador: su costo se aprueba aparte.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="datos">
+  <h2><span class="num">07</span>Modelo de datos y mapeo a Odoo</h2>
+  <p class="medida">Propuesta de equivalencias. Donde dice <strong>campo nuevo</strong> o
+    <strong>modelo nuevo</strong>, el estándar no cubre el caso.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Concepto</th><th>Modelo Odoo sugerido</th><th>Notas</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Producto</strong></td><td><code>product.template</code></td>
+          <td><code>default_code</code> = referencia · <code>name</code> · <code>image_1920</code> = foto. Campos nuevos: tipo de producto, colección, temporada, año, código único, muestra aprobada, fecha de entrega.</td></tr>
+        <tr><td><strong>Categoría / tipo</strong></td><td><code>product.category</code> + campo nuevo</td>
+          <td>24 categorías, cada una con su lista de tipos. El tipo es el que dispara la receta sugerida.</td></tr>
+        <tr><td><strong>Receta sugerida</strong></td><td>Modelo nuevo</td>
+          <td>Plantilla de materiales y consumos por tipo. Se copia a la ficha al crear, y se puede volver a cargar sobre una ficha vacía.</td></tr>
+        <tr><td><strong>Material</strong></td><td><code>product.template</code> (consumible o servicio)</td>
+          <td><code>standard_price</code> = costo unitario · <code>uom_id</code>. La familia (materia prima, insumos, decoración, servicios) va como categoría de producto.</td></tr>
+        <tr><td><strong>Ficha de costos</strong></td><td><code>mrp.bom</code></td>
+          <td>Una lista de materiales por referencia. Campos nuevos en la cabecera: versión, estado, fecha de aprobación, fecha del último avance.</td></tr>
+        <tr><td><strong>Línea de material</strong></td><td><code>mrp.bom.line</code></td>
+          <td><code>product_qty</code> = consumo. Campo nuevo: desperdicio %. El color pantone es opcional por línea.</td></tr>
+        <tr><td><strong>Centro</strong></td><td><code>mrp.workcenter</code> + campos nuevos</td>
+          <td>Tarifa MOD y tarifa MOI <strong>por minuto</strong>, más la base (minutos o puntadas). Ver el aviso de la sección 4.2.</td></tr>
+        <tr><td><strong>Tarifa vigente</strong></td><td>Modelo nuevo</td>
+          <td>Tarifas con fecha de vigencia, para poder subirlas sin alterar los costos ya cerrados.</td></tr>
+        <tr><td><strong>Tiempo por centro</strong></td><td><code>mrp.routing.workcenter</code></td>
+          <td>Minutos (o puntadas) de esa referencia en ese centro. Es lo que entra al costo.</td></tr>
+        <tr><td><strong>Catálogo de operaciones</strong></td><td>Modelo nuevo</td>
+          <td>595 operaciones con su centro, sección, familia, máquina, código y tiempo de referencia.</td></tr>
+        <tr><td><strong>Operaciones de la referencia</strong></td><td>Modelo nuevo</td>
+          <td>Secuencia por prenda. <strong>No entra al costo</strong>, es base de ingeniería.</td></tr>
+        <tr><td><strong>Versión de costeo</strong></td><td>Modelo nuevo</td>
+          <td>Foto congelada del costo aprobado: líneas, tiempos, total, SAM y PVP por cliente. Nunca se modifica.</td></tr>
+        <tr><td><strong>Cliente y margen</strong></td><td><code>res.partner</code> + <code>product.pricelist</code></td>
+          <td>El margen meta por cliente y la regla de cliente atado (base + recargo) no son estándar: requieren campos y cálculo propios.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="roles">
+  <h2><span class="num">08</span>Roles y permisos</h2>
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Rol</th><th>Puede</th><th>No puede</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Administrador</strong></td><td>Todo: aprobar costos, cambiar tarifas y márgenes, crear usuarios, eliminar, exportar y respaldar.</td><td>—</td></tr>
+        <tr><td><strong>Planificación</strong></td><td>Crear y costear productos, aprobar costos, editar precios.</td><td>Cambiar usuarios ni tarifas de centro.</td></tr>
+        <tr><td><strong>Prearmado</strong></td><td>Crear productos, cargar materiales, consumos y tiempos. <strong>Ver el precio simulado</strong> moviendo el margen, para tantear.</td><td>Guardar precios ni aprobar costos. Lo que simula no se guarda.</td></tr>
+        <tr><td><strong>Consulta</strong></td><td>Ver productos, fichas y precios.</td><td>Editar nada.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nota">
+    <span class="et">Sobre el rol de prearmado</span>
+    <p>Es el que más se usa en planta. Necesita ver cómo queda el precio al mover el margen, porque de
+      ahí salen las conversaciones con el cliente, pero <strong>ese número no se guarda</strong>: al
+      recargar vuelve a los márgenes oficiales. El costo lo cierra un administrador.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section id="exportar">
+  <h2><span class="num">09</span>Exportaciones</h2>
+  <p class="medida">Tres salidas a Excel. La segunda es la que más se usa: una hoja por referencia, con
+    la foto y las fórmulas vivas, de modo que se pueda simular un cambio de consumo fuera del sistema.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Exportación</th><th>Contenido</th></tr></thead>
+      <tbody>
+        <tr><td><strong>BOM general</strong></td><td>Una fila por línea de material de todo el catálogo: referencia, producto, material, código, unidad, consumo y costo.</td></tr>
+        <tr><td><strong>Fichas por referencia</strong></td><td>Hoja RESUMEN con el costo de cada referencia, y luego <strong>una hoja por referencia</strong> con la ficha completa, la foto de la prenda y fórmulas de Excel reales.</td></tr>
+        <tr><td><strong>Lista de precios</strong></td><td>Precio de cada referencia para cada cliente, con su margen y su ganancia.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <figure>
+    <div class="hoja-marco">
+      <div class="hoja">
+        <div class="fila-x"><div class="col-n">8</div><div class="cabx">MATERIAL</div><div class="cabx">CÓDIGO</div><div class="cabx">COLOR</div><div class="cabx">UM</div><div class="cabx num">CONSUMO</div><div class="cabx num">COSTO UNIT.</div><div class="cabx num">$ TOTAL</div></div>
+        <div class="fila-x"><div class="col-n">9</div><div class="grupox">MATERIA PRIMA</div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div></div>
+        <div class="fila-x"><div class="col-n">10</div><div>FLEECE PERCHADO</div><div>MP-FLEECEPERCHA</div><div>11-4801 TOFU</div><div>kg</div><div class="num">0,600</div><div class="num">$8,80</div><div class="num">$5,28</div></div>
+        <div class="fila-x"><div class="col-n">11</div><div>RIBB 2X2 LIVIANO</div><div>MP-RIBB2X2LIVIA</div><div>11-4801 TOFU</div><div>kg</div><div class="num">0,070</div><div class="num">$8,70</div><div class="num">$0,61</div></div>
+        <div class="fila-x"><div class="col-n">12</div><div class="grupox">INSUMOS</div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div><div class="grupox"></div></div>
+        <div class="fila-x"><div class="col-n">13</div><div>CORDON REDONDO</div><div>IN-CORDONREDOND</div><div></div><div>m</div><div class="num">1,400</div><div class="num">$0,20</div><div class="num">$0,28</div></div>
+        <div class="fila-x"><div class="col-n">14</div><div>HILO PARA COSER</div><div>IN-HILOPARACOSE</div><div></div><div>u</div><div class="num">0,010</div><div class="num">$7,00</div><div class="num">$0,07</div></div>
+        <div class="fila-x"><div class="col-n">15</div><div class="tot">Subtotal Materia prima</div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot num">$5,89</div></div>
+        <div class="fila-x"><div class="col-n">16</div><div class="tot">Subtotal Insumos</div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot num">$0,39</div></div>
+        <div class="fila-x"><div class="col-n">17</div><div class="tot">TOTAL MATERIALES</div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot"></div><div class="tot num">$6,28</div></div>
+      </div>
+    </div>
+    <figcaption><b>Hoja por referencia.</b> Las celdas de <b>$ TOTAL</b> son fórmulas
+      (<code>=E10*F10</code>) y los subtotales son sumas: al cambiar un consumo en Excel, todo se
+      recalcula. La foto de la prenda va anclada a la derecha de la tabla.</figcaption>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section id="duras">
+  <h2><span class="num">10</span>Reglas que no se negocian</h2>
+  <p class="medida">Cada una de estas salió de un problema real en producción. Son requisitos, no
+    recomendaciones.</p>
+
+  <ul class="criterios">
+    <li><span class="cod">R-1</span><span class="txt">Nada se pierde por un fallo de red o de permiso.
+      <small>Si la foto o el dato no llegan al servidor, se conservan y se reintentan. La pantalla dice qué quedó pendiente y por qué, con el nombre de la referencia.</small></span></li>
+    <li><span class="cod">R-2</span><span class="txt">Una sesión nunca pisa lo que escribió otra.
+      <small>Dos personas trabajando a la vez, o un proceso de carga en paralelo, no pueden sobrescribirse. Solo se envía lo que de verdad cambió en esa sesión.</small></span></li>
+    <li><span class="cod">R-3</span><span class="txt">El costo aprobado es inmutable.
+      <small>Cambiar una tarifa o el precio de un material no altera una versión ya cerrada. Se refleja en el re-costeo, en la versión siguiente.</small></span></li>
+    <li><span class="cod">R-4</span><span class="txt">Un dato faltante se ve, no se disimula.
+      <small>Una ficha sin tela, un producto sin foto o sin nombre, un costo en cero: todo eso se cuenta en un indicador y se puede filtrar en un clic.</small></span></li>
+    <li><span class="cod">R-5</span><span class="txt">La sesión se renueva sola antes de escribir.
+      <small>El permiso de acceso caduca a la hora. Debe renovarse antes de cada guardado, al volver a la pestaña y tras un rechazo, con un reintento.</small></span></li>
+    <li><span class="cod">R-6</span><span class="txt">Se trabaja en una sola pantalla.
+      <small>Costear no puede exigir navegar entre cinco vistas de Odoo. Materiales, tiempos, costo y precio se ven y se editan juntos.</small></span></li>
+    <li><span class="cod">R-7</span><span class="txt">Todo en español de taller.
+      <small>Consumo, ficha, avance, prearmado, referencia. No "BoM", no "routing", no "unbuild".</small></span></li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="aceptacion">
+  <h2><span class="num">11</span>Criterios de aceptación</h2>
+  <p class="medida">Pruebas concretas para dar por recibido el desarrollo. Cada una se verifica en
+    pantalla, con datos reales.</p>
+
+  <ul class="criterios">
+    <li><span class="cod">CA-1</span><span class="txt">La referencia 4864 del ejemplo da <strong>$10,24</strong> de costo y <strong>16,90</strong> minutos de SAM.</span></li>
+    <li><span class="cod">CA-2</span><span class="txt">Sus cinco precios coinciden con la tabla de la sección 4.5, al centavo.</span></li>
+    <li><span class="cod">CA-3</span><span class="txt">Con bordado activo en 4 200 puntadas, el costo sube exactamente <strong>$0,504</strong> y el SAM no cambia.</span></li>
+    <li><span class="cod">CA-4</span><span class="txt">Al subir una carpeta de 9 fotos nombradas con la referencia, se crean los 9 productos en la colección de la carpeta, con su foto.</span></li>
+    <li><span class="cod">CA-5</span><span class="txt">Al aprobar, la ficha queda de solo lectura, se registra la versión con sus precios, y subir el precio de la tela no la altera.</span></li>
+    <li><span class="cod">CA-6</span><span class="txt">El historial muestra qué cambió entre la v1 y la v2: líneas agregadas, quitadas y modificadas, con el antes y el después.</span></li>
+    <li><span class="cod">CA-7</span><span class="txt">Duplicar la 4864 crea una referencia nueva con el mismo costo; al quitarle el bordado baja, y la original no se mueve.</span></li>
+    <li><span class="cod">CA-8</span><span class="txt">Un usuario de prearmado puede mover el margen y ver el PVP, pero al recargar vuelve el oficial y no se guardó nada.</span></li>
+    <li><span class="cod">CA-9</span><span class="txt">La exportación por referencia abre en Excel con los valores visibles y las fórmulas vivas, y con la foto de cada prenda.</span></li>
+    <li><span class="cod">CA-10</span><span class="txt">Con la sesión caducada a propósito, guardar una foto la sube igual tras renovar el permiso, sin intervención del usuario.</span></li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section id="pendiente">
+  <h2><span class="num">12</span>Fuera de alcance y decisiones pendientes</h2>
+  <div class="dos">
+    <div>
+      <h4>Fuera de alcance de esta fase</h4>
+      <ul>
+        <li>Órdenes de producción y consumo real de materiales.</li>
+        <li>Inventario y compras.</li>
+        <li>Facturación al cliente.</li>
+        <li>Costeo por talla o por color (hoy se costea el estilo).</li>
+      </ul>
+    </div>
+    <div>
+      <h4>Por decidir con TEMPO</h4>
+      <ul>
+        <li>Si los precios de material se actualizan a mano o se leen de compras.</li>
+        <li>Si el código único se sincroniza con el sistema actual de la empresa.</li>
+        <li>Qué pasa con las 595 operaciones del catálogo: si se cargan todas o solo las usadas.</li>
+        <li>Si el histórico de versiones se migra o se arranca en limpio.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="nota regla">
+    <span class="et">Para cotizar</span>
+    <p>Se pide una estimación separada por bloque (A1 a A9), señalando cuáles se resuelven con
+      configuración estándar de Odoo y cuáles requieren desarrollo. Los bloques A5 (ficha de costos) y
+      A6 (precio por cliente) son el corazón: si algo se recorta, que no sea de ahí.</p>
+  </div>
+</section>
+
+<p class="pie">TEMPOCODECA · Especificación funcional de Costos TEMPO para Odoo · v1.0 · Los números del
+  ejemplo corresponden a la referencia 4864 con las tarifas vigentes desde el 01-ago-2026.</p>
+
+</div>
