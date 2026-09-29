@@ -948,6 +948,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="addrow">
       <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
       <button class="btn" onclick="xlsxFichas()">Descargar fichas por referencia (Excel)</button>
+      <button class="btn" onclick="xlsxPrecios()">Descargar lista de precios (Excel)</button>
       <button class="btn ghost" onclick="exportarCostos()">Descargar resumen (CSV)</button>
       <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
       <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
@@ -970,6 +971,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="card-h"><h2>Precios por referencia</h2>
       <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
       <button class="btn org sm" style="margin-left:8px" onclick="pdfListaPrecios()">Exportar PDF</button>
+      <button class="btn sm" style="margin-left:6px" title="Una hoja horizontal con la foto, el detalle y una columna por cliente" onclick="xlsxPrecios()">Exportar Excel</button>
       <div class="sub" id="lp-s"></div></div>
     <div class="lpwrap"><table class="lptab">
       <thead id="lp-head"></thead>
@@ -5836,7 +5838,7 @@ const XL_ESTILOS='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
  '<xf xfId="0" numFmtId="165" applyNumberFormat="1"/>'+
  '<xf xfId="0" fontId="2" applyFont="1"/></cellXfs>'+
  '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
-function hojaXml(filas,anchos,conFoto){
+function hojaXml(filas,anchos,conFoto,altos){
   let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
     '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'+
     ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">';
@@ -5855,7 +5857,8 @@ function hojaXml(filas,anchos,conFoto){
       else if(typeof o.v==='number')cs+='<c r="'+ref+'"'+st+'><v>'+o.v+'</v></c>';
       else cs+='<c r="'+ref+'" t="inlineStr"'+st+'><is><t xml:space="preserve">'+xesc(o.v)+'</t></is></c>';
     });
-    if(cs)x+='<row r="'+r+'">'+cs+'</row>';
+    const ht=(altos&&altos[r])?' ht="'+altos[r]+'" customHeight="1"':'';
+    if(cs)x+='<row r="'+r+'"'+ht+'>'+cs+'</row>';
   });
   x+='</sheetData>';
   if(conFoto)x+='<drawing r:id="rId1"/>';       /* la foto va después de los datos */
@@ -5870,24 +5873,35 @@ function nombreHoja(t,usados){
 /* Una imagen dentro de un .xlsx son tres piezas: el archivo en xl/media, un
    "dibujo" que dice dónde va y de qué tamaño, y la relación entre la hoja y ese
    dibujo. Se ancla a una celda, así que la foto acompaña a la ficha sin taparla. */
-function dibujoXml(col,fila,ancho,alto){
+/* Un dibujo por hoja, con tantas imágenes como haga falta: la ficha lleva una
+   sola, la lista de precios lleva una por fila. */
+function dibujoXml(fotos){
   const EMU=9525;
+  const anclas=fotos.map((f,i)=>{
+    const cx=Math.round(f.ancho*EMU),cy=Math.round(f.alto*EMU);
+    return '<xdr:oneCellAnchor>'+
+    '<xdr:from><xdr:col>'+f.col+'</xdr:col><xdr:colOff>'+Math.round((f.dx||0)*EMU)+'</xdr:colOff>'+
+    '<xdr:row>'+f.fila+'</xdr:row><xdr:rowOff>'+Math.round((f.dy||0)*EMU)+'</xdr:rowOff></xdr:from>'+
+    '<xdr:ext cx="'+cx+'" cy="'+cy+'"/>'+
+    '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="'+(i+2)+'" name="Foto'+(i+1)+'"/><xdr:cNvPicPr/></xdr:nvPicPr>'+
+    '<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId'+(i+1)+'"/>'+
+    '<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'+
+    '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+cx+'" cy="'+cy+'"/></a:xfrm>'+
+    '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic>'+
+    '<xdr:clientData/></xdr:oneCellAnchor>';
+  }).join('');
   return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
   '<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">'+
-  '<xdr:oneCellAnchor>'+
-  '<xdr:from><xdr:col>'+col+'</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>'+fila+'</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from>'+
-  '<xdr:ext cx="'+Math.round(ancho*EMU)+'" cy="'+Math.round(alto*EMU)+'"/>'+
-  '<xdr:pic><xdr:nvPicPr><xdr:cNvPr id="2" name="Foto"/><xdr:cNvPicPr/></xdr:nvPicPr>'+
-  '<xdr:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="rId1"/>'+
-  '<a:stretch><a:fillRect/></a:stretch></xdr:blipFill>'+
-  '<xdr:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="'+Math.round(ancho*EMU)+'" cy="'+Math.round(alto*EMU)+'"/></a:xfrm>'+
-  '<a:prstGeom prst="rect"><a:avLst/></a:prstGeom></xdr:spPr></xdr:pic>'+
-  '<xdr:clientData/></xdr:oneCellAnchor></xdr:wsDr>';
+  anclas+'</xdr:wsDr>';
 }
 function libroXlsx(hojas,nombreArchivo){
   const usados=new Set();
-  const h=hojas.map((x,i)=>({nom:nombreHoja(x.nombre,usados),
-    xml:hojaXml(x.filas,x.anchos,!!x.foto),id:i+1,foto:x.foto||null}));
+  /* una hoja puede traer una foto (x.foto) o muchas (x.fotos) */
+  const h=hojas.map((x,i)=>{
+    const fotos=x.fotos&&x.fotos.length?x.fotos:(x.foto?[x.foto]:[]);
+    return {nom:nombreHoja(x.nombre,usados),
+      xml:hojaXml(x.filas,x.anchos,!!fotos.length,x.altos),id:i+1,fotos};
+  });
   const arch=[
     {nombre:'[Content_Types].xml',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
@@ -5897,7 +5911,7 @@ function libroXlsx(hojas,nombreArchivo){
       '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'+
       h.map(x=>'<Override PartName="/xl/worksheets/sheet'+x.id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join('')+
       '<Default Extension="jpeg" ContentType="image/jpeg"/>'+
-      h.filter(x=>x.foto).map(x=>'<Override PartName="/xl/drawings/drawing'+x.id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>').join('')+
+      h.filter(x=>x.fotos.length).map(x=>'<Override PartName="/xl/drawings/drawing'+x.id+'.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>').join('')+
       '</Types>'},
     {nombre:'_rels/.rels',datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
@@ -5913,21 +5927,22 @@ function libroXlsx(hojas,nombreArchivo){
       '<Relationship Id="rId'+(h.length+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>'},
     {nombre:'xl/styles.xml',datos:XL_ESTILOS}
   ].concat(h.map(x=>({nombre:'xl/worksheets/sheet'+x.id+'.xml',datos:x.xml})));
-  h.filter(x=>x.foto).forEach(x=>{
+  let nFotos=0;
+  h.filter(x=>x.fotos.length).forEach(x=>{
     arch.push({nombre:'xl/worksheets/_rels/sheet'+x.id+'.xml.rels',
       datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
       '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing'+x.id+'.xml"/></Relationships>'});
-    arch.push({nombre:'xl/drawings/drawing'+x.id+'.xml',
-      datos:dibujoXml(x.foto.col,x.foto.fila,x.foto.ancho,x.foto.alto)});
+    arch.push({nombre:'xl/drawings/drawing'+x.id+'.xml',datos:dibujoXml(x.fotos)});
     arch.push({nombre:'xl/drawings/_rels/drawing'+x.id+'.xml.rels',
       datos:'<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
       '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
-      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/imagen'+x.id+'.jpeg"/></Relationships>'});
-    arch.push({nombre:'xl/media/imagen'+x.id+'.jpeg',datos:x.foto.datos});
+      x.fotos.map((f,k)=>'<Relationship Id="rId'+(k+1)+'" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="../media/imagen'+x.id+'_'+(k+1)+'.jpeg"/>').join('')+
+      '</Relationships>'});
+    x.fotos.forEach((f,k)=>{nFotos++;
+      arch.push({nombre:'xl/media/imagen'+x.id+'_'+(k+1)+'.jpeg',datos:f.datos})});
   });
-  return {blob:zipAlmacenado(arch),nombre:nombreArchivo,hojas:h.length,
-    fotos:h.filter(x=>x.foto).length};
+  return {blob:zipAlmacenado(arch),nombre:nombreArchivo,hojas:h.length,fotos:nFotos};
 }
 /* Libro con una hoja por referencia, como la hoja de costos de siempre: el
    consumo, el desperdicio, el costo unitario y el total de cada línea, con
@@ -6077,6 +6092,52 @@ async function xlsxFichas(){
   }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
   return lib;
 }
+/* ====== LISTA DE PRECIOS DE TODOS LOS CLIENTES ======
+   Una sola hoja horizontal: la foto de la prenda, su detalle, y a la derecha
+   una columna por cliente con su precio. Es la que se lleva a la reunión. */
+async function xlsxPrecios(){
+  const list=activos();
+  if(!list.length){toast('Nada que exportar','Todavía no hay productos en el catálogo.');return}
+  const g=cur,fl=[],altos={};
+  fl.push([{v:'LISTA DE PRECIOS · TEMPO',s:5},'','',{v:'generado el '+hoy(),s:1}]);
+  fl.push([]);
+  fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN','ESTADO','COSTO TEMPO']
+    .concat(CLI.map(c=>c.cli+' · '+c.zona)).map(t=>({v:t,s:3})));
+  const estadoDe=f=>f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?('Costeada v'+f.ver):(f.edit?'Re-costeo':(enAvance(f)?'En avance':'Borrador')));
+  const conFoto=[];
+  list.forEach(x=>{
+    const f=FICHAS[x.r]||fichaVacia();cur=x.r;calc();
+    const r=fl.length+1;
+    fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'',estadoDe(f),{v:TOT.total,s:2}]
+      .concat(CLI.map((c,i)=>({v:plCalc(i,true).pvp,s:2}))));
+    altos[r]=54;                       /* alto de fila para que quepa la foto */
+    if(FOTO[x.r])conFoto.push({ref:x.r,fila:r-1});
+  });
+  fl.push([]);
+  fl.push([{v:'Precios calculados con los costos y márgenes de hoy ('+hoy()+'). '+
+    'Los clientes atados a otro llevan su recargo ya aplicado.',s:1}]);
+  cur=g;calc();
+
+  marcaSave('Armando la lista…','');
+  const fotos=[];let sinFoto=0;
+  for(const c of conFoto){
+    const f=await fotoParaExcel(FOTO[c.ref],64);
+    if(f)fotos.push({datos:f.datos,ancho:f.ancho,alto:f.alto,col:0,fila:c.fila,dx:3,dy:3});
+    else sinFoto++;
+  }
+  estadoOk();
+  const hoja={nombre:'PRECIOS',filas:fl,
+    anchos:[11,13,40,17,17,17,13,13].concat(CLI.map(()=>15)),altos,fotos};
+  const lib=libroXlsx([hoja],'TEMPO_Lista_de_precios_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  try{
+    const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Lista de precios generada',lib.nombre+' · '+list.length+' productos, '+CLI.length+
+      ' clientes y '+lib.fotos+' fotos.'+(sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
+  }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
+  return lib;
+}
+
 /* ====== EXPORTAR TODOS LOS COSTOS ======
    Una fila por producto con el desglose del costo y el PVP de cada cliente.
    Los costos se calculan con los precios y tarifas de HOY, no con los que
