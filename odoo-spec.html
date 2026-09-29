@@ -291,6 +291,39 @@ figcaption b{color:var(--tinta);font-weight:600}
 .pie{margin-top:52px;padding-top:20px;border-top:1px solid var(--linea);font-size:13px;color:var(--tinta-3)}
 :focus-visible{outline:2px solid var(--vino);outline-offset:2px}
 @media (prefers-reduced-motion:no-preference){a{transition:color .12s}}
+
+/* ---------- impresión / PDF ----------
+   El documento se manda impreso o en PDF: papel blanco, tinta oscura y el vino
+   de la marca, aunque quien lo genere tenga la pantalla en modo oscuro. Las
+   maquetas se reducen con zoom para caber en A4 sin recortarse. */
+@page{size:A4;margin:14mm 13mm 16mm}
+@media print{
+  :root,:root[data-theme="dark"],:root[data-theme="light"]{
+    --papel:#fff; --tinta:#1e1a1b; --tinta-2:#55484c; --tinta-3:#87777c;
+    --vino:#9c3b4e; --vino-hondo:#6b2434;
+    --linea:#ded3d5; --linea-suave:#efe8e9; --caja:#fff; --suave:#f7eff0;
+    --verde:#14663a; --verde-suave:#e7f4ec; --ambar:#6b4708; --ambar-suave:#fdf6e7;
+    --rojo:#a8331a; --rojo-suave:#fbeae5; --azul:#2c4f73; --azul-suave:#e9eff6;
+    color-scheme:light;
+  }
+  body{background:#fff;font-size:10.5pt;line-height:1.5}
+  .envoltura{max-width:none;padding-inline:0;padding-block:0}
+  .portada{padding-block:0 16px}
+  h1{font-size:30pt}
+  h2{font-size:17pt}
+  h3{font-size:12.5pt;margin-top:20px}
+  section{padding-block:18px 2px;margin-top:16px}
+  h2,h3,h4,.eyebrow{break-after:avoid}
+  figure,.formula,.nota,.tabla-caja,.indice,.pie,.criterios li,.paso-f{break-inside:avoid}
+  .flujo{break-inside:avoid}
+  #pantallas,#datos,#aceptacion{break-before:page}
+  .maqueta-caja,.hoja-marco{zoom:.70;overflow:visible;break-inside:avoid;padding:14px}
+  .tabla-caja{overflow:visible}
+  table{min-width:0}
+  a{color:inherit;text-decoration:none}
+  .indice{display:none}
+}
+
 </style>
 
 <div class="envoltura">
