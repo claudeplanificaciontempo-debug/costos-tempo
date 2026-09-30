@@ -2362,6 +2362,7 @@ function rowsCons(){
         <div class="nu"><div class="k">Sin describir</div><div class="v${R.sinDesc?' falta':''}">${R.sinDesc||'—'}</div></div>
       </div>
       <div class="ax">
+        <button class="btn sm" onclick="abrirCons('${c.id}')" title="Ver las prendas de esta tanda y quitar las que no van">${CONS_ABIERTO.has(c.id)?'▴ Ocultar las prendas':'▾ Ver las '+R.n+' prenda'+(R.n===1?'':'s')}</button>
         <button class="btn org sm" onclick="pdfPropuesta('${c.id}')" title="La hoja que se le manda al cliente: foto, referencia y precio. Sin costos.">PDF de la propuesta</button>
         <button class="btn sm" onclick="verCons('${c.id}','mural')" title="Ver las prendas de esta tanda como fotos">▦ Ver el mural</button>
         <button class="btn ghost sm" onclick="abrirAddRef('${c.id}')" title="Agregar referencias que ya existen, de cualquier temporada">+ Agregar referencias</button>
