@@ -1000,8 +1000,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="addrow">
       <button class="btn org" onclick="respaldo()">Descargar respaldo</button>
       <button class="btn" onclick="xlsxFichas()">Descargar fichas por referencia (Excel)</button>
-      <button class="btn" onclick="xlsxPrecios(true)">Lista de precios con costo (Excel)</button>
-      <button class="btn" onclick="xlsxPrecios(false)">Lista de precios para el cliente (Excel)</button>
+      <button class="btn" onclick="xlsxPrecios()">Lista de precios con costo (Excel)</button>
       <button class="btn ghost" onclick="exportarCostos()">Descargar resumen (CSV)</button>
       <button class="btn ghost" onclick="abrirRestaurar()">Restaurar desde archivo</button>
       <input type="file" id="restaurar-file" accept=".json" class="hide" onchange="onArchivoRestaurar(this.files)">
@@ -1023,10 +1022,19 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="card">
     <div class="card-h"><h2>Precios por referencia</h2>
       <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
-      <button class="btn org sm" style="margin-left:8px" onclick="pdfListaPrecios()">Exportar PDF</button>
-      <button class="btn sm" style="margin-left:6px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios(true)">Excel con costo</button>
-      <button class="btn sm" style="margin-left:6px" title="La misma hoja sin el costo de TEMPO ni el estado de la ficha: para mandarla al cliente" onclick="xlsxPrecios(false)">Excel para el cliente</button>
+      <button class="btn sm" style="margin-left:8px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios()">Excel con costo</button>
       <div class="sub" id="lp-s"></div></div>
+    <div class="addrow" style="border-bottom:1px solid var(--line-soft);flex-wrap:wrap">
+      <span class="mini" style="margin:0">Filtrar</span>
+      <select id="lp-f-cons" class="fld" style="width:auto" onchange="rowsLista()"></select>
+      <select id="lp-f-col" class="fld" style="width:auto" onchange="rowsLista()"></select>
+      <select id="lp-f-cat" class="fld" style="width:auto" onchange="rowsLista()"></select>
+      <select id="lp-f-temp" class="fld" style="width:auto" onchange="rowsLista()"></select>
+      <button class="btn ghost sm" onclick="limpiarFiltroLp()">Limpiar</button>
+      <span class="mini" style="margin:0 0 0 auto">PDF para</span>
+      <select id="lp-cli" class="fld" style="width:auto" title="De qué cliente sale el precio que va en el PDF"></select>
+      <button class="btn org sm" onclick="pdfListaCliente()" title="Una hoja con la foto, la referencia y el precio de ese cliente: lo marcado, o todo lo que quedó en el filtro">PDF para el cliente</button>
+    </div>
     <div class="lpwrap"><table class="lptab">
       <thead id="lp-head"></thead>
       <tbody id="lp-body"></tbody>
@@ -5206,24 +5214,69 @@ function xlsxReporte(){
 /* ====== EXPORTAR ====== */
 let cliSel='fc';
 function abbr(s){return s.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,4)}
-function rowsLista(){
+/* ====== LISTA DE PRECIOS ======
+   La misma pantalla sirve para consultar y para armar el PDF del cliente: se
+   filtra, se marca lo que va, y sale la hoja con foto, referencia y precio. */
+let SELLP=new Set();
+function lpLista(){
   const q=($('lp-q')&&$('lp-q').value||'').toLowerCase();
-  $('lp-head').innerHTML='<tr><th class="l" style="width:52px"></th><th class="l">Producto</th>'+
+  const v=id=>($(id)&&$(id).value)||'';
+  const co=v('lp-f-cons'),cl=v('lp-f-col'),ca=v('lp-f-cat'),te=v('lp-f-temp');
+  return activos().filter(x=>FICHAS[x.r].saved)
+    .filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q))
+    .filter(x=>(!co||x.cons===co)&&(!cl||x.col===cl)&&(!ca||x.cat===ca)&&(!te||x.temporada===te));
+}
+function limpiarFiltroLp(){
+  ['lp-q','lp-f-cons','lp-f-col','lp-f-cat','lp-f-temp'].forEach(id=>{const e=$(id);if(e)e.value=''});
+  rowsLista();
+}
+function toggleLp(r,v){if(v)SELLP.add(r);else SELLP.delete(r);pintarSubLp()}
+function toggleAllLp(v){
+  const rs=lpLista().map(x=>x.r);
+  if(v)rs.forEach(r=>SELLP.add(r));else rs.forEach(r=>SELLP.delete(r));
+  rowsLista();
+}
+function pintarSubLp(){
+  const lista=lpLista(),marcadas=lista.filter(x=>SELLP.has(x.r)).length;
+  if($('lp-s'))$('lp-s').innerHTML=lista.length+' de '+REFS.length+' referencias con precio cerrado'
+    +(marcadas?' · <b>'+marcadas+' marcada'+(marcadas===1?'':'s')+' para el PDF</b>':'');
+  const all=$('lp-all');
+  if(all)all.checked=lista.length>0&&lista.every(x=>SELLP.has(x.r));
+}
+function rowsLista(){
+  /* los desplegables se arman con lo que de verdad hay en el catálogo */
+  const pon=(id,vals,etq,etiqueta)=>{const e=$(id);if(!e)return;const v=e.value;
+    e.innerHTML='<option value="">'+etq+'</option>'+vals.map(x=>`<option value="${escR(x)}" ${x===v?'selected':''}>${escR(etiqueta?etiqueta(x):x)}</option>`).join('');
+    if(vals.indexOf(v)>=0)e.value=v;};
+  const con=activos().filter(x=>FICHAS[x.r].saved);
+  pon('lp-f-cons',[...new Set(con.map(x=>x.cons).filter(Boolean))],'Todos los consolidados',nombreCons);
+  pon('lp-f-col',[...new Set(con.map(x=>x.col).filter(Boolean))].sort(),'Todas las colecciones');
+  pon('lp-f-cat',[...new Set(con.map(x=>x.cat).filter(Boolean))].sort(),'Todas las categorías');
+  pon('lp-f-temp',[...new Set(con.map(x=>x.temporada).filter(Boolean))].sort(),'Todas las temporadas');
+  const sc=$('lp-cli');
+  if(sc){const v=sc.value;sc.innerHTML=CLI.map(c=>`<option value="${c.id}">${escR(c.cli)} · ${escR(c.zona)}</option>`).join('');
+    if(CLI.some(c=>c.id===v))sc.value=v;}
+
+  $('lp-head').innerHTML='<tr><th style="width:34px"><input type="checkbox" id="lp-all" title="Marcar todo lo que está en el filtro" onchange="toggleAllLp(this.checked)"></th>'
+    +'<th class="l" style="width:52px"></th><th class="l">Producto</th>'+
     CLI.map(c=>`<th title="${c.cli} · ${c.zona}">${abbr(c.cli)} USD</th>`).join('')+'</tr>';
-  const g=cur;let n=0,vis=0;
-  const list=activos().filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
+  const g=cur;let vis=0;
+  const list=lpLista();
+  SELLP.forEach(r=>{if(!byRef(r))SELLP.delete(r)});
+  const cols=CLI.length+3;
   const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
   let rows='';
   Object.keys(grupos).sort().forEach(sub=>{
-    rows+=`<tr class="cat"><td class="l" colspan="${CLI.length+2}"><b>${sub}</b></td></tr>`;
+    rows+=`<tr class="cat"><td class="l" colspan="${cols}"><b>${sub}</b></td></tr>`;
     grupos[sub].forEach(x=>{
       cur=x.r;calc();const f=FICHAS[x.r];
-      n++;vis++;
+      vis++;
       const px=CLI.map((c,ci)=>{
         const r=plCalc(ci);
         return `<td><span class="lppx${r.pvp?'':' cero'}" title="${r.pvp?'Precio de la v'+f.ver+' · guardada '+f.fecha:'Sin precio: la ficha todavía no tiene costo'}">${fmt(r.pvp)}</span></td>`;
       }).join('');
       rows+=`<tr>
+        <td><input type="checkbox" class="lpsel" ${SELLP.has(x.r)?'checked':''} onchange="toggleLp('${x.r}',this.checked)"></td>
         <td><div class="lpth">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin foto</div>'}</div></td>
         <td class="l" style="text-align:left">
           <div class="lpnm">${x.n}</div>
@@ -5232,33 +5285,44 @@ function rowsLista(){
         ${px}</tr>`;
     });
   });
-  $('lp-body').innerHTML=rows||`<tr><td colspan="${CLI.length+2}" class="empty">Todavía no hay precios. Guarda la ficha de costos de una referencia y aparece aquí.</td></tr>`;
+  $('lp-body').innerHTML=rows||`<tr><td colspan="${cols}" class="empty">No hay referencias con ese filtro. ${activos().filter(x=>FICHAS[x.r].saved).length?'Prueba con "Limpiar".':'Guarda la ficha de costos de una referencia y aparece aquí.'}</td></tr>`;
   cur=g;calc();
   kpis();
-  $('lp-s').textContent=vis+' de '+REFS.length+' referencias con precio cerrado';
+  pintarSubLp();
 }
-function pdfListaPrecios(){
-  const q=($('lp-q')&&$('lp-q').value||'').toLowerCase();
+/* El PDF que se le manda al cliente: lo marcado, o todo lo que quedó filtrado. */
+function pdfListaCliente(){
+  const lista=lpLista();
+  const marcadas=lista.filter(x=>SELLP.has(x.r));
+  const list=marcadas.length?marcadas:lista;
+  if(!list.length){toast('Nada que imprimir','No hay referencias con ese filtro.');return}
+  const id=($('lp-cli')&&$('lp-cli').value)||(CLI[0]&&CLI[0].id);
+  const ci=CLI.findIndex(c=>c.id===id);
+  const c=CLI[ci<0?0:ci];
+  if(!c){toast('Falta el cliente','Crea un cliente en Configuración.');return}
   const g=cur;
-  const list=activos().filter(x=>FICHAS[x.r].saved).filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q));
-  if(!list.length){toast('Nada que exportar','Guarda al menos una ficha de costos.');return}
   const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
-  let body='';
-  Object.keys(grupos).sort().forEach(sub=>{
-    body+=`<tr class="grp"><td colspan="${CLI.length+2}">${sub}</td></tr>`;
-    grupos[sub].forEach(x=>{
-      cur=x.r;calc();const f=FICHAS[x.r];
-      const px=CLI.map((c,ci)=>`<td class="n">${fmt(plCalc(ci).pvp)}</td>`).join('');
-      body+=`<tr><td>${x.r}</td><td>${x.n}${x.marca?' · '+x.marca:''}</td>${px}</tr>`;
-    });
-  });
+  const cards=Object.keys(grupos).sort().map(sub=>
+    `<div style="grid-column:1/-1;font-weight:800;font-size:13px;margin-top:6px;border-bottom:1px solid #ddd;padding-bottom:4px">${escR(sub)}</div>`
+    +grupos[sub].map(x=>{cur=x.r;calc();const r=plCalc(ci<0?0:ci);
+      return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</div>
+        <div class="pdf-b"><div class="r">${x.marca?escR(x.marca.toUpperCase())+' · ':''}REF ${escR(x.r)}${x.dep?' · '+escR(x.dep.toUpperCase()):''}</div>
+        <div class="n">${escR(x.n)}</div>
+        <div class="p">${fmt(r.pvp)}<small>USD</small></div></div></div>`}).join('')
+  ).join('');
   cur=g;calc();
+  const filtro=[['Consolidado',$('lp-f-cons')&&nombreCons($('lp-f-cons').value)],
+    ['Colección',$('lp-f-col')&&$('lp-f-col').value],
+    ['Categoría',$('lp-f-cat')&&$('lp-f-cat').value],
+    ['Temporada',$('lp-f-temp')&&$('lp-f-temp').value]]
+    .filter(([t,v])=>v).map(([t,v])=>t+': '+v).join(' · ');
   $('print-area').innerHTML=`<div class="pdf-h"><h1>Lista de precios · TEMPO</h1>
-    <span class="d">${hoy()} · ${list.length} referencias</span></div>
-    <table class="pdf-tab"><thead><tr><th>Ref</th><th>Producto</th>${CLI.map(c=>`<th>${c.cli} USD</th>`).join('')}</tr></thead>
-    <tbody>${body}</tbody></table>
+    <span class="c">${escR(c.cli)} · ${escR(c.zona)}</span>
+    <span class="d">${hoy()} · ${list.length} referencia${list.length===1?'':'s'}${filtro?' · '+escR(filtro):''}</span></div>
+    <div class="pdf-g">${cards}</div>
     <div class="pdf-foot">Precios en USD por prenda · TEMPOCODECA S.A.</div>`;
-  toast('Abriendo el PDF','En la ventana de impresión elige "Guardar como PDF".');
+  toast('Abriendo el PDF para '+c.cli,
+    (marcadas.length?list.length+' marcada(s)':'las '+list.length+' del filtro')+'. En la ventana de impresión elige "Guardar como PDF".');
   setTimeout(()=>window.print(),250);
 }
 let expAgrupa='';
@@ -5679,15 +5743,14 @@ async function xlsxFichas(){
    una columna por cliente con su precio. Es la que se lleva a la reunión. */
 /* conCosto=false arma la misma hoja para mandarla al cliente: sin el costo de
    TEMPO y sin el estado interno de la ficha. */
-async function xlsxPrecios(conCosto){
-  const interna=conCosto!==false;
+async function xlsxPrecios(){
   const list=activos();
   if(!list.length){toast('Nada que exportar','Todavía no hay productos en el catálogo.');return}
   const g=cur,fl=[],altos={};
   fl.push([{v:'LISTA DE PRECIOS · TEMPO',s:5},'','',{v:'generado el '+hoy(),s:1}]);
   fl.push([]);
   fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN']
-    .concat(interna?['ESTADO','COSTO TEMPO']:[])
+    .concat(['ESTADO','COSTO TEMPO'])
     .concat(CLI.map(c=>c.cli+' · '+c.zona)).map(t=>({v:t,s:3})));
   const estadoDe=f=>f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?('Costeada v'+f.ver):(f.edit?'Re-costeo':(f.pre?'Pre costeada':(enAvance(f)?'En avance':'Borrador'))));
   const conFoto=[];
@@ -5695,15 +5758,13 @@ async function xlsxPrecios(conCosto){
     const f=FICHAS[x.r]||fichaVacia();cur=x.r;calc();
     const r=fl.length+1;
     fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'']
-      .concat(interna?[estadoDe(f),{v:TOT.total,s:2}]:[])
+      .concat([estadoDe(f),{v:TOT.total,s:2}])
       .concat(CLI.map((c,i)=>({v:plCalc(i,true).pvp,s:2}))));
     altos[r]=54;                       /* alto de fila para que quepa la foto */
     if(FOTO[x.r])conFoto.push({ref:x.r,fila:r-1});
   });
   fl.push([]);
-  fl.push([{v:interna
-    ?('Precios calculados con los costos y márgenes de hoy ('+hoy()+'). Los clientes atados a otro llevan su recargo ya aplicado.')
-    :('Precios en dólares por prenda, vigentes al '+hoy()+'. TEMPOCODECA.'),s:1}]);
+  fl.push([{v:'Precios calculados con los costos y márgenes de hoy ('+hoy()+'). Los clientes atados a otro llevan su recargo ya aplicado.',s:1}]);
   cur=g;calc();
 
   marcaSave('Armando la lista…','');
@@ -5715,15 +5776,14 @@ async function xlsxPrecios(conCosto){
   }
   estadoOk();
   const hoja={nombre:'PRECIOS',filas:fl,
-    anchos:[11,13,40,17,17,17].concat(interna?[13,13]:[]).concat(CLI.map(()=>15)),altos,fotos};
-  const lib=libroXlsx([hoja],'TEMPO_Lista_de_precios'+(interna?'':'_para_cliente')+'_'+
+    anchos:[11,13,40,17,17,17,13,13].concat(CLI.map(()=>15)),altos,fotos};
+  const lib=libroXlsx([hoja],'TEMPO_Lista_de_precios_'+
     new Date().toISOString().slice(0,10)+'.xlsx');
   try{
     const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
     document.body.appendChild(a);a.click();document.body.removeChild(a);
-    toast(interna?'Lista de precios generada':'Lista para el cliente generada',
+    toast('Lista de precios generada',
       lib.nombre+' · '+list.length+' productos, '+CLI.length+' clientes y '+lib.fotos+' fotos.'+
-      (interna?'':' Sin el costo de TEMPO ni el estado de la ficha.')+
       (sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
   }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
   return lib;
