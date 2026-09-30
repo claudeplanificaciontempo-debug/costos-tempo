@@ -596,6 +596,17 @@ select.fld{border-color:var(--line)}
 .est-aprobado,.est-cerrado{background:var(--green-soft);color:var(--green-txt)}
 .est-final{background:var(--amber-soft);color:var(--amber)}
 .est-perdido{background:var(--line-soft);color:var(--ink-3)}
+.cons-refs{grid-column:1/-1;width:100%;border-top:1px solid var(--line-soft);margin-top:10px;padding-top:10px}
+.crow{display:grid;grid-template-columns:34px 62px minmax(150px,1fr) minmax(120px,200px) 104px 78px 30px;
+  gap:9px;align-items:center;padding:5px 4px;border-bottom:1px solid var(--line-soft);font-size:12px}
+.crow:last-child{border-bottom:0}
+.crow .im{width:34px;height:44px;border-radius:5px;overflow:hidden;background:var(--suave);display:block}
+.crow .im img{width:100%;height:100%;object-fit:cover;display:block}
+.crow .rf{font-weight:800;color:var(--vino-deep);cursor:pointer}
+.crow .rf:hover{text-decoration:underline}
+.crow .nm{color:var(--ink);line-height:1.25}
+.crow .dt{color:var(--ink-3);font-size:11px}
+.crow .px{text-align:right;font-weight:700}
 .arow{display:grid;grid-template-columns:24px 40px 62px minmax(150px,1fr) minmax(140px,220px) 104px 72px;
   gap:9px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line-soft);cursor:pointer;font-size:12px}
 .arow:hover{background:var(--suave)}
@@ -2340,7 +2351,8 @@ function rowsCons(){
         </div>
       </div>
       <div class="nums">
-        <div class="nu"><div class="k">Referencias</div><div class="v">${R.n}</div></div>
+        <div class="nu" style="cursor:pointer" onclick="abrirCons('${c.id}')" title="Ver y quitar las referencias de esta tanda">
+          <div class="k">Referencias</div><div class="v" style="color:var(--vino-deep)">${R.n} ${CONS_ABIERTO.has(c.id)?'▴':'▾'}</div></div>
         <div class="nu"><div class="k">Pre costeadas</div><div class="v${R.pre<R.n?' falta':''}">${R.pre}</div></div>
         <div class="nu"><div class="k">Costeadas</div><div class="v">${R.cerradas}</div></div>
         <div class="nu"><div class="k">Propuesta${R.cli?' · '+escR(R.cli.cli):''}</div><div class="v">${fmt(R.propuesta)}</div></div>
@@ -2355,13 +2367,46 @@ function rowsCons(){
         <button class="btn ghost sm" onclick="abrirAddRef('${c.id}')" title="Agregar referencias que ya existen, de cualquier temporada">+ Agregar referencias</button>
         <button class="btn ghost sm" onclick="fotosDeCons('${c.id}')" title="Cargar una carpeta de fotos a esta tanda">Cargar fotos</button>
         <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista para editarlas">☰ Lista</button>
-        <button class="x" title="Borrar el consolidado" onclick="borrarCons('${c.id}')">×</button>
+        <button class="btn ghost sm" title="Borrar la tanda entera · las prendas no se borran" onclick="borrarCons('${c.id}')">× Borrar la tanda</button>
       </div>
+      ${CONS_ABIERTO.has(c.id)?filasCons(c.id):''}
     </div>`;
   }).join('')||'<div class="empty">Todavía no hay consolidados. Crea el primero con "+ Nuevo consolidado" y cárgale las referencias que te mandó el cliente.</div>';
   const enTandas=new Set();CONS.forEach(c=>listaCons(c).forEach(r=>{if(byRef(r))enTandas.add(r)}));
   $('cons-sub').textContent=CONS.length?CONS.length+(CONS.length===1?' tanda':' tandas')+' · '+enTandas.size+' referencias asignadas':'';
   kpisCons();
+}
+const CONS_ABIERTO=new Set();
+function abrirCons(id){CONS_ABIERTO.has(id)?CONS_ABIERTO.delete(id):CONS_ABIERTO.add(id);rowsCons()}
+/* Las referencias de la tanda, con su × para sacarlas de aquí sin ir a Productos.
+   Quitar de la tanda NO borra la prenda: sigue en el catálogo. */
+function filasCons(id){
+  const c=consPorId(id);if(!c)return '';
+  const lista=refsDeCons(id);
+  let ci=CLI.findIndex(z=>z.id===c.cliId);if(ci<0)ci=clienteBase();
+  if(!lista.length)return `<div class="cons-refs"><div class="empty" style="padding:14px">Esta tanda todavía no tiene referencias. Usa <b>+ Agregar referencias</b> o <b>Cargar fotos</b>.</div></div>`;
+  const filas=lista.map(x=>{
+    const e=estadoProd(x),p=precioPropuesta(x.r,ci);
+    const cls=e==='Costeada'?'ok':(e==='Pre costeada'||e==='Por aprobar'?'pend':'');
+    return `<div class="crow">
+      <span class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
+      <span class="rf" onclick="verFicha('${x.r}')" title="Abrir su ficha de costos">${escR(x.r)}</span>
+      <span class="nm">${escR(x.n||'sin describir')}</span>
+      <span class="dt">${escR([x.col,x.temporada].filter(Boolean).join(' · '))}</span>
+      <span class="pill ${cls}">${e}</span>
+      <span class="px">${p.pvp?fmt(p.pvp):'sin precio'}</span>
+      <button class="x" title="Quitar de esta tanda · la prenda no se borra" onclick="sacarDeCons('${id}','${x.r}')">×</button>
+    </div>`}).join('');
+  return `<div class="cons-refs">
+    <div class="mini" style="margin:0 0 6px">Las prendas de esta tanda · la <b>×</b> la saca de aquí, no la borra del catálogo</div>
+    ${filas}</div>`;
+}
+function sacarDeCons(id,r){
+  const x=byRef(r);
+  if(!confirm('¿Quitar '+r+(x&&x.n?' · '+x.n:'')+' de "'+nombreCons(id)+'"?\n\nLa prenda NO se borra: sigue en el catálogo y en sus otras tandas.'))return;
+  quitarDeCons(id,[r]);
+  rowsCons();rowsProd();rowsLista();autosave();
+  toast(r+' fuera de la tanda',nombreCons(id)+' queda con '+refsDeCons(id).length+' referencia(s). La prenda sigue en el catálogo.');
 }
 /* Al mandar la propuesta se guarda la fecha sola: es el dato que después falta. */
 function cambiarEstadoCons(id,v){
