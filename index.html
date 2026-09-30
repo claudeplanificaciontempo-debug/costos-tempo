@@ -821,6 +821,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <div id="menu-agrupa" class="menu hide"></div>
       </div>
       <button class="btn ghost sm" id="bt-vista" onclick="cambiarVista()" title="Ver el catálogo como fotos, para revisarlo y presentarlo">▦ Mural</button>
+      <button class="btn ghost sm" id="bt-pdf-mural" onclick="pdfMural()" title="Imprimir el mural como está: con los filtros y las agrupaciones puestas. Lleva el costo: es para adentro.">PDF del mural</button>
       <div class="sub" id="prod-sub"></div></div>
     <div id="chips-prod" class="chips hide"></div>
     <div id="panel-filtros" class="filtros hide"></div>
@@ -3221,6 +3222,49 @@ function tarjetaProd({x,i}){
         ${pvp?`<span>propuesta ${fmt(pvp)}</span>`:(x.col?`<span>${escR(x.col)}</span>`:'')}</div>
     </div>
   </div>`;
+}
+/* El mural en papel: lo mismo que se está viendo, con sus filtros y sus
+   grupos. Lleva el costo y el estado porque esta hoja es para adentro; la que
+   ve el cliente es la propuesta del consolidado. */
+function pdfMural(){
+  const lista=prodLista();
+  if(!lista.length){toast('Nada que imprimir','No hay productos con ese filtro.');return}
+  const g=cur;
+  const tarjeta=({x})=>{
+    const f=FICHAS[x.r]||fichaVacia(),t=totRef(x.r),e=estadoProd(x);
+    const pre=(f.pre&&f.pre.pvp&&f.pre.pvp[clienteBase()])?f.pre.pvp[clienteBase()].pvp:0;
+    return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</div>
+      <div class="pdf-b"><div class="r">REF ${escR(x.r)}${x.col?' · '+escR(x.col.toUpperCase()):''}</div>
+      <div class="n">${escR(x.n||'sin describir')}</div>
+      <div class="p">${fmt(t.total)}<small>costo</small></div>
+      <div class="r" style="margin-top:2px">${pre?'propuesta '+fmt(pre):'&nbsp;'}</div>
+      <span class="b">${escR(e)}</span></div></div>`;
+  };
+  let cards;
+  if(prodAgrupa.length){
+    const nivel=(items,n)=>{
+      if(n>=prodAgrupa.length)return items.map(tarjeta).join('');
+      const k=prodAgrupa[n],gr={};
+      items.forEach(it=>valoresProd(it.x,k).forEach(v=>{(gr[v]=gr[v]||[]).push(it)}));
+      return Object.keys(gr).sort((a,b)=>cmpValor(k,a,b)).map(v=>
+        `<div style="grid-column:1/-1;font-weight:800;font-size:${13-n}px;margin-top:6px;
+          border-bottom:1px solid #ddd;padding-bottom:4px">${escR(etiquetaValor(k,v))}
+          <span style="font-weight:600;color:#8a7a7e"> · ${gr[v].length}</span></div>`
+        +nivel(gr[v],n+1)).join('');
+    };
+    cards=nivel(lista,0);
+  }else cards=lista.map(tarjeta).join('');
+  cur=g;calc();
+  const filtro=Object.keys(FPROD).filter(k=>FPROD[k]&&FPROD[k].length)
+    .map(k=>tituloCampo(k)+': '+FPROD[k].map(v=>etiquetaValor(k,v)).join(' o ')).join(' · ');
+  const agr=prodAgrupa.length?' · agrupado por '+prodAgrupa.map(tituloCampo).join(' › '):'';
+  $('print-area').innerHTML=`<div class="pdf-h"><h1>Mural · TEMPO</h1>
+    ${filtro?`<span class="c">${escR(filtro)}</span>`:''}
+    <span class="d">${hoy()} · ${lista.length} referencia${lista.length===1?'':'s'}${escR(agr)}</span></div>
+    <div class="pdf-g">${cards}</div>
+    <div class="pdf-foot">Costos de la ficha de hoy · uso interno · TEMPOCODECA S.A.</div>`;
+  toast('Abriendo el mural',lista.length+' referencia(s). En la ventana de impresión elige "Guardar como PDF".');
+  setTimeout(()=>window.print(),250);
 }
 function grupoHtml(items,nivel){
   if(nivel>=prodAgrupa.length)
