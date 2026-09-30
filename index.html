@@ -679,7 +679,6 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <button class="nav-item" data-screen="centros">Configuración</button>
     <div class="navsep"></div>
     <button class="nav-item" data-screen="lista">Lista de precios</button>
-    <button class="nav-item" data-screen="exp">Exportar por cliente</button>
     <button class="nav-item" data-screen="rep">Reportes</button>
   </nav>
   </div>
@@ -1039,34 +1038,6 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <thead id="lp-head"></thead>
       <tbody id="lp-body"></tbody>
     </table></div>
-  </div>
-</section>
-
-<section id="scr-exp" class="hide">
-  <div class="crumb"><b>Exportar por cliente</b></div>
-  <div class="eyebrow">Costos y precios por cliente</div>
-  <div class="hint"><b>Esta es la vista para el cliente: foto, referencia y precio.</b> Solo salen las referencias con la ficha guardada; las que están en borrador se ven en gris. Los costos y márgenes se consultan en la ficha y en Productos.</div>
-  <div class="tabs" id="tabs-cli"></div>
-  <div class="card">
-    <div class="card-h"><h2 id="exp-t"></h2>
-      <div class="mini" style="margin:0 0 0 14px">Agrupar por</div>
-      <div class="tabs" id="tabs-agrupa-exp" style="margin:0 14px 0 6px">
-        <button class="tab on" onclick="agruparExp('')">Ninguno</button>
-        <button class="tab" onclick="agruparExp('cat')">Categoría</button>
-        <button class="tab" onclick="agruparExp('sub')">Tipo</button>
-      </div>
-      <div class="sub" id="exp-s"></div></div>
-    <table>
-      <thead><tr><th class="l" style="width:52px">Foto</th><th class="l">Ref</th><th class="l">Producto</th><th class="l">Marca</th><th class="l">Depto.</th><th class="l">Categoría</th><th class="l">Tipo</th><th>PVP</th><th class="l">Estado</th></tr></thead>
-      <tbody id="tb-exp"></tbody>
-      <tfoot id="tf-exp"></tfoot>
-    </table>
-    <div class="addrow">
-      <button class="btn org" onclick="pdfCliente()">PDF con fotos y PVP</button>
-      <button class="btn ghost" onclick="exportar()">Exportar CSV del cliente</button>
-      <button class="btn ghost" onclick="exportar(true)">Exportar todos los clientes</button>
-      <label class="mini" style="margin:0 0 0 auto;display:flex;align-items:center;gap:6px"><input type="checkbox" id="pdf-borr"> Incluir borradores en el PDF</label>
-    </div>
   </div>
 </section>
 
@@ -2048,7 +2019,7 @@ function setPrecio(i,v){
   const x=CAT[i];if(!x)return;
   x.p=num(v);x.f=hoy();
   const e=$('mf-'+i);if(e)e.textContent=x.f;
-  draw(true);rowsProd();rowsExp();
+  draw(true);rowsProd();
 }
 /* El año se escoge de una lista, no se escribe: así no entran letras ni años
    a medias. La lista va de dos años adelante a cinco atrás, y si alguna ficha
@@ -2078,7 +2049,7 @@ function borrarMat(i){
   CAT.splice(i,1);
   if(SEED&&SEED.CAT.some(m=>m.c===x.c)&&BORRADOS.mat.indexOf(x.c)<0)BORRADOS.mat.push(x.c);
   REFS.forEach(r=>{const f=FICHAS[r.r];if(f)f.lines=f.lines.filter(l=>l.c!==x.c)});
-  rowsCatMat();draw();rowsProd();rowsExp();
+  rowsCatMat();draw();rowsProd();
   toast('Material borrado',x.d+' ('+x.c+') se quitó del catálogo'+(usos?' y de '+usos+' ficha'+(usos===1?'':'s'):'')+'.');
 }
 function rm(i){F().lines.splice(i,1);draw()}
@@ -2295,7 +2266,7 @@ function guardarPre(){
   f.pre={total:TOT.total,sam:TOT.sam,fecha:hoy(),fechaISO:hoyISO(),
     pvp:CLI.map((c,i)=>({id:c.id,cli:c.cli,zona:c.zona,pvp:plCalc(i,true).pvp}))};
   f.av=hoy();
-  draw();rowsProd();rowsExp();autosave();
+  draw();rowsProd();autosave();
   toast(antes?'Pre costeo actualizado · REF '+cur:'Pre costeo guardado · REF '+cur,
     'Propuesta con '+fmt(f.pre.total)+' de costo'+(f.pre.pvp[0]?' y '+fmt(f.pre.pvp[0].pvp)+' de precio para '+f.pre.pvp[0].cli:'')
     +'. La ficha sigue abierta para el costeo final.');
@@ -2471,7 +2442,7 @@ async function guardar(){
   try{
     if(soloPrearmado()){
       f.aprob='pendiente';
-      draw();rowsProd();rowsExp();
+      draw();rowsProd();
       const eV=await guardarVersion(ref);
       if(await forzarGuardado(null,false))
         toast('Enviado para aprobación · REF '+ref,'Un administrador revisará los consumos y tiempos, y cerrará el costo.'+(eV?' (Aviso: el historial no se pudo escribir · '+eV+')':''));
@@ -2481,7 +2452,7 @@ async function guardar(){
     f.saved=true;f.edit=false;f.fecha=hoy();f.aprob=null;f.av='';
     f.hist=f.hist||[];
     f.hist.push({ver:f.ver,fecha:f.fecha,total:TOT.total,sam:TOT.sam,pvp:plCalc(0,true).pvp});
-    draw();rowsProd();rowsExp();
+    draw();rowsProd();
     const eV=await guardarVersion(ref);
     /* solo se confirma el guardado si Supabase respondió bien */
     if(await forzarGuardado(null,false))
@@ -2553,7 +2524,7 @@ function rowsHist(){
   }
 }
 async function guardarTarifas(){
-  draw();rowsCentros();rowsProd();rowsExp();
+  draw();rowsCentros();rowsProd();
   return forzarGuardado('bt-tar','Tarifas guardadas');
 }
 let tt;
@@ -2605,7 +2576,7 @@ function borrarArchivados(){
   if(!confirm('Vas a eliminar definitivamente '+arch.length+' producto(s) archivado(s), con su ficha de costos y su foto:\n\n'+
     lista.slice(0,12).join('\n')+(lista.length>12?'\n…y '+(lista.length-12)+' más':'')+'\n\nEsto no se puede deshacer. ¿Seguir?'))return;
   arch.map(x=>x.r).forEach(r=>{const i=REFS.findIndex(y=>y.r===r);if(i>=0)quitarProd(i)});
-  SELP.clear();rowsProd();rowsExp();rowsLista();autosave();
+  SELP.clear();rowsProd();rowsLista();autosave();
   toast('Archivados eliminados',arch.length+' producto(s) salieron del catálogo para siempre.');
 }
 function toggleProd(r,v){if(v)SELP.add(r);else SELP.delete(r);pintarBulkProd()}
@@ -2695,7 +2666,7 @@ function aplicarMasivo(campo){
     if(c.k==='sub'&&v&&!(CATEG[x.cat]||[]).includes(v)){saltados.push(x.r);return}
     setP(i,c.k,v);n++;
   });
-  rowsProd();rowsExp();rowsLista();autosave();
+  rowsProd();rowsLista();autosave();
   toast(n+' producto'+(n===1?'':'s')+' actualizado'+(n===1?'':'s'),
     c.t+(v?': '+(c.fecha?fechaBonita(v):(c.etiqueta?c.etiqueta(v):v)):' sin definir')
     +(saltados.length?' · '+saltados.length+' sin cambiar porque su categoría no tiene ese tipo ('+saltados.slice(0,6).join(', ')+')':''));
@@ -2707,7 +2678,7 @@ function archivarSel(){
   const restaurar=prodF==='arch';
   refs.forEach(({x})=>{x.arch=!restaurar});
   SELP.clear();
-  rowsProd();rowsExp();rowsLista();autosave();
+  rowsProd();rowsLista();autosave();
   toast(refs.length+(restaurar?' producto(s) restaurado(s)':' producto(s) archivado(s)'),
     restaurar?'Vuelven a aparecer en precios y exportaciones.':'Ya no aparecen en precios ni exportaciones.');
 }
@@ -3093,13 +3064,13 @@ function setP(i,f,v){
     if(f==='cat'||f==='sub')reajustarReceta(REFS[i],pc,ps);
     if(f==='cat')rowsProd();
   }
-  rowsExp();head();
+  head();
 }
 function nuevoProd(){
   let n=1;while(byRef('NUEVO'+n))n++;
   const r='NUEVO'+n;
   REFS.push({r,n:'PRODUCTO NUEVO',cat:'CAMISETAS',sub:CATEG['CAMISETAS'][0],cu:'',creado:hoyISO()});
-  FICHAS[r]=nuevaFicha(recetaDe('CAMISETAS',CATEG['CAMISETAS'][0]));rowsProd();rowsExp();
+  FICHAS[r]=nuevaFicha(recetaDe('CAMISETAS',CATEG['CAMISETAS'][0]));rowsProd();
 }
 /* Aprobación de la MUESTRA (la decide quien revisa la prenda). Nada que ver con
    "Aprobar y guardar costo", que es el visto bueno del costo para el rol prearmado. */
@@ -3118,7 +3089,7 @@ function toggleAprobFicha(){
 function toggleArchivo(i){
   const x=REFS[i];x.arch=!x.arch;
   toast(x.arch?'Producto archivado':'Producto restaurado',x.r+' · '+x.n+(x.arch?' ya no aparece en precios ni exportaciones.':' vuelve a aparecer en precios y exportaciones.'));
-  rowsProd();rowsExp();rowsLista();
+  rowsProd();rowsLista();
 }
 /* Quitar de verdad: el producto, su ficha y su foto. Sin preguntar nada, para
    que lo usen tanto la × de la fila como el borrado de los seleccionados. */
@@ -3155,7 +3126,7 @@ function duplicarProd(i){
   f.ver=1;f.saved=false;f.edit=false;f.fecha='';f.hist=[];f.aprob=null;f.av='';
   FICHAS[r]=f;
   if(FOTO[x.r])FOTO[r]=FOTO[x.r];
-  rowsProd();rowsExp();rowsLista();autosave();
+  rowsProd();rowsLista();autosave();
   verFicha(r);
   toast('Copiado en '+r,'Tiene los mismos materiales, tiempos y márgenes que '+x.r+
     '. Quita lo que no lleve esta versión y cambia el nombre; el costo se aprueba aparte.');
@@ -3165,7 +3136,7 @@ function borrarProd(i){
   const x=REFS[i];if(!x)return;
   if(!confirm('¿Borrar '+x.r+(x.n?' · '+x.n:'')+'?\n\nSe borra también su ficha de costos y su foto, y no se puede deshacer.\nSi solo quieres sacarlo de la lista, archívalo con el botón de al lado.'))return;
   quitarProd(i);
-  rowsProd();rowsExp();if(REFS.length)draw();autosave();
+  rowsProd();if(REFS.length)draw();autosave();
   toast('Producto borrado · '+x.r,(x.n||'')+' salió del catálogo junto con su ficha.');
 }
 /* Borrado de los seleccionados: una sola confirmación para todos, con los
@@ -3176,11 +3147,11 @@ function borrarProdSel(){
   const lista=refs.slice(0,10).join(', ')+(refs.length>10?' y '+(refs.length-10)+' más':'');
   if(!confirm('¿Borrar '+refs.length+' producto(s)?\n\n'+lista+'\n\nSe borran también sus fichas de costos y sus fotos, y no se puede deshacer.'))return;
   refs.forEach(r=>{const i=REFS.findIndex(x=>x.r===r);if(i>=0)quitarProd(i)});
-  SELP.clear();rowsProd();rowsExp();if(REFS.length)draw();autosave();
+  SELP.clear();rowsProd();if(REFS.length)draw();autosave();
   toast(refs.length+' producto(s) borrado(s)','Se fueron con sus fichas: '+lista+'.');
 }
 async function guardarProductos(){
-  rowsProd();rowsExp();head();
+  rowsProd();head();
   return forzarGuardado('bt-prod','Productos guardados');
 }
 
@@ -3267,7 +3238,7 @@ function cargarColeccion(fs){
     }
     leer(f,d=>{
       if(ref)FOTO[ref]=d; else sin.push(f.name);
-      if(--pend===0){rowsProd();rowsExp();head();if($("cons-lista"))rowsCons();autosave();
+      if(--pend===0){rowsProd();head();if($("cons-lista"))rowsCons();autosave();
         const avisos=[];
         if(nuevos.length)avisos.push(nuevos.length+' nuevo(s): '+nuevos.slice(0,6).join(', ')+(nuevos.length>6?'…':'')+'. Falta la descripción.');
         if(act)avisos.push(act+' ya existían: solo se les cambió la foto.');
@@ -3295,7 +3266,7 @@ function subirFotos(fs){
     }
     leer(f,d=>{
       if(ref){FOTO[ref]=d;ok++} else sin.push(f.name);
-      if(--pend===0){rowsProd();rowsExp();head();autosave();
+      if(--pend===0){rowsProd();head();autosave();
         const avisos=[];
         if(nuevos.length)avisos.push(nuevos.length+' producto(s) nuevo(s): '+nuevos.slice(0,6).join(', ')+(nuevos.length>6?'…':'')+'. Ponles categoría y tipo.');
         if(sin.length)avisos.push('Sin pareja: '+sin.slice(0,4).join(', ')+(sin.length>4?' y '+(sin.length-4)+' más.':''));
@@ -3491,7 +3462,7 @@ async function entrar(){
   }
   CARGANDO=false;
   $('ovl-login').classList.add('hide');
-  rowsCatMat();rowsCentros();rowsCli();rowsProd();rowsExp();draw();
+  rowsCatMat();rowsCentros();rowsCli();rowsProd();draw();
   aplicarRolUI();
   if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Mueve el margen o el PVP para ver cómo queda el precio. Estos números son solo para probar: no se guardan. El costo lo cierra un administrador al aprobar.');go('prod')}
   else if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
@@ -3762,7 +3733,7 @@ async function recuperarDesdeVersiones(){
     if(!f.hist.some(h=>h.ver===v.ver))f.hist.push({ver:v.ver,fecha:v.fecha,total:v.total,sam:v.sam,pvp:(v.pvp&&v.pvp[0]&&v.pvp[0].pvp)||0});
     n++;
   });
-  draw();rowsProd();rowsExp();
+  draw();rowsProd();
   try{
     const r=await syncPush();
     if(r.omitidas.length)toast('Restaurado en pantalla, NO en la nube','Falta crear en Supabase la tabla: '+r.omitidas.join(', ')+'. Se reintenta solo cuando exista.');
@@ -4257,7 +4228,7 @@ function guardarClasif(siguiente){
   if($('cl-rec').checked&&f&&!(f.lines||[]).length)
     f.lines=recetaDe(x.cat,x.sub).lines.map(l=>({c:l[0],q:l[1],d:l[2]}));
   else reajustarReceta(x,pc,ps);
-  rowsProd();rowsExp();head();if(cur===x.r)draw();autosave();
+  rowsProd();head();if(cur===x.r)draw();autosave();
   toast('Clasificado',x.r+' · '+x.n+' · '+x.cat+(x.sub?' · '+x.sub:''));
   if(!siguiente){cerrar('ovl-clasif');return}
   const p=porClasificar();
@@ -4413,7 +4384,7 @@ function procesarMasiva(){
     }
   });
   cerrar('ovl2');
-  if(masivaModo==='prod'){rowsProd();rowsExp();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
+  if(masivaModo==='prod'){rowsProd();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
   else{rowsCatMat();draw()}
   const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
                nuevosTipo.length?nuevosTipo.length+' tipo(s) nuevo(s)':'',
@@ -4503,7 +4474,7 @@ function limpiarMPeIns(){
     if(!CAT.some(x=>x.c===m.c)){CAT.push({...m});nm++}
     const j=BORRADOS.mat.indexOf(m.c);if(j>=0)BORRADOS.mat.splice(j,1);   // vuelve a existir: ya no es una lápida
   });
-  rowsCatMat();draw();rowsProd();rowsExp();
+  rowsCatMat();draw();rowsProd();
   toast('Materia prima e Insumos restablecidos',idxBorrar.length+' borrados y reemplazados por '+nm+' familias limpias (sin variantes de color).'+(usos?' Se quitaron '+usos+' línea(s) de ficha que los usaban.':''));
 }
 
@@ -4617,7 +4588,7 @@ function rowsCli(){
 }
 function setCli(i,v){
   CLI[i].meta=num(v);
-  aplicarMargenes();rowsCli();resumenFabrica();draw();rowsProd();rowsExp();
+  aplicarMargenes();rowsCli();resumenFabrica();draw();rowsProd();
 }
 /* Realinea la lista de precios de cada ficha con los clientes actuales.
    Regla: lo que escribió una persona (p.man) NUNCA se recalcula aquí; lo demás
@@ -4860,7 +4831,7 @@ function renombrarCat(viejo,nuevo){
   Object.keys(CATFOTO).forEach(k=>{if(k.startsWith(viejo+'||')){
     CATFOTO[nuevo+'||'+k.slice(viejo.length+2)]=CATFOTO[k];delete CATFOTO[k]}});
   let n=0;REFS.forEach(x=>{if(x.cat===viejo){x.cat=nuevo;n++}});
-  rowsCats();rowsProd();rowsExp();head();
+  rowsCats();rowsProd();head();
   toast('Familia renombrada',viejo+' → '+nuevo+(n?' · '+n+' producto(s) actualizados.':''));
 }
 function borrarCat(c){
@@ -5212,7 +5183,6 @@ function xlsxReporte(){
 }
 
 /* ====== EXPORTAR ====== */
-let cliSel='fc';
 function abbr(s){return s.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice(0,4)}
 /* ====== LISTA DE PRECIOS ======
    La misma pantalla sirve para consultar y para armar el PDF del cliente: se
@@ -5325,75 +5295,6 @@ function pdfListaCliente(){
     (marcadas.length?list.length+' marcada(s)':'las '+list.length+' del filtro')+'. En la ventana de impresión elige "Guardar como PDF".');
   setTimeout(()=>window.print(),250);
 }
-let expAgrupa='';
-function agruparExp(campo){
-  expAgrupa=campo;
-  document.querySelectorAll('#tabs-agrupa-exp .tab').forEach(b=>b.classList.remove('on'));
-  const btn=[...document.querySelectorAll('#tabs-agrupa-exp .tab')].find(b=>b.getAttribute('onclick')===`agruparExp('${campo}')`);
-  if(btn)btn.classList.add('on');
-  rowsExp();
-}
-function rowsExp(){
-  $('tabs-cli').innerHTML=CLI.map(c=>
-    `<button class="tab ${c.id===cliSel?'on':''}" onclick="cliSel='${c.id}';rowsExp()">${c.cli} · ${c.zona}</button>`).join('');
-  const ci=CLI.findIndex(c=>c.id===cliSel);
-  $('exp-t').textContent=CLI[ci].cli+' · '+CLI[ci].zona;
-  const g=cur;let n=0,sp=0;
-  const filaExp=x=>{
-    cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
-    if(f.saved){n++;sp+=r.pvp}
-    return `<tr style="${f.saved?'':'opacity:.5'}">
-      <td class="l"><div class="lpth" style="width:44px;height:50px;cursor:pointer" onclick="verFicha('${x.r}')">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin foto</div>'}</div></td>
-      <td class="l"><span class="cod">${x.r}</span></td>
-      <td class="l"><b style="font-weight:600">${x.n}</b></td>
-      <td class="l ro">${x.marca||'—'}</td><td class="l ro">${x.dep||'—'}</td><td class="l ro">${x.cat}</td><td class="l ro">${x.sub}</td>
-      <td><span class="lppx${r.pvp?'':' cero'}">${fmt(r.pvp)}</span></td>
-      <td class="l"><span class="pill ${f.saved?'ok':''}">${f.saved?'v'+f.ver:'Borrador'}</span></td></tr>`;
-  };
-  const list=activos();
-  let html;
-  if(expAgrupa){
-    const grupos={};list.forEach(x=>{const k=x[expAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(x)});
-    html=Object.keys(grupos).sort().map(k=>
-      `<tr><td colspan="9" style="background:var(--line-soft);font-weight:800;font-size:12.5px;padding:9px 12px">${k}</td></tr>`
-      +grupos[k].map(filaExp).join('')
-    ).join('');
-  }else{
-    html=list.map(filaExp).join('');
-  }
-  $('tb-exp').innerHTML=html;
-  cur=g;calc();
-  $('exp-s').textContent=n+' de '+REFS.length+' referencias con precio cerrado';
-  $('tf-exp').innerHTML=n?`<tr><td class="l" colspan="7">${n} referencias · PVP promedio</td><td>${fmt(sp/n)}</td><td></td></tr>`:'';
-}
-function pdfCliente(){
-  const ci=CLI.findIndex(c=>c.id===cliSel),c=CLI[ci];
-  const incl=$('pdf-borr').checked;
-  const g=cur;
-  const list=activos().filter(x=>incl||FICHAS[x.r].saved);
-  if(!list.length){toast('Nada que imprimir','Guarda al menos una ficha, o marca "Incluir borradores".');return}
-  const cardHtml=x=>{cur=x.r;calc();const r=plCalc(ci),f=FICHAS[x.r];
-    return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:''}</div>
-      <div class="pdf-b"><div class="r">${x.marca?x.marca.toUpperCase()+' · ':''}REF ${x.r}${x.dep?' · '+x.dep.toUpperCase():''}</div><div class="n">${x.n}</div>
-      <div class="p">${fmt(r.pvp)}<small>USD</small></div>${f.saved?'':'<span class="b">PROVISIONAL</span>'}</div></div>`};
-  let cards;
-  if(expAgrupa){
-    const grupos={};list.forEach(x=>{const k=x[expAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(x)});
-    cards=Object.keys(grupos).sort().map(k=>
-      `<div style="grid-column:1/-1;font-weight:800;font-size:13px;margin-top:6px;border-bottom:1px solid #ddd;padding-bottom:4px">${k}</div>`
-      +grupos[k].map(cardHtml).join('')
-    ).join('');
-  }else{
-    cards=list.map(cardHtml).join('');
-  }
-  cur=g;calc();
-  $('print-area').innerHTML=`<div class="pdf-h"><h1>Lista de precios · TEMPO</h1><span class="c">${c.cli} · ${c.zona}</span>
-    <span class="d">${hoy()} · ${list.length} referencias</span></div>
-    <div class="pdf-g">${cards}</div>
-    <div class="pdf-foot">Precios en USD por prenda · TEMPOCODECA S.A.</div>`;
-  toast('Abriendo el PDF','En la ventana de impresión elige "Guardar como PDF".');
-  setTimeout(()=>window.print(),250);
-}
 function exportarBOM(){
   const list=activos().filter(x=>(FICHAS[x.r].lines||[]).length);
   if(!list.length){toast('Nada que exportar','No hay fichas con materiales cargados.');return}
@@ -5406,29 +5307,6 @@ function exportarBOM(){
     });
   });
   CSVTXT=out;CSVNOM='TEMPO_BOM.csv';
-  $('mo-t').textContent=CSVNOM;
-  $('mo-s').textContent=(CSVTXT.trim().split('\n').length-1)+' líneas';
-  $('mo-b').textContent=CSVTXT;
-  $('ovl').classList.remove('hide');
-}
-function csvDe(ids){
-  const g=cur;
-  let out='Cliente;Zona;Ref;Producto;Marca;Departamento;Categoria;Tipo;PVP_USD;Version;Fecha\n';
-  ids.forEach(id=>{
-    const ci=CLI.findIndex(c=>c.id===id),c=CLI[ci];
-    activos().forEach(x=>{
-      const f=FICHAS[x.r];if(!f.saved)return;
-      cur=x.r;calc();const r=plCalc(ci);
-      out+=[c.cli,c.zona,x.r,x.n,x.marca||'',x.dep||'',x.cat,x.sub,r.pvp.toFixed(2),'v'+f.ver,f.fecha].join(';')+'\n';
-    });
-  });
-  cur=g;calc();return out;
-}
-function exportar(todos){
-  if(!activos().filter(x=>FICHAS[x.r].saved).length){toast('No hay nada que exportar','Guarda al menos una ficha de costos.');return}
-  const ids=todos?CLI.map(c=>c.id):[cliSel];
-  CSVTXT=csvDe(ids);
-  CSVNOM='TEMPO_Costos_'+(todos?'TODOS':CLI.find(c=>c.id===cliSel).cli.replace(/ /g,'_'))+'.csv';
   $('mo-t').textContent=CSVNOM;
   $('mo-s').textContent=(CSVTXT.trim().split('\n').length-1)+' líneas';
   $('mo-b').textContent=CSVTXT;
@@ -5840,14 +5718,13 @@ function bajarCSV(){
 }
 
 /* ====== NAVEGACIÓN ====== */
-const SCR=['ficha','prod','cons','mat','cat','centros','lista','exp','rep'];
+const SCR=['ficha','prod','cons','mat','cat','centros','lista','rep'];
 function go(s){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.screen===s));
   SCR.forEach(x=>$('scr-'+x).classList.toggle('hide',x!==s));
   if(s==='prod')rowsProd();
   if(s==='lista')rowsLista();
   if(s==='centros'){resumenFabrica();rowsUsr()}
-  if(s==='exp')rowsExp();
   if(s==='rep')rowsRep();
   if(s==='cat')rowsCats();
   if(s==='cons')rowsCons();
@@ -5861,7 +5738,7 @@ document.querySelectorAll('.tab[data-cat]').forEach(t=>t.onclick=()=>{
 
 adoptarEstado();   // desde aquí, cualquier cambio en los datos dispara el guardado por sí solo
 tomarSemilla();
-rowsCatMat();rowsCentros();rowsCli();rowsProd();rowsExp();draw();
+rowsCatMat();rowsCentros();rowsCli();rowsProd();draw();
 (async()=>{
   const ok=await refrescar();
   if(ok)await entrar();else mostrarLogin();
