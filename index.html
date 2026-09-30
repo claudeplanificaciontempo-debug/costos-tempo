@@ -559,6 +559,43 @@ select.fld{border-color:var(--line)}
 .chipf button{border:0;background:none;color:inherit;cursor:pointer;font-size:12px;line-height:1;padding:0;font-family:inherit}
 .gh{padding:9px 14px;background:var(--line-soft);font-weight:800;font-size:12.5px}
 .gh.n1{background:var(--suave);font-size:11.5px;font-weight:700}
+/* Mural: el catálogo como fotos, para mirarlo y presentarlo */
+.mural{display:grid;grid-template-columns:repeat(auto-fill,minmax(172px,1fr));gap:13px;padding:13px 14px}
+.mcard{position:relative;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;
+  cursor:pointer;transition:border-color .12s,box-shadow .12s;display:flex;flex-direction:column}
+.mcard:hover{border-color:var(--vino);box-shadow:0 8px 22px rgba(0,0,0,.09)}
+.mcard .im{aspect-ratio:3/4;background:var(--suave);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mcard .im img{width:100%;height:100%;object-fit:cover;display:block}
+.mcard .im .nof{font-size:10.5px;color:var(--ink-3);text-align:center;line-height:1.3}
+.mcard .cu{padding:7px 9px 9px;display:flex;flex-direction:column;gap:3px}
+.mcard .rf{font-size:11.5px;font-weight:800;color:var(--vino-deep);display:flex;align-items:center;gap:5px}
+.mcard .nm{font-size:11px;color:var(--ink);line-height:1.25;min-height:27px}
+.mcard .nm.sindef{color:var(--ink-3);font-style:italic}
+.mcard .cs{display:flex;align-items:baseline;gap:6px;margin-top:2px}
+.mcard .cs b{font-size:13px;color:var(--ink)}
+.mcard .cs span{font-size:10.5px;color:var(--ink-3)}
+.mcard .sel{position:absolute;top:7px;left:7px;z-index:2;width:17px;height:17px;cursor:pointer}
+.mcard .mk{position:absolute;top:7px;right:7px;z-index:2}
+/* Consolidados: la tanda que manda el cliente */
+.cons{border-bottom:1px solid var(--line-soft);padding:13px 15px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.cons:last-child{border-bottom:0}
+.cons .tt{min-width:210px;flex:1}
+.cons .tt .nm{font-size:14px;font-weight:800;color:var(--ink)}
+.cons .tt .sb{font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.cons .nums{display:flex;gap:16px;flex-wrap:wrap}
+.cons .nu{min-width:84px}
+.cons .nu .k{font-size:9.5px;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3)}
+.cons .nu .v{font-size:15px;font-weight:800;color:var(--ink);line-height:1.25}
+.cons .nu .v.falta{color:var(--falta)}
+.cons .ax{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-left:auto}
+.cons .mini-fotos{display:flex;gap:4px}
+.cons .mini-fotos i{width:34px;height:44px;border-radius:5px;background:var(--suave) center/cover no-repeat;
+  border:1px solid var(--line);display:block}
+.est-pre{background:var(--amber-soft);color:var(--amber)}
+.est-enviado{background:var(--vino-soft);color:var(--vino-deep)}
+.est-aprobado,.est-cerrado{background:var(--green-soft);color:var(--green-txt)}
+.est-final{background:var(--amber-soft);color:var(--amber)}
+.est-perdido{background:var(--line-soft);color:var(--ink-3)}
 .catbadge{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:2px 7px;background:var(--line-soft);color:var(--ink-2)}
 .catbadge.mp{background:var(--cat-mp);color:var(--cat-mp-tx)}
 .catbadge.ins{background:var(--cat-ins);color:var(--cat-ins-tx)}
@@ -636,6 +673,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <button class="nav-item" data-screen="prod">Productos <span class="cnt" id="nav-prod">38</span></button>
     <button class="nav-item on" data-screen="ficha">Ficha de costos <span class="cnt" id="nav-ref">4823</span></button>
     <div class="navsep"></div>
+    <button class="nav-item" data-screen="cons">Consolidados <span class="cnt" id="nav-cons">0</span></button>
     <button class="nav-item" data-screen="mat">Materiales <span class="cnt" id="nav-mat">0</span></button>
     <button class="nav-item" data-screen="cat">Categorías <span class="cnt" id="nav-cat">0</span></button>
     <button class="nav-item" data-screen="centros">Configuración</button>
@@ -730,6 +768,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <div id="sum-lines"></div>
           <div class="grand"><span>Costo total</span><b id="grand">$0.00</b></div>
           <div class="samline"><span>Tiempo total de la ruta</span><b id="samtot">0.00 min</b></div>
+          <div class="samline hide" id="pre-comp"></div>
         </div>
       </div>
       <div class="card">
@@ -741,6 +780,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <button id="bt-aprobar" class="btn org wide hide" onclick="aprobar()">Aprobar y guardar costo</button>
           <button id="bt-pend" class="btn ghost wide hide" style="margin-top:8px" onclick="guardarAvance('bt-pend')">Guardar avance · sin aprobar</button>
           <button id="bt-rec" class="btn ghost wide hide" style="margin-top:8px" onclick="recostear()">Re-costear · abrir nueva versión</button>
+          <button id="bt-pre" class="btn ghost wide hide" style="margin-top:8px" title="Guarda este costo como el de la propuesta, sin cerrar la ficha" onclick="guardarPre()">Guardar pre costeo · para la propuesta</button>
           <p id="save-h">Al guardar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy. La referencia pasa a Costeada y entra a la lista de precios.</p>
         </div>
       </div>
@@ -769,6 +809,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="btn ghost sm" id="bt-agrupa" onclick="toggleMenuAgrupa()" title="Agrupar la lista por uno o varios campos">≡ Agrupar por</button>
         <div id="menu-agrupa" class="menu hide"></div>
       </div>
+      <button class="btn ghost sm" id="bt-vista" onclick="cambiarVista()" title="Ver el catálogo como fotos, para revisarlo y presentarlo">▦ Mural</button>
       <div class="sub" id="prod-sub"></div></div>
     <div id="chips-prod" class="chips hide"></div>
     <div id="panel-filtros" class="filtros hide"></div>
@@ -1043,6 +1084,19 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 </section>
 
 
+<section id="scr-cons" class="hide">
+  <div class="crumb"><b>Consolidados</b></div>
+  <div class="eyebrow">Lo que pide el cliente · pre costeo y propuesta</div>
+  <div class="hint"><b>Un consolidado es la tanda que manda el cliente.</b> Se le cargan las referencias (con las fotos de una carpeta, con carga masiva o seleccionándolas en Productos), se saca el <b>pre costeo</b> de cada una, se presenta la propuesta y, cuando la aprueban, se cierra el <b>costeo final</b>. Aquí se ve en qué punto va cada tanda y cuánto suma.</div>
+  <div class="kpis" id="kpis-cons"></div>
+  <div class="card">
+    <div class="card-h"><h2>Consolidados</h2><div class="sub" id="cons-sub"></div>
+      <button class="btn org sm" style="margin-left:auto" onclick="nuevoConsolidado()">+ Nuevo consolidado</button></div>
+    <div id="cons-lista"></div>
+  </div>
+  <input type="file" id="cons-fotos-in" accept="image/*" multiple webkitdirectory directory class="hide" onchange="cargarColeccion(this.files)">
+</section>
+
 <section id="scr-rep" class="hide">
   <div class="crumb"><b>Reportes</b></div>
   <div class="eyebrow">Avance de muestras</div>
@@ -1077,7 +1131,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="card">
     <div class="card-h"><h2>Avance</h2><div class="sub" id="rep-grupo-sub">registradas · entregadas · en costeo · por aprobar · costeadas</div></div>
     <table>
-      <thead><tr><th class="l" id="rep-th-grupo">Categoría</th><th>Registradas</th><th>Entregadas</th><th>Por entregar</th><th>En costeo</th><th>Por aprobar</th><th>Costeadas</th><th>Aprobadas</th><th class="l" style="width:150px">Avance del costeo</th></tr></thead>
+      <thead><tr><th class="l" id="rep-th-grupo">Categoría</th><th>Registradas</th><th>Entregadas</th><th>Por entregar</th><th>En costeo</th><th>Pre costeadas</th><th>Por aprobar</th><th>Costeadas</th><th>Aprobadas</th><th class="l" style="width:150px">Avance del costeo</th></tr></thead>
       <tbody id="rep-cat"></tbody>
       <tfoot id="rep-tot"></tfoot>
     </table>
@@ -1334,7 +1388,7 @@ function reactivo(o){
 }
 function adoptarEstado(){
   FOTO=reactivo(FOTO);REFS=reactivo(REFS);CAT=reactivo(CAT);CEN=reactivo(CEN);
-  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);COLECCIONES=reactivo(COLECCIONES);BASE=reactivo(BASE);
+  CLI=reactivo(CLI);FICHAS=reactivo(FICHAS);MARCAS=reactivo(MARCAS);COLECCIONES=reactivo(COLECCIONES);BASE=reactivo(BASE);CONS=reactivo(CONS);
   PANTONES=reactivo(PANTONES);TEMPORADAS=reactivo(TEMPORADAS);BORRADOS=reactivo(BORRADOS);
   CATEG=reactivo(CATEG);CATFOTO=reactivo(CATFOTO);
 }
@@ -1900,7 +1954,7 @@ function head(){
   $('cr-ref').textContent=x.n+' · REF '+x.r;
   $('nav-ref').textContent=x.r;
   const b=$('rh-badge');
-  b.textContent=f.edit?'Re-costeo':(f.saved?'Costeada':(enAvance(f)?'En avance':'Borrador'));
+  b.textContent=f.edit?'Re-costeo':(f.saved?'Costeada':(f.pre?'Pre costeada':(enAvance(f)?'En avance':'Borrador')));
   b.className='badge '+(f.saved&&!f.edit?'ok':'draft');
   $('rh-ver').textContent=f.edit?'Re-costeo en curso · se guardará como v'+(f.ver+1)
     :(f.saved?'Versión '+f.ver+' · guardada '+f.fecha:'Versión '+f.ver+' · sin guardar');
@@ -2114,6 +2168,145 @@ function rowsSum(){
      <span class="p">${TOT.total?(TOT[k]/TOT.total*100).toFixed(0):0}%</span><span class="v">${fmt(TOT[k])}</span></div>`).join('');
   $('grand').textContent=fmt(TOT.total);
   $('samtot').textContent=TOT.sam.toFixed(2)+' min';
+  pintarPre();
+}
+/* ---- La pantalla de Consolidados ---- */
+function nuevoConsolidado(){
+  const nom=MAY((prompt('Nombre del consolidado (por ejemplo: HOLIDAY 27 · PRIMERA TANDA):')||'').trim());
+  if(!nom)return;
+  const id='c'+Date.now().toString(36);
+  CONS.push({id,nom,cli:'',fecha:hoyISO(),fechaProp:'',estado:'pre',nota:''});
+  rowsCons();autosave();
+  toast('Consolidado creado',nom+'. Ahora cárgale las referencias: con las fotos de una carpeta, con carga masiva, o seleccionándolas en Productos.');
+}
+function setCons(id,campo,v){
+  const c=consPorId(id);if(!c)return;
+  c[campo]=campo==='nom'?MAY(v):v;
+  rowsCons();rowsProd();autosave();
+}
+function borrarCons(id){
+  const c=consPorId(id);if(!c)return;
+  const n=refsDeCons(id).length;
+  if(!confirm('¿Borrar el consolidado "'+c.nom+'"?'+(n?'\n\nSus '+n+' referencia(s) NO se borran: quedan sin consolidado.':'')))return;
+  REFS.forEach(x=>{if(x.cons===id)x.cons=''});
+  CONS.splice(CONS.indexOf(c),1);
+  rowsCons();rowsProd();autosave();
+  toast('Consolidado borrado',c.nom+(n?' · sus '+n+' referencia(s) siguen en el catálogo.':''));
+}
+/* Números de una tanda: cuántas van, cuánto costaría y en cuánto se ofreció. */
+function resumenCons(id){
+  const r=refsDeCons(id);
+  const pre=r.filter(x=>(FICHAS[x.r]||{}).pre);
+  const cerr=r.filter(x=>estadoRep(x.r)==='costeada');
+  const suma=a=>a.reduce((s,v)=>s+v,0);
+  const propuesta=suma(pre.map(x=>{const p=FICHAS[x.r].pre;return (p.pvp&&p.pvp[0]&&p.pvp[0].pvp)||0}));
+  const costoPre=suma(pre.map(x=>FICHAS[x.r].pre.total||0));
+  const costoHoy=suma(cerr.map(x=>totRef(x.r).total));
+  return {n:r.length,pre:pre.length,cerradas:cerr.length,sinFoto:r.filter(x=>!FOTO[x.r]).length,
+    sinDesc:r.filter(sinDescribir).length,propuesta,costoPre,costoHoy,refs:r};
+}
+let consFotos='';                 /* a qué consolidado van las fotos que se carguen */
+function fotosDeCons(id){consFotos=id;$('cons-fotos-in').click()}
+/* Abre el catálogo filtrado por esta tanda, en fotos o en lista */
+function verCons(id,vista){
+  FPROD={cons:[id]};FDESDE=FHASTA='';
+  prodF='todos';
+  if(prodVista!==vista)cambiarVista();
+  go('prod');rowsProd();window.scrollTo(0,0);
+}
+function rowsCons(){
+  const cont=$('cons-lista');if(!cont)return;
+  if($('nav-cons'))$('nav-cons').textContent=CONS.length;
+  const est=c=>(CONS_ESTADOS.find(e=>e.k===c.estado)||CONS_ESTADOS[0]);
+  cont.innerHTML=CONS.map(c=>{
+    const R=resumenCons(c.id),e=est(c);
+    const fotos=R.refs.filter(x=>FOTO[x.r]).slice(0,5);
+    return `<div class="cons">
+      <div class="mini-fotos">${fotos.map(x=>`<i style="background-image:url('${escR(FOTO[x.r])}')" title="${escR(x.r)} · ${escR(x.n)}"></i>`).join('')
+        ||'<i title="todavía sin fotos"></i>'}</div>
+      <div class="tt">
+        <div class="nm">${escR(c.nom)}</div>
+        <div class="sb">${escR(c.cli||'sin cliente')} · recibido ${fechaBonita(c.fecha)}${c.fechaProp?' · propuesta enviada '+fechaBonita(c.fechaProp):''}</div>
+        <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span class="pill est-${c.estado}">${e.t}</span>
+          <select class="fld" style="width:auto;font-size:11px" onchange="cambiarEstadoCons('${c.id}',this.value)">
+            ${CONS_ESTADOS.map(o=>`<option value="${o.k}" ${o.k===c.estado?'selected':''}>${o.t}</option>`).join('')}
+          </select>
+          <input class="fld" style="width:150px;font-size:11px" placeholder="Cliente" value="${escR(c.cli||'')}"
+            onchange="setCons('${c.id}','cli',this.value)">
+        </div>
+      </div>
+      <div class="nums">
+        <div class="nu"><div class="k">Referencias</div><div class="v">${R.n}</div></div>
+        <div class="nu"><div class="k">Pre costeadas</div><div class="v${R.pre<R.n?' falta':''}">${R.pre}</div></div>
+        <div class="nu"><div class="k">Costeadas</div><div class="v">${R.cerradas}</div></div>
+        <div class="nu"><div class="k">Propuesta</div><div class="v">${fmt(R.propuesta)}</div></div>
+        <div class="nu"><div class="k">Costo del pre</div><div class="v">${fmt(R.costoPre)}</div></div>
+        <div class="nu"><div class="k">Sin foto</div><div class="v${R.sinFoto?' falta':''}">${R.sinFoto||'—'}</div></div>
+        <div class="nu"><div class="k">Sin describir</div><div class="v${R.sinDesc?' falta':''}">${R.sinDesc||'—'}</div></div>
+      </div>
+      <div class="ax">
+        <button class="btn sm" onclick="verCons('${c.id}','mural')" title="Ver las prendas de esta tanda como fotos">▦ Ver el mural</button>
+        <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista para editarlas">☰ Lista</button>
+        <button class="btn ghost sm" onclick="fotosDeCons('${c.id}')" title="Cargar una carpeta de fotos a esta tanda">Cargar fotos</button>
+        <button class="x" title="Borrar el consolidado" onclick="borrarCons('${c.id}')">×</button>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty">Todavía no hay consolidados. Crea el primero con "+ Nuevo consolidado" y cárgale las referencias que te mandó el cliente.</div>';
+  $('cons-sub').textContent=CONS.length?CONS.length+(CONS.length===1?' tanda':' tandas')+' · '+REFS.filter(x=>x.cons&&!x.arch).length+' referencias asignadas':'';
+  kpisCons();
+}
+/* Al mandar la propuesta se guarda la fecha sola: es el dato que después falta. */
+function cambiarEstadoCons(id,v){
+  const c=consPorId(id);if(!c)return;
+  c.estado=v;
+  if(v==='enviado'&&!c.fechaProp)c.fechaProp=hoyISO();
+  rowsCons();autosave();
+  toast('Consolidado actualizado',c.nom+' · '+(CONS_ESTADOS.find(e=>e.k===v)||{}).t+'.');
+}
+function kpisCons(){
+  const k=$('kpis-cons');if(!k)return;
+  const abiertos=CONS.filter(c=>['pre','enviado','aprobado','final'].includes(c.estado));
+  const tot=abiertos.reduce((a,c)=>{const R=resumenCons(c.id);a.n+=R.n;a.pre+=R.pre;a.prop+=R.propuesta;return a},{n:0,pre:0,prop:0});
+  const kk=(cls,label,val,hint)=>`<div class="kpi ${cls}" style="cursor:default"><div class="k">${label}</div><div class="v">${val}</div><div class="h">${hint}</div></div>`;
+  k.innerHTML=kk('','Tandas abiertas',abiertos.length,'de '+CONS.length+' en total')+
+    kk('','Referencias',tot.n,'en las tandas abiertas')+
+    kk(tot.pre<tot.n?'pend':'ok','Pre costeadas',tot.pre,tot.n?Math.round(tot.pre/tot.n*100)+'% de lo que hay':'nada cargado')+
+    kk('ok','Suma de las propuestas',fmt(tot.prop),'precio del cliente base');
+}
+
+/* ====== PRE COSTEO ======
+   El costo con el que se presentó la propuesta al cliente. Se guarda aparte del
+   costo final: la ficha sigue abierta, pero queda la foto de con qué números se
+   ofreció, para poder mirar después cuánto se movió. */
+function guardarPre(){
+  const f=F();if(!f||!puedeEditarCostos())return;
+  if(f.saved&&!f.edit){toast('Ya está costeada','El pre costeo es para antes de cerrar el costo final.');return}
+  calc();
+  const antes=f.pre;
+  f.pre={total:TOT.total,sam:TOT.sam,fecha:hoy(),fechaISO:hoyISO(),
+    pvp:CLI.map((c,i)=>({id:c.id,cli:c.cli,zona:c.zona,pvp:plCalc(i,true).pvp}))};
+  f.av=hoy();
+  draw();rowsProd();rowsExp();autosave();
+  toast(antes?'Pre costeo actualizado · REF '+cur:'Pre costeo guardado · REF '+cur,
+    'Propuesta con '+fmt(f.pre.total)+' de costo'+(f.pre.pvp[0]?' y '+fmt(f.pre.pvp[0].pvp)+' de precio para '+f.pre.pvp[0].cli:'')
+    +'. La ficha sigue abierta para el costeo final.');
+}
+/* Cuánto se movió el costo entre lo que se ofreció y lo que va hoy. */
+function difPre(f,hoyTotal){
+  if(!f||!f.pre||!f.pre.total)return null;
+  const d=hoyTotal-f.pre.total;
+  return {antes:f.pre.total,ahora:hoyTotal,dif:d,pct:d/f.pre.total*100,fecha:f.pre.fecha};
+}
+function pintarPre(){
+  const e=$('pre-comp');if(!e)return;
+  const f=F(),d=difPre(f,TOT.total);
+  e.classList.toggle('hide',!d);
+  if(!d)return;
+  const sube=d.dif>0.004,baja=d.dif<-0.004;
+  const col=sube?'var(--falta)':(baja?'var(--green-txt)':'var(--ink-3)');
+  e.innerHTML=`<span>Pre costeo del ${d.fecha}</span>
+    <b style="color:${col}">${fmt(d.antes)} → ${fmt(d.ahora)} · ${sube?'+':''}${d.pct.toFixed(1)}%</b>`;
 }
 /* `man` dice qué escribió la persona: 'pvp', 'pct', 'up' o null si todo es calculado.
    Lo escrito a mano manda siempre; lo demás se deriva del costo y del margen meta. */
@@ -2315,7 +2508,7 @@ function rowsHist(){
     ||'<div class="empty">Todavía no hay versiones guardadas.</div>';
   $('hist-s').textContent=hs.length?hs.length+(hs.length===1?' versión':' versiones'):'';
   const bd=$('bt-dif');if(bd)bd.classList.toggle('hide',!hs.length);
-  const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h'),bp=$('bt-pend');
+  const bs=$('bt-save'),br=$('bt-rec'),ba=$('bt-aprobar'),bg=$('bt-sug'),q=$('q-all'),ph=$('save-h'),bp=$('bt-pend'),bpr=$('bt-pre');
   const cc=$('card-costo'),pl=$('plists'),po=$('precio-oculto'),psub=$('precio-sub');
   const sim=soloPrearmado();
   if(cc)cc.classList.remove('hide');
@@ -2324,6 +2517,11 @@ function rowsHist(){
   if(psub)psub.textContent=sim?'simulación · no se guarda':'margen sobre PVP';
   ba.classList.add('hide');
   if(bp)bp.classList.add('hide');
+  /* el pre costeo solo tiene sentido mientras la ficha no esté cerrada */
+  if(bpr){
+    bpr.classList.toggle('hide',RO()||!puedeEditarCostos());
+    bpr.textContent=f.pre?'Actualizar el pre costeo · '+fmt(f.pre.total):'Guardar pre costeo · para la propuesta';
+  }
   if(RO()){
     bs.classList.add('hide');br.classList.remove('hide');
     if(bg)bg.disabled=true; if(q){q.disabled=true;q.placeholder='Ficha cerrada · usa Re-costear para modificarla'}
@@ -2341,7 +2539,7 @@ function rowsHist(){
     if(bp&&!soloPrearmado())bp.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
     ph.textContent=soloPrearmado()?'Llena consumos y tiempos. Al enviar, un administrador revisa y cierra el costo con los precios vigentes.'
-      :'Mientras trabajas usa "Guardar avance": queda guardado y la ficha sigue en borrador, sin entrar a la lista de precios. '
+      :'Mientras trabajas usa "Guardar avance". Si vas a presentar la propuesta, "Guardar pre costeo" deja la foto del costo con el que se ofreció, sin cerrar la ficha. '
       +(f.saved?'Al aprobar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy, y la v'+f.ver+' queda en el historial.'
       :'Al aprobar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy, y la referencia pasa a Costeada.');
   }
@@ -2419,7 +2617,8 @@ const BULK_CAMPOS=[
   {k:'dep',      t:'Departamento',lista:()=>DEPS.slice()},
   {k:'cat',      t:'Categoría',   lista:()=>Object.keys(CATEG)},
   {k:'sub',      t:'Tipo de producto',lista:()=>tiposDeSel()},
-  {k:'ent',      t:'Fecha de entrega',fecha:true}
+  {k:'ent',      t:'Fecha de entrega',fecha:true},
+  {k:'cons',     t:'Consolidado',      lista:()=>CONS.map(c=>c.id),etiqueta:id=>nombreCons(id)}
 ];
 const bulkCampo=k=>BULK_CAMPOS.find(c=>c.k===k);
 /* Los tipos que ofrece el desplegable son los de las categorías que tienen los
@@ -2452,7 +2651,7 @@ function pintarBulkValor(){
   const antes=sv.value;
   const vals=c.lista();
   sv.innerHTML=`<option value="">${c.t}…</option>`
-    +vals.map(v=>`<option value="${escR(v)}">${escR(v)}</option>`).join('')
+    +vals.map(v=>`<option value="${escR(v)}">${escR(c.etiqueta?c.etiqueta(v):v)}</option>`).join('')
     +(c.nueva?`<option value="__nueva__">+ Nueva ${c.nueva}…</option>`:'')
     +`<option value="__vaciar__">— Dejar sin definir —</option>`;
   if(vals.includes(antes)||antes==='__vaciar__')sv.value=antes;
@@ -2490,7 +2689,7 @@ function aplicarMasivo(campo){
   });
   rowsProd();rowsExp();rowsLista();autosave();
   toast(n+' producto'+(n===1?'':'s')+' actualizado'+(n===1?'':'s'),
-    c.t+(v?': '+(c.fecha?fechaBonita(v):v):' sin definir')
+    c.t+(v?': '+(c.fecha?fechaBonita(v):(c.etiqueta?c.etiqueta(v):v)):' sin definir')
     +(saltados.length?' · '+saltados.length+' sin cambiar porque su categoría no tiene ese tipo ('+saltados.slice(0,6).join(', ')+')':''));
 }
 /* Archivar de a muchos: al cerrar una temporada se sacan todas de una vez. */
@@ -2571,8 +2770,24 @@ const CAMPOS_PROD=[
   {k:'marca',    t:'Marca'},
   {k:'dep',      t:'Departamento'},
   {k:'__estado', t:'Estado de la ficha'},
-  {k:'__mes',    t:'Mes de entrega'}
+  {k:'__mes',    t:'Mes de entrega'},
+  {k:'cons',     t:'Consolidado'}
 ];
+/* ====== CONSOLIDADOS ======
+   La tanda que manda el cliente: sus referencias, su pre costeo y en qué punto
+   va la propuesta. Cada producto guarda a qué consolidado pertenece (x.cons). */
+let CONS=[];
+const CONS_ESTADOS=[
+  {k:'pre',     t:'En pre costeo'},
+  {k:'enviado', t:'Propuesta enviada'},
+  {k:'aprobado',t:'Aprobado por el cliente'},
+  {k:'final',   t:'En costeo final'},
+  {k:'cerrado', t:'Cerrado'},
+  {k:'perdido', t:'No lo tomaron'}
+];
+const consPorId=id=>CONS.find(c=>c.id===id);
+const nombreCons=id=>{const c=consPorId(id);return c?c.nom:''};
+const refsDeCons=id=>REFS.filter(x=>x.cons===id&&!x.arch);
 let prodAgrupa=[];            /* campos por los que se agrupa, en orden */
 let FPROD={};                 /* campo -> valores marcados */
 let FDESDE='',FHASTA='';      /* rango de la fecha de entrega */
@@ -2585,6 +2800,7 @@ function estadoProd(x){
   if(f.aprob==='pendiente')return 'Por aprobar';
   if(f.saved&&!f.edit)return 'Costeada';
   if(f.edit)return 'Re-costeo';
+  if(f.pre)return 'Pre costeada';
   if(enAvance(f))return 'En avance';
   return 'Borrador';
 }
@@ -2596,6 +2812,7 @@ function valorProd(x,k){
 function etiquetaValor(k,v){
   if(!v)return '(sin asignar)';
   if(k==='__mes'){const q=v.split('-');return MESES_C[(+q[1])-1]+'-'+q[0]}
+  if(k==='cons')return nombreCons(v)||v;
   return v;
 }
 const tituloCampo=k=>(CAMPOS_PROD.find(c=>c.k===k)||{t:k}).t;
@@ -2603,6 +2820,7 @@ const tituloCampo=k=>(CAMPOS_PROD.find(c=>c.k===k)||{t:k}).t;
 function cmpValor(k,a,b){
   if(!a!==!b)return a?-1:1;
   if(k==='__mes'||k==='anio')return b.localeCompare(a);
+  if(k==='cons')return (nombreCons(a)||a).localeCompare(nombreCons(b)||b,'es');
   return a.localeCompare(b,'es');
 }
 function pasaFiltros(x){
@@ -2752,7 +2970,7 @@ function filaProd({x,i}){
         ${f.aprob==='pendiente'?`<span class="pill pend">Por aprobar</span>`:
           f.saved&&!f.edit
           ?`<button class="pill ok" style="border:0;cursor:pointer" title="Abrir un re-costeo (nueva versión)" onclick="recostearRef('${x.r}')">v${f.ver} · re-costear</button>`
-          :`<span class="pill" title="${f.av?'Último avance guardado el '+f.av:'Todavía sin empezar'}">${f.edit?'Re-costeo v'+(f.ver+1):(enAvance(f)?'En avance':'Borrador')}</span>`}</div>
+          :`<span class="pill" title="${f.pre?'Pre costeada el '+f.pre.fecha+' en '+fmt(f.pre.total):(f.av?'Último avance guardado el '+f.av:'Todavía sin empezar')}">${f.edit?'Re-costeo v'+(f.ver+1):(f.pre?'Pre costeada':(enAvance(f)?'En avance':'Borrador'))}</span>`}</div>
       <div style="text-align:right;white-space:nowrap">
         <button class="vst ${x.apr?'on':''}" title="${x.apr?'Muestra aprobada el '+fechaBonita(x.aprFecha)+' · clic para quitar el visto':'Marcar la muestra como aprobada'}" onclick="toggleAprob(${i})">✓</button>
         <button class="x" title="Duplicar con su ficha de costos" onclick="duplicarProd(${i})">⧉</button>
@@ -2780,8 +2998,42 @@ function rowsProd(){
   pintarFiltros();
 }
 /* Cada nivel de agrupación entra un poco más; el último nivel pinta las filas. */
+/* El mural: las mismas referencias, pero como fotos. Sirve para revisar una
+   colección de un vistazo y para presentarla, sin salir de los filtros. */
+let prodVista='lista';
+function cambiarVista(){
+  prodVista=prodVista==='lista'?'mural':'lista';
+  const b=$('bt-vista');
+  if(b){b.textContent=prodVista==='lista'?'▦ Mural':'☰ Lista';
+    b.title=prodVista==='lista'?'Ver el catálogo como fotos':'Volver a la lista para editar'}
+  const cab=document.querySelector('#scr-prod .prow.head');
+  if(cab)cab.classList.toggle('hide',prodVista==='mural');
+  rowsProd();window.scrollTo(0,0);
+}
+function tarjetaProd({x,i}){
+  const f=FICHAS[x.r]||fichaVacia(),t=totRef(x.r);
+  const pvp=(f.pre&&f.pre.pvp&&f.pre.pvp[0])?f.pre.pvp[0].pvp:null;
+  const est=estadoProd(x);
+  const cls=est==='Costeada'?'ok':(est==='Por aprobar'||est==='Pre costeada'?'pend':'');
+  return `<div class="mcard" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">
+    <input type="checkbox" class="sel prsel" ${SELP.has(x.r)?'checked':''}
+      onclick="event.stopPropagation()" onchange="toggleProd('${x.r}',this.checked)">
+    <span class="mk pill ${cls}">${est}</span>
+    <div class="im" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>
+      ${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}</div>
+    <div class="cu">
+      <div class="rf">${escR(x.r)}</div>
+      <div class="nm${x.n?'':' sindef'}">${escR(x.n||'sin describir')}</div>
+      <div class="cs"><b${t.total?'':' style="color:var(--falta)"'}>${fmt(t.total)}</b>
+        ${pvp?`<span>propuesta ${fmt(pvp)}</span>`:(x.col?`<span>${escR(x.col)}</span>`:'')}</div>
+    </div>
+  </div>`;
+}
 function grupoHtml(items,nivel){
-  if(nivel>=prodAgrupa.length)return items.map(filaProd).join('');
+  if(nivel>=prodAgrupa.length)
+    return prodVista==='mural'
+      ? '<div class="mural">'+items.map(tarjetaProd).join('')+'</div>'
+      : items.map(filaProd).join('');
   const k=prodAgrupa[nivel],g={};
   items.forEach(it=>{const v=valorProd(it.x,k);(g[v]=g[v]||[]).push(it)});
   return Object.keys(g).sort((a,b)=>cmpValor(k,a,b)).map(v=>
@@ -2985,27 +3237,29 @@ function cargarColeccion(fs){
   $('col-fotos-in').value='';
   if(!archivos.length){toast('No encontré fotos','La carpeta que elegiste no tiene imágenes.','warn');return}
   const col=carpetaDe(archivos);
-  if(!col){toast('No pude leer la carpeta','Usa "Subir fotos desde una carpeta" y elige los archivos.','warn');return}
+  if(!col){toast('No pude leer la carpeta','Usa "Subir fotos desde una carpeta" y elige los archivos.','warn');consFotos='';return}
   if(!COLECCIONES.some(c=>c===col))COLECCIONES.push(col);
+  const destino=consFotos;consFotos='';
+  if($('cons-fotos-in'))$('cons-fotos-in').value='';
   const total=archivos.length,sin=[],nuevos=[],otraCol=[];
   let act=0,pend=total;
   archivos.forEach(f=>{
     let ref=refDeArchivo(f.name);
     if(ref){
       const x=byRef(ref);
-      if(x){ if(!String(x.col||'').trim())x.col=col; else if(x.col!==col)otraCol.push(ref); }
+      if(x){ if(!String(x.col||'').trim())x.col=col; else if(x.col!==col)otraCol.push(ref); if(destino)x.cons=destino; }
       act++;
     }else{
       const n=refDeArchivoNueva(f.name);
       if(n){
-        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',col,creado:hoyISO()});
+        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',col,cons:destino||'',creado:hoyISO()});
         FICHAS[n.r]=nuevaFicha(recetaDe('',''));
         nuevos.push(n.r);ref=n.r;
       }
     }
     leer(f,d=>{
       if(ref)FOTO[ref]=d; else sin.push(f.name);
-      if(--pend===0){rowsProd();rowsExp();head();autosave();
+      if(--pend===0){rowsProd();rowsExp();head();if($("cons-lista"))rowsCons();autosave();
         const avisos=[];
         if(nuevos.length)avisos.push(nuevos.length+' nuevo(s): '+nuevos.slice(0,6).join(', ')+(nuevos.length>6?'…':'')+'. Falta la descripción.');
         if(act)avisos.push(act+' ya existían: solo se les cambió la foto.');
@@ -3270,6 +3524,7 @@ function filas(){
     cst_temporadas:TEMPORADAS.map((t,i)=>({id:t.toLowerCase().replace(/[^a-z0-9]+/g,'-'),data:{nombre:t,orden:i}})),
     cst_colecciones:COLECCIONES.map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-')||'c'+i,data:{nombre:c,orden:i}})),
     cst_base:BASE.filter(b=>b.c).map((b,i)=>({id:b.c,data:{...b,orden:i}})),
+    cst_consolidados:CONS.map((c,i)=>({id:c.id,data:{...c,orden:i}})),
     cst_categorias:Object.keys(CATEG).map((c,i)=>({id:c.toLowerCase().replace(/[^a-z0-9]+/g,'-'),
       data:{cat:c,tipos:CATEG[c],foto:(CATFOTO[c]&&!String(CATFOTO[c]).startsWith('data:'))?CATFOTO[c]:'',
         fotos:(CATEG[c]||[]).reduce((o,t)=>{const f=CATFOTO[kFoto(c,t)];
@@ -3291,11 +3546,11 @@ function soloCambioDeOrden(antes,ahora){
   if(antes===undefined||antes===null)return false;
   try{return sinOrden(JSON.parse(antes))===sinOrden(ahora)}catch(e){return false}
 }
-const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones','cst_base'];
+const TABLAS=['cst_productos','cst_materiales','cst_centros','cst_clientes','cst_fichas','cst_marcas','cst_pantones','cst_temporadas','cst_categorias','cst_colecciones','cst_base','cst_consolidados'];
 async function cargarNube(){
   const T=TABLAS;
   const R=await Promise.all(T.map(t=>sbGet(t)));
-  const [pr,ma,ce,cl,fi,mk,pt,tp,ct,co,bs]=R;
+  const [pr,ma,ce,cl,fi,mk,pt,tp,ct,co,bs,cn]=R;
   const porOrden=(a,b)=>((a.data.orden??0)-(b.data.orden??0));
   if(!pr.length&&!ma.length&&!fi.length){
     // La nube parece vacía. Nunca se sube nada solo: hay que confirmarlo a mano,
@@ -3354,6 +3609,8 @@ async function cargarNube(){
   if(tp&&tp.length){TEMPORADAS.length=0;tp.sort(porOrden).forEach(x=>TEMPORADAS.push(x.data.nombre))}
   if(co&&co.length){COLECCIONES.length=0;co.sort(porOrden).forEach(x=>COLECCIONES.push(x.data.nombre))}
   if(bs&&bs.length){BASE.length=0;bs.sort(porOrden).forEach(x=>{const {orden,...b}=x.data;BASE.push(b)})}
+  /* los consolidados: manda la nube */
+  if(cn){CONS.length=0;cn.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CONS.push(c)})}
   /* las categorías de la nube mandan; las del archivo solo rellenan lo que falte */
   if(ct&&ct.length){
     Object.keys(CATEG).forEach(k=>delete CATEG[k]);
@@ -3620,7 +3877,7 @@ async function guardarVersion(ref){
 
 /* ====== GUARDADO LOCAL Y RESPALDO ====== */
 const LKEY='costos_tempo_v1';
-function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,COLECCIONES,BASE,BORRADOS}}
+function estado(){return {v:1,cliv:CLI_V,fecha:new Date().toISOString(),cur,REFS,FICHAS,CAT,CEN,CLI,FOTO,MARCAS,PANTONES,TEMPORADAS,COLECCIONES,BASE,CONS,BORRADOS}}
 function marcaSave(txt,cls){const e=$('autosave');if(!e)return;e.textContent=txt;e.className='asv '+(cls||'');e.title=ultimoError||''}
 let ultimoError='',avisado=false;
 /* Aviso que NO se borra con un guardado exitoso: mientras haya una tabla que no se pudo
@@ -3830,6 +4087,7 @@ function aplicarEstado(d){
   if(d.TEMPORADAS&&d.TEMPORADAS.length){TEMPORADAS.length=0;d.TEMPORADAS.forEach(x=>TEMPORADAS.push(x))}
   if(d.COLECCIONES&&d.COLECCIONES.length){COLECCIONES.length=0;d.COLECCIONES.forEach(x=>COLECCIONES.push(x))}
   if(d.BASE&&d.BASE.length){BASE.length=0;d.BASE.forEach(x=>BASE.push(x))}
+  if(d.CONS&&d.CONS.length){CONS.length=0;d.CONS.forEach(x=>CONS.push(x))}
   if(d.BORRADOS){BORRADOS.mat.length=0;BORRADOS.prod.length=0;
     (d.BORRADOS.mat||[]).forEach(c=>BORRADOS.mat.push(c));(d.BORRADOS.prod||[]).forEach(r=>BORRADOS.prod.push(r))}
   cur=(d.cur&&FICHAS[d.cur])?d.cur:(REFS[0]&&REFS[0].r);
@@ -4677,7 +4935,8 @@ async function subirFotoCatNube(k){
 function estadoRep(r){
   const f=FICHAS[r];if(!f)return 'costeo';
   if(f.aprob==='pendiente')return 'aprobar';
-  return (f.saved&&!f.edit)?'costeada':'costeo';
+  if(f.saved&&!f.edit)return 'costeada';
+  return f.pre?'pre':'costeo';
 }
 const REP_ABIERTO=new Set();   // qué día y familia están desplegados en el reporte
 let REP_ASC=true;              // los días van de la más antigua a la más reciente
@@ -4720,6 +4979,7 @@ function rowsRep(){
     ent:arr.filter(x=>x.ent).length,
     falta:arr.filter(x=>!x.ent).length,
     costeo:arr.filter(x=>estadoRep(x.r)==='costeo').length,
+    pre:arr.filter(x=>estadoRep(x.r)==='pre').length,
     aprobar:arr.filter(x=>estadoRep(x.r)==='aprobar').length,
     costeada:arr.filter(x=>estadoRep(x.r)==='costeada').length,
     apr:arr.filter(x=>x.apr).length
@@ -4733,6 +4993,7 @@ function rowsRep(){
     k('ok','Entregadas',T.ent,(T.n?Math.round(T.ent/T.n*100):0)+'% del total')+
     k('pend','Por entregar',T.falta,'el taller aún las debe')+
     k('pend','En costeo',T.costeo,'sin cerrar')+
+    (T.pre?k('pend','Pre costeadas',T.pre,'con propuesta presentada'):'')+
     k('pend','Por aprobar',T.aprobar,'esperando revisión')+
     k('ok','Costeadas',T.costeada,'ficha guardada')+
     k('ok','Aprobadas',T.apr,(T.n?Math.round(T.apr/T.n*100):0)+'% de las registradas')+
@@ -4758,11 +5019,11 @@ function rowsRep(){
     return `<tr><td class="l"><b style="font-weight:600">${escR(cat)}</b></td>
       <td>${c.n}</td><td class="tot" style="color:${c.ent?'var(--green-txt)':'var(--ink-3)'}">${c.ent||'—'}</td>
       <td${c.falta?' style="color:var(--falta);font-weight:700"':''}>${c.falta||'—'}</td>
-      <td>${c.costeo||'—'}</td><td>${c.aprobar||'—'}</td><td class="tot">${c.costeada}</td>
+      <td>${c.costeo||'—'}</td><td>${c.pre||'—'}</td><td>${c.aprobar||'—'}</td><td class="tot">${c.costeada}</td>
       <td class="tot" style="color:${c.apr?'var(--green-txt)':'var(--ink-3)'}">${c.apr||'—'}</td>
       <td class="l"><div style="display:flex;align-items:center;gap:8px">${barra(c)}<span class="cod" style="width:34px;text-align:right">${p}%</span></div></td></tr>`;
-  }).join('')||'<tr><td colspan="9" class="empty">No hay muestras con ese filtro.</td></tr>';
-  $('rep-tot').innerHTML=lista.length?`<tr><td class="l">Total</td><td>${T.n}</td><td class="tot">${T.ent}</td><td>${T.falta}</td><td>${T.costeo}</td><td>${T.aprobar}</td><td class="tot">${T.costeada}</td><td class="tot">${T.apr}</td><td class="l">${pct}%</td></tr>`:'';
+  }).join('')||'<tr><td colspan="10" class="empty">No hay muestras con ese filtro.</td></tr>';
+  $('rep-tot').innerHTML=lista.length?`<tr><td class="l">Total</td><td>${T.n}</td><td class="tot">${T.ent}</td><td>${T.falta}</td><td>${T.costeo}</td><td>${T.pre}</td><td>${T.aprobar}</td><td class="tot">${T.costeada}</td><td class="tot">${T.apr}</td><td class="l">${pct}%</td></tr>`:'';
 
   pintarPlata(lista,campo,ETQ[campo]);
 
@@ -4872,7 +5133,7 @@ function xlsxReporte(){
   const filtro=[['Temporada',$('rep-temp')],['Año',$('rep-anio')],['Colección',$('rep-col')],
     ['Marca',$('rep-marca')],['Categoría',$('rep-cat-f')]]
     .filter(([t,e])=>e&&e.value).map(([t,e])=>t+': '+e.value).join(' · ')||'todo el catálogo';
-  const est={costeada:'Costeada',aprobar:'Por aprobar',costeo:'En costeo'};
+  const est={costeada:'Costeada',aprobar:'Por aprobar',costeo:'En costeo',pre:'Pre costeada'};
   const plata={};lista.forEach(x=>{plata[x.r]=plataDe(x.r)});
 
   /* hoja 1 · muestra por muestra */
@@ -4882,16 +5143,17 @@ function xlsxReporte(){
   f1.push([]);
   f1.push(['CÓDIGO ÚNICO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','MARCA','DEPARTAMENTO','AÑO',
     'TEMPORADA','COLECCIÓN','REGISTRADO','ENTREGADA','ESTADO','MUESTRA APROBADA','FOTO',
-    'COSTO TEMPO','PRECIO · '+((cb&&cb.cli)||'base'),'MARGEN %'].map(t=>({v:t,s:3})));
+    'PRE COSTEO','FECHA DEL PRE COSTEO','COSTO TEMPO','PRECIO · '+((cb&&cb.cli)||'base'),'MARGEN %'].map(t=>({v:t,s:3})));
   lista.forEach(x=>{
-    const pl=plata[x.r];
+    const pl=plata[x.r],f=FICHAS[x.r]||{};
     f1.push([x.cu||'',x.r,x.n||'',x.cat||'',x.sub||'',x.marca||'',x.dep||'',x.anio||'',
       x.temporada||'',x.col||'',x.creado||'',x.ent||'',est[estadoRep(x.r)]||'',x.apr?'Sí':'No',
       FOTO[x.r]?'Sí':'No',
+      (f.pre&&f.pre.total)?{v:f.pre.total,s:2}:'',(f.pre&&f.pre.fechaISO)||'',
       {v:pl.costo||0,s:2},{v:pl.pvp||0,s:2},pl.margen===null?'':Math.round(pl.margen*10)/10]);
   });
   const h1={nombre:'MUESTRAS',filas:f1,
-    anchos:[14,12,38,17,17,15,14,8,13,20,12,12,13,10,7,13,15,11]};
+    anchos:[14,12,38,17,17,15,14,8,13,20,12,12,13,10,7,13,17,13,15,11]};
 
   /* hoja 2 · el resumen, agrupado como en pantalla */
   const valor=x=>x[campo]||'(sin asignar)';
@@ -4904,6 +5166,7 @@ function xlsxReporte(){
     return [todas.length,
       todas.filter(x=>x.ent).length,
       todas.filter(x=>estadoRep(x.r)==='costeo').length,
+      todas.filter(x=>estadoRep(x.r)==='pre').length,
       todas.filter(x=>estadoRep(x.r)==='aprobar').length,
       arr.length,
       todas.filter(x=>x.apr).length,
@@ -4918,7 +5181,7 @@ function xlsxReporte(){
   f2.push([{v:'CÓMO VA LA TEMPORADA',s:5}]);
   f2.push([{v:filtro+' · agrupado por '+(ETQ[campo]||campo)+' · generado el '+hoy(),s:1}]);
   f2.push([]);
-  f2.push([(ETQ[campo]||campo).toUpperCase(),'PRODUCTOS','ENTREGADAS','EN COSTEO','POR APROBAR',
+  f2.push([(ETQ[campo]||campo).toUpperCase(),'PRODUCTOS','ENTREGADAS','EN COSTEO','PRE COSTEADAS','POR APROBAR',
     'COSTEADAS','MUESTRAS APROBADAS','COSTO MÍNIMO','COSTO PROMEDIO','COSTO MÁXIMO',
     'PRECIO PROMEDIO · '+((cb&&cb.cli)||'base'),'MARGEN PROMEDIO %','SIN FOTO'].map(t=>({v:t,s:3})));
   grupos.forEach(g=>f2.push([{v:g,s:1}].concat(resumen(lista.filter(x=>valor(x)===g)))));
@@ -4928,7 +5191,7 @@ function xlsxReporte(){
   f2.push([{v:'Los promedios solo cuentan las referencias con el costo cerrado. El costo es el de la ficha de hoy y el precio es el del cliente base'
     +((cb&&cb.cli)?' ('+cb.cli+' · '+cb.zona+')':'')+'. El margen es lo que queda sobre ese precio.',s:1}]);
   const h2={nombre:'TEMPORADA',filas:f2,
-    anchos:[24,11,11,10,12,11,12,14,15,14,20,15,10]};
+    anchos:[24,11,11,10,14,12,11,12,14,15,14,20,15,10]};
 
   const lib=libroXlsx([h2,h1],'TEMPO_Reporte_de_temporada_'+new Date().toISOString().slice(0,10)+'.xlsx');
   try{
@@ -5426,7 +5689,7 @@ async function xlsxPrecios(conCosto){
   fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN']
     .concat(interna?['ESTADO','COSTO TEMPO']:[])
     .concat(CLI.map(c=>c.cli+' · '+c.zona)).map(t=>({v:t,s:3})));
-  const estadoDe=f=>f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?('Costeada v'+f.ver):(f.edit?'Re-costeo':(enAvance(f)?'En avance':'Borrador')));
+  const estadoDe=f=>f.aprob==='pendiente'?'Por aprobar':(f.saved&&!f.edit?('Costeada v'+f.ver):(f.edit?'Re-costeo':(f.pre?'Pre costeada':(enAvance(f)?'En avance':'Borrador'))));
   const conFoto=[];
   list.forEach(x=>{
     const f=FICHAS[x.r]||fichaVacia();cur=x.r;calc();
@@ -5517,7 +5780,7 @@ function bajarCSV(){
 }
 
 /* ====== NAVEGACIÓN ====== */
-const SCR=['ficha','prod','mat','cat','centros','lista','exp','rep'];
+const SCR=['ficha','prod','cons','mat','cat','centros','lista','exp','rep'];
 function go(s){
   document.querySelectorAll('.nav-item').forEach(b=>b.classList.toggle('on',b.dataset.screen===s));
   SCR.forEach(x=>$('scr-'+x).classList.toggle('hide',x!==s));
@@ -5527,6 +5790,7 @@ function go(s){
   if(s==='exp')rowsExp();
   if(s==='rep')rowsRep();
   if(s==='cat')rowsCats();
+  if(s==='cons')rowsCons();
   window.scrollTo(0,0);
 }
 document.querySelectorAll('.nav-item[data-screen]').forEach(b=>b.onclick=()=>go(b.dataset.screen));
