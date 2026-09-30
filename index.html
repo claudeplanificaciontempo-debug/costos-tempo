@@ -1070,7 +1070,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <option value="marca">Marca</option>
           <option value="dep">Departamento</option>
         </select></label>
-      <button class="btn ghost sm" style="margin-left:auto" onclick="csvReporte()">Descargar reporte (Excel)</button>
+      <button class="btn ghost sm" style="margin-left:auto" onclick="xlsxReporte()">Descargar reporte (Excel)</button>
     </div>
   </div>
   <div class="kpis" id="rep-kpis"></div>
@@ -1085,9 +1085,9 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="card">
     <div class="card-h"><h2>Cómo va la temporada</h2>
       <div class="sub" id="rep-plata-sub"></div></div>
-    <div class="hint">Lo mismo, pero en plata: <b>cuánto cuesta cada grupo y a cuánto se está vendiendo</b>. El costo es el de la ficha de hoy; el precio es el del cliente base, y el margen es lo que queda sobre ese precio. Solo cuentan las referencias que ya tienen costo.</div>
+    <div class="hint">Lo mismo, pero en plata: <b>cuánto cuesta cada grupo y a cuánto se está vendiendo</b>. El costo es el de la ficha de hoy; el precio es el del cliente base, y el margen es lo que queda sobre ese precio. <b>Solo cuentan las referencias con el costo ya cerrado</b>: las que siguen en borrador no ensucian el promedio.</div>
     <table>
-      <thead><tr><th class="l" id="rep-th-plata">Categoría</th><th>Productos</th><th>Con costo</th>
+      <thead><tr><th class="l" id="rep-th-plata">Categoría</th><th>Productos</th><th>Costeadas</th>
         <th>Costo mínimo</th><th>Costo promedio</th><th>Costo máximo</th>
         <th id="rep-th-precio">Precio promedio</th><th>Margen promedio</th><th>Sin foto</th></tr></thead>
       <tbody id="rep-plata"></tbody>
@@ -4831,12 +4831,15 @@ function pintarPlata(lista,campo,etiqueta){
   if($('rep-th-precio'))$('rep-th-precio').textContent='Precio promedio'+(cb?' · '+cb.cli:'');
   const plata={};lista.forEach(x=>{plata[x.r]=plataDe(x.r)});
   const valor=x=>x[campo]||'(sin asignar)';
-  const resumen=arr=>{
+  const resumen=todas=>{
+    /* solo entran las que ya tienen el costo cerrado: una ficha a medias
+       ensuciaría el promedio con un costo que todavía no es */
+    const arr=todas.filter(x=>estadoRep(x.r)==='costeada');
     const cos=arr.map(x=>plata[x.r].costo).filter(v=>v>0);
     const mar=arr.map(x=>plata[x.r].margen).filter(v=>v!==null&&isFinite(v));
     const pv=arr.map(x=>plata[x.r].pvp).filter(v=>v>0);
     const med=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:null;
-    return {n:arr.length,con:cos.length,sinFoto:arr.filter(x=>!FOTO[x.r]).length,
+    return {n:todas.length,con:cos.length,sinFoto:todas.filter(x=>!FOTO[x.r]).length,
       min:cos.length?Math.min(...cos):null,max:cos.length?Math.max(...cos):null,
       prom:med(cos),pvp:med(pv),margen:med(mar)};
   };
@@ -4854,28 +4857,87 @@ function pintarPlata(lista,campo,etiqueta){
   const T=resumen(lista);
   $('rep-plata-tot').innerHTML=lista.length?fila('Total',T,true):'';
   $('rep-plata-sub').textContent=T.con
-    ? T.con+' con costo · promedio '+fmt(T.prom)+(T.margen!==null?' · margen '+T.margen.toFixed(1)+'%':'')
-    : 'Todavía ninguna tiene costo.';
+    ? T.con+' costeada'+(T.con===1?'':'s')+' · promedio '+fmt(T.prom)+(T.margen!==null?' · margen '+T.margen.toFixed(1)+'%':'')
+    : 'Todavía ninguna tiene el costo cerrado.';
 }
-function csvReporte(){
-  const lista=repLista(),sep=';';
+/* El reporte en Excel de verdad: una hoja con muestra por muestra y otra con el
+   resumen de la temporada, tal como se ve en pantalla. */
+function xlsxReporte(){
+  const lista=repLista();
+  if(!lista.length){toast('Nada que exportar','No hay muestras con ese filtro.');return}
   const cb=CLI[clienteBase()];
-  const cab=['Codigo_unico','Referencia','Producto','Categoria','Tipo','Marca','Departamento','Anio','Temporada','Coleccion','Registrado','Entregada','Estado','Muestra_aprobada','Fecha_aprobacion',
-    'Costo_TEMPO','Precio_'+((cb&&cb.cli)||'base').replace(/[^A-Za-z0-9]+/g,'_'),'Margen_pct'];
+  const campo=($('rep-grupo')&&$('rep-grupo').value)||'cat';
+  const ETQ={cat:'Categoría',sub:'Tipo de producto',col:'Colección',temporada:'Temporada',
+    anio:'Año',marca:'Marca',dep:'Departamento'};
+  const filtro=[['Temporada',$('rep-temp')],['Año',$('rep-anio')],['Colección',$('rep-col')],
+    ['Marca',$('rep-marca')],['Categoría',$('rep-cat-f')]]
+    .filter(([t,e])=>e&&e.value).map(([t,e])=>t+': '+e.value).join(' · ')||'todo el catálogo';
   const est={costeada:'Costeada',aprobar:'Por aprobar',costeo:'En costeo'};
-  const n2=v=>(v===null||v===undefined)?'':String(Math.round(v*100)/100).replace('.',',');
-  const filas=lista.map(x=>{
-    const pl=plataDe(x.r);
-    return [x.cu||'',x.r,x.n,x.cat,x.sub,x.marca||'',x.dep||'',x.anio||'',x.temporada||'',x.col||'',
-      x.creado||'',x.ent||'',est[estadoRep(x.r)],x.apr?'Si':'No',x.aprFecha||'',
-      n2(pl.costo),n2(pl.pvp),pl.margen===null?'':n2(pl.margen)]
-      .map(v=>String(v).replace(/[;\n\r]/g,' ')).join(sep);
+  const plata={};lista.forEach(x=>{plata[x.r]=plataDe(x.r)});
+
+  /* hoja 1 · muestra por muestra */
+  const f1=[];
+  f1.push([{v:'REPORTE DE TEMPORADA · TEMPO',s:5}]);
+  f1.push([{v:filtro+' · generado el '+hoy(),s:1}]);
+  f1.push([]);
+  f1.push(['CÓDIGO ÚNICO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','MARCA','DEPARTAMENTO','AÑO',
+    'TEMPORADA','COLECCIÓN','REGISTRADO','ENTREGADA','ESTADO','MUESTRA APROBADA','FOTO',
+    'COSTO TEMPO','PRECIO · '+((cb&&cb.cli)||'base'),'MARGEN %'].map(t=>({v:t,s:3})));
+  lista.forEach(x=>{
+    const pl=plata[x.r];
+    f1.push([x.cu||'',x.r,x.n||'',x.cat||'',x.sub||'',x.marca||'',x.dep||'',x.anio||'',
+      x.temporada||'',x.col||'',x.creado||'',x.ent||'',est[estadoRep(x.r)]||'',x.apr?'Sí':'No',
+      FOTO[x.r]?'Sí':'No',
+      {v:pl.costo||0,s:2},{v:pl.pvp||0,s:2},pl.margen===null?'':Math.round(pl.margen*10)/10]);
   });
-  const txt='﻿'+[cab.join(sep)].concat(filas).join('\n');
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob([txt],{type:'text/csv;charset=utf-8'}));
-  a.download='Reporte_muestras_'+hoyISO()+'.csv';a.click();
-  toast('Reporte descargado',lista.length+' muestra(s) con su estado y fecha de registro.');
+  const h1={nombre:'MUESTRAS',filas:f1,
+    anchos:[14,12,38,17,17,15,14,8,13,20,12,12,13,10,7,13,15,11]};
+
+  /* hoja 2 · el resumen, agrupado como en pantalla */
+  const valor=x=>x[campo]||'(sin asignar)';
+  const resumen=todas=>{
+    const arr=todas.filter(x=>estadoRep(x.r)==='costeada');
+    const cos=arr.map(x=>plata[x.r].costo).filter(v=>v>0);
+    const pv=arr.map(x=>plata[x.r].pvp).filter(v=>v>0);
+    const mar=arr.map(x=>plata[x.r].margen).filter(v=>v!==null&&isFinite(v));
+    const med=a=>a.length?a.reduce((s,v)=>s+v,0)/a.length:'';
+    return [todas.length,
+      todas.filter(x=>x.ent).length,
+      todas.filter(x=>estadoRep(x.r)==='costeo').length,
+      todas.filter(x=>estadoRep(x.r)==='aprobar').length,
+      arr.length,
+      todas.filter(x=>x.apr).length,
+      {v:cos.length?Math.min(...cos):'',s:2},{v:med(cos),s:2},{v:cos.length?Math.max(...cos):'',s:2},
+      {v:med(pv),s:2},
+      mar.length?Math.round(med(mar)*10)/10:'',
+      todas.filter(x=>!FOTO[x.r]).length];
+  };
+  const grupos=[...new Set(lista.map(valor))].sort((a,b)=>
+    lista.filter(z=>valor(z)===b).length-lista.filter(z=>valor(z)===a).length||a.localeCompare(b,'es'));
+  const f2=[];
+  f2.push([{v:'CÓMO VA LA TEMPORADA',s:5}]);
+  f2.push([{v:filtro+' · agrupado por '+(ETQ[campo]||campo)+' · generado el '+hoy(),s:1}]);
+  f2.push([]);
+  f2.push([(ETQ[campo]||campo).toUpperCase(),'PRODUCTOS','ENTREGADAS','EN COSTEO','POR APROBAR',
+    'COSTEADAS','MUESTRAS APROBADAS','COSTO MÍNIMO','COSTO PROMEDIO','COSTO MÁXIMO',
+    'PRECIO PROMEDIO · '+((cb&&cb.cli)||'base'),'MARGEN PROMEDIO %','SIN FOTO'].map(t=>({v:t,s:3})));
+  grupos.forEach(g=>f2.push([{v:g,s:1}].concat(resumen(lista.filter(x=>valor(x)===g)))));
+  f2.push([]);
+  f2.push([{v:'TOTAL',s:1}].concat(resumen(lista)));
+  f2.push([]);
+  f2.push([{v:'Los promedios solo cuentan las referencias con el costo cerrado. El costo es el de la ficha de hoy y el precio es el del cliente base'
+    +((cb&&cb.cli)?' ('+cb.cli+' · '+cb.zona+')':'')+'. El margen es lo que queda sobre ese precio.',s:1}]);
+  const h2={nombre:'TEMPORADA',filas:f2,
+    anchos:[24,11,11,10,12,11,12,14,15,14,20,15,10]};
+
+  const lib=libroXlsx([h2,h1],'TEMPO_Reporte_de_temporada_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  try{
+    const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
+    document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+  }catch(e){toast('No se pudo descargar',String(e&&e.message||e));return}
+  toast('Reporte descargado',lista.length+' muestra(s) · '+grupos.length+' grupo(s) de '+(ETQ[campo]||campo).toLowerCase()+'.');
+  return lib;
 }
 
 /* ====== EXPORTAR ====== */
