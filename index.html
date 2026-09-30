@@ -596,6 +596,18 @@ select.fld{border-color:var(--line)}
 .est-aprobado,.est-cerrado{background:var(--green-soft);color:var(--green-txt)}
 .est-final{background:var(--amber-soft);color:var(--amber)}
 .est-perdido{background:var(--line-soft);color:var(--ink-3)}
+.arow{display:grid;grid-template-columns:24px 40px 62px minmax(150px,1fr) minmax(140px,220px) 104px 72px;
+  gap:9px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line-soft);cursor:pointer;font-size:12px}
+.arow:hover{background:var(--suave)}
+.arow.cab{position:sticky;top:0;background:var(--card);z-index:1;font-size:9.5px;font-weight:800;
+  letter-spacing:.5px;text-transform:uppercase;color:var(--ink-3);cursor:default}
+.arow .im{width:40px;height:50px;border-radius:5px;overflow:hidden;background:var(--suave);display:block}
+.arow.cab .im{height:auto;background:none}
+.arow .im img{width:100%;height:100%;object-fit:cover;display:block}
+.arow .rf{font-weight:800;color:var(--vino-deep)}
+.arow .nm{color:var(--ink);line-height:1.25}
+.arow .dt{color:var(--ink-3);font-size:11px;line-height:1.25}
+.arow .px{text-align:right;font-weight:700}
 .catbadge{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:2px 7px;background:var(--line-soft);color:var(--ink-2)}
 .catbadge.mp{background:var(--cat-mp);color:var(--cat-mp-tx)}
 .catbadge.ins{background:var(--cat-ins);color:var(--cat-ins-tx)}
@@ -1241,6 +1253,34 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-fotos')">Cancelar</button></div>
   </div>
 </div>
+<div id="ovl-addref" class="ovl hide">
+  <div class="modal" style="width:min(1020px,100%)">
+    <div class="modal-h"><h2>Agregar referencias a la tanda</h2>
+      <div class="sub" id="ar-t" style="margin-left:auto"></div></div>
+    <div class="modal-b">
+      <div class="hint" style="margin:0 0 10px">Busca en todo el catálogo: sirve una referencia de otra temporada o de otra colección que el cliente vuelve a pedir. <b>Si ya está costeada, entra con su precio hecho.</b></div>
+      <div class="addrow" style="background:none;border:0;padding:0 0 10px;flex-wrap:wrap">
+        <input id="ar-q" class="lpq" type="text" placeholder="Buscar referencia o nombre…" oninput="pintarAddRef()">
+        <select id="ar-col" class="fld" style="width:auto" onchange="pintarAddRef()"></select>
+        <select id="ar-temp" class="fld" style="width:auto" onchange="pintarAddRef()"></select>
+        <select id="ar-cat" class="fld" style="width:auto" onchange="pintarAddRef()"></select>
+        <select id="ar-est" class="fld" style="width:auto" onchange="pintarAddRef()">
+          <option value="">Todos los estados</option>
+          <option value="costeada">Solo las costeadas</option>
+          <option value="pre">Solo las pre costeadas</option>
+          <option value="sin">Sin costo cerrado</option>
+        </select>
+        <button class="btn ghost sm" onclick="limpiarAddRef()">Limpiar</button>
+      </div>
+      <div id="ar-lista" style="max-height:52vh;overflow:auto;border:1px solid var(--line);border-radius:10px"></div>
+    </div>
+    <div class="modal-f">
+      <button class="btn ghost" onclick="cerrar('ovl-addref')">Cerrar</button>
+      <button class="btn org" id="ar-btn" onclick="confirmarAddRef()">Agregar a la tanda</button>
+    </div>
+  </div>
+</div>
+
 <div id="ovl-clasif" class="ovl hide">
   <div class="modal" style="width:min(780px,100%)">
     <div class="modal-h"><h2>Clasificar producto</h2><div class="sub" id="cl-cuenta" style="margin-left:auto"></div></div>
@@ -2166,23 +2206,103 @@ function setCons(id,campo,v){
 function borrarCons(id){
   const c=consPorId(id);if(!c)return;
   const n=refsDeCons(id).length;
-  if(!confirm('¿Borrar el consolidado "'+c.nom+'"?'+(n?'\n\nSus '+n+' referencia(s) NO se borran: quedan sin consolidado.':'')))return;
-  REFS.forEach(x=>{if(x.cons===id)x.cons=''});
+  if(!confirm('¿Borrar el consolidado "'+c.nom+'"?'+(n?'\n\nSus '+n+' referencia(s) NO se borran: siguen en el catálogo.':'')))return;
   CONS.splice(CONS.indexOf(c),1);
   rowsCons();rowsProd();autosave();
   toast('Consolidado borrado',c.nom+(n?' · sus '+n+' referencia(s) siguen en el catálogo.':''));
 }
 /* Números de una tanda: cuántas van, cuánto costaría y en cuánto se ofreció. */
 function resumenCons(id){
+  const c=consPorId(id)||{};
   const r=refsDeCons(id);
+  let ci=CLI.findIndex(z=>z.id===c.cliId);
+  if(ci<0)ci=clienteBase();
   const pre=r.filter(x=>(FICHAS[x.r]||{}).pre);
   const cerr=r.filter(x=>estadoRep(x.r)==='costeada');
   const suma=a=>a.reduce((s,v)=>s+v,0);
-  const propuesta=suma(pre.map(x=>{const p=FICHAS[x.r].pre;return (p.pvp&&p.pvp[0]&&p.pvp[0].pvp)||0}));
+  /* la propuesta se suma con el precio de SU cliente, no siempre el base */
+  const precios=r.map(x=>precioPropuesta(x.r,ci).pvp||0);
+  const propuesta=suma(precios);
   const costoPre=suma(pre.map(x=>FICHAS[x.r].pre.total||0));
   const costoHoy=suma(cerr.map(x=>totRef(x.r).total));
   return {n:r.length,pre:pre.length,cerradas:cerr.length,sinFoto:r.filter(x=>!FOTO[x.r]).length,
-    sinDesc:r.filter(sinDescribir).length,propuesta,costoPre,costoHoy,refs:r};
+    sinDesc:r.filter(sinDescribir).length,sinPrecio:precios.filter(v=>!v).length,
+    propuesta,costoPre,costoHoy,refs:r,cli:CLI[ci]};
+}
+/* ---- Agregar al consolidado referencias que ya existen ----
+   El cliente repite un estilo de otra temporada: se busca en todo el catálogo
+   y se agrega tal cual, con el costo que ya tenga. */
+let AR_CONS='',AR_SEL=new Set();
+function abrirAddRef(id){
+  const c=consPorId(id);if(!c)return;
+  AR_CONS=id;AR_SEL=new Set();
+  $('ar-t').textContent=c.nom;
+  ['ar-q'].forEach(k=>{const e=$(k);if(e)e.value=''});
+  const pon=(idd,vals,etq)=>{const e=$(idd);if(!e)return;
+    e.innerHTML='<option value="">'+etq+'</option>'+vals.map(v=>`<option>${escR(v)}</option>`).join('')};
+  pon('ar-col',[...new Set(activos().map(x=>x.col).filter(Boolean))].sort(),'Todas las colecciones');
+  pon('ar-temp',[...new Set(activos().map(x=>x.temporada).filter(Boolean))].sort(),'Todas las temporadas');
+  pon('ar-cat',[...new Set(activos().map(x=>x.cat).filter(Boolean))].sort(),'Todas las categorías');
+  if($('ar-est'))$('ar-est').value='';
+  pintarAddRef();
+  $('ovl-addref').classList.remove('hide');
+}
+function limpiarAddRef(){
+  ['ar-q','ar-col','ar-temp','ar-cat','ar-est'].forEach(k=>{const e=$(k);if(e)e.value=''});
+  pintarAddRef();
+}
+function listaAddRef(){
+  const v=id=>($(id)&&$(id).value)||'';
+  const q=v('ar-q').toLowerCase().trim(),col=v('ar-col'),te=v('ar-temp'),ca=v('ar-cat'),es=v('ar-est');
+  const dentro=new Set(listaCons(consPorId(AR_CONS)||{refs:[]}));
+  return activos().filter(x=>!dentro.has(x.r))
+    .filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q))
+    .filter(x=>(!col||x.col===col)&&(!te||x.temporada===te)&&(!ca||x.cat===ca))
+    .filter(x=>{if(!es)return true;
+      const e=estadoRep(x.r);
+      return es==='costeada'?e==='costeada':es==='pre'?e==='pre':e!=='costeada'});
+}
+function toggleAddRef(r,v){if(v)AR_SEL.add(r);else AR_SEL.delete(r);pintarBtnAddRef()}
+function toggleAllAddRef(v){
+  const rs=listaAddRef().map(x=>x.r);
+  if(v)rs.forEach(r=>AR_SEL.add(r));else rs.forEach(r=>AR_SEL.delete(r));
+  pintarAddRef();
+}
+function pintarBtnAddRef(){
+  const b=$('ar-btn');if(!b)return;
+  b.textContent=AR_SEL.size?'Agregar '+AR_SEL.size+' a la tanda':'Agregar a la tanda';
+  b.disabled=!AR_SEL.size;
+}
+function pintarAddRef(){
+  const cont=$('ar-lista');if(!cont)return;
+  const lista=listaAddRef(),g=cur;
+  const filas=lista.map(x=>{
+    const f=FICHAS[x.r]||fichaVacia(),e=estadoProd(x);
+    cur=x.r;calc();const pvp=plCalc(clienteBase(),true).pvp;
+    const cls=e==='Costeada'?'ok':(e==='Pre costeada'||e==='Por aprobar'?'pend':'');
+    return `<label class="arow">
+      <input type="checkbox" ${AR_SEL.has(x.r)?'checked':''} onchange="toggleAddRef('${x.r}',this.checked)">
+      <span class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
+      <span class="rf">${escR(x.r)}</span>
+      <span class="nm">${escR(x.n||'sin describir')}</span>
+      <span class="dt">${escR([x.col,x.temporada,x.cat].filter(Boolean).join(' · '))}</span>
+      <span class="pill ${cls}">${e}</span>
+      <span class="px">${fmt(pvp)}</span></label>`;
+  }).join('');
+  cur=g;calc();
+  cont.innerHTML=(lista.length
+    ?`<label class="arow cab"><input type="checkbox" onchange="toggleAllAddRef(this.checked)">
+        <span class="im"></span><span class="rf">REF</span><span class="nm">PRODUCTO</span>
+        <span class="dt">COLECCIÓN · TEMPORADA · CATEGORÍA</span><span class="pill" style="background:none;color:var(--ink-3)">ESTADO</span>
+        <span class="px">PVP</span></label>`+filas
+    :'<div class="empty">No hay referencias que agregar con esa búsqueda. Las que ya están en la tanda no salen aquí.</div>');
+  pintarBtnAddRef();
+}
+function confirmarAddRef(){
+  const n=agregarACons(AR_CONS,[...AR_SEL]);
+  cerrar('ovl-addref');
+  rowsCons();rowsProd();rowsLista();autosave();
+  toast(n+' referencia(s) agregada(s)',nombreCons(AR_CONS)+' queda con '+refsDeCons(AR_CONS).length+'.');
 }
 let consFotos='';                 /* a qué consolidado van las fotos que se carguen */
 function fotosDeCons(id){consFotos=id;$('cons-fotos-in').click()}
@@ -2205,34 +2325,41 @@ function rowsCons(){
         ||'<i title="todavía sin fotos"></i>'}</div>
       <div class="tt">
         <div class="nm">${escR(c.nom)}</div>
-        <div class="sb">${escR(c.cli||'sin cliente')} · recibido ${fechaBonita(c.fecha)}${c.fechaProp?' · propuesta enviada '+fechaBonita(c.fechaProp):''}</div>
+        <div class="sb">${escR(nombreCli(c.cliId)||c.cli||'sin cliente')} · recibido ${fechaBonita(c.fecha)}${c.fechaProp?' · propuesta enviada '+fechaBonita(c.fechaProp):''}</div>
         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <span class="pill est-${c.estado}">${e.t}</span>
           <select class="fld" style="width:auto;font-size:11px" onchange="cambiarEstadoCons('${c.id}',this.value)">
             ${CONS_ESTADOS.map(o=>`<option value="${o.k}" ${o.k===c.estado?'selected':''}>${o.t}</option>`).join('')}
           </select>
-          <input class="fld" style="width:150px;font-size:11px" placeholder="Cliente" value="${escR(c.cli||'')}"
-            onchange="setCons('${c.id}','cli',this.value)">
+          <select class="fld" style="width:auto;font-size:11px" title="A qué cliente se le presenta esta tanda"
+            onchange="setCons('${c.id}','cliId',this.value)">
+            <option value="">Cliente…</option>
+            ${CLI.map(z=>`<option value="${z.id}" ${z.id===(c.cliId||'')?'selected':''}>${escR(z.cli)} · ${escR(z.zona)}</option>`).join('')}
+          </select>
         </div>
       </div>
       <div class="nums">
         <div class="nu"><div class="k">Referencias</div><div class="v">${R.n}</div></div>
         <div class="nu"><div class="k">Pre costeadas</div><div class="v${R.pre<R.n?' falta':''}">${R.pre}</div></div>
         <div class="nu"><div class="k">Costeadas</div><div class="v">${R.cerradas}</div></div>
-        <div class="nu"><div class="k">Propuesta</div><div class="v">${fmt(R.propuesta)}</div></div>
+        <div class="nu"><div class="k">Propuesta${R.cli?' · '+escR(R.cli.cli):''}</div><div class="v">${fmt(R.propuesta)}</div></div>
+        <div class="nu"><div class="k">Sin precio</div><div class="v${R.sinPrecio?' falta':''}">${R.sinPrecio||'—'}</div></div>
         <div class="nu"><div class="k">Costo del pre</div><div class="v">${fmt(R.costoPre)}</div></div>
         <div class="nu"><div class="k">Sin foto</div><div class="v${R.sinFoto?' falta':''}">${R.sinFoto||'—'}</div></div>
         <div class="nu"><div class="k">Sin describir</div><div class="v${R.sinDesc?' falta':''}">${R.sinDesc||'—'}</div></div>
       </div>
       <div class="ax">
+        <button class="btn org sm" onclick="pdfPropuesta('${c.id}')" title="La hoja que se le manda al cliente: foto, referencia y precio. Sin costos.">PDF de la propuesta</button>
         <button class="btn sm" onclick="verCons('${c.id}','mural')" title="Ver las prendas de esta tanda como fotos">▦ Ver el mural</button>
-        <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista para editarlas">☰ Lista</button>
+        <button class="btn ghost sm" onclick="abrirAddRef('${c.id}')" title="Agregar referencias que ya existen, de cualquier temporada">+ Agregar referencias</button>
         <button class="btn ghost sm" onclick="fotosDeCons('${c.id}')" title="Cargar una carpeta de fotos a esta tanda">Cargar fotos</button>
+        <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista para editarlas">☰ Lista</button>
         <button class="x" title="Borrar el consolidado" onclick="borrarCons('${c.id}')">×</button>
       </div>
     </div>`;
   }).join('')||'<div class="empty">Todavía no hay consolidados. Crea el primero con "+ Nuevo consolidado" y cárgale las referencias que te mandó el cliente.</div>';
-  $('cons-sub').textContent=CONS.length?CONS.length+(CONS.length===1?' tanda':' tandas')+' · '+REFS.filter(x=>x.cons&&!x.arch).length+' referencias asignadas':'';
+  const enTandas=new Set();CONS.forEach(c=>listaCons(c).forEach(r=>{if(byRef(r))enTandas.add(r)}));
+  $('cons-sub').textContent=CONS.length?CONS.length+(CONS.length===1?' tanda':' tandas')+' · '+enTandas.size+' referencias asignadas':'';
   kpisCons();
 }
 /* Al mandar la propuesta se guarda la fecha sola: es el dato que después falta. */
@@ -2242,6 +2369,47 @@ function cambiarEstadoCons(id,v){
   if(v==='enviado'&&!c.fechaProp)c.fechaProp=hoyISO();
   rowsCons();autosave();
   toast('Consolidado actualizado',c.nom+' · '+(CONS_ESTADOS.find(e=>e.k===v)||{}).t+'.');
+}
+const nombreCli=id=>{const c=CLI.find(z=>z.id===id);return c?c.cli+' · '+c.zona:''};
+/* El precio con el que se presenta: el del pre costeo si ya se congeló, y si no
+   el de hoy. Aquí NO va ningún costo: esta hoja la ve el cliente. */
+function precioPropuesta(r,ci){
+  const f=FICHAS[r]||{};
+  if(f.pre&&f.pre.pvp&&f.pre.pvp[ci]&&f.pre.pvp[ci].pvp)return {pvp:f.pre.pvp[ci].pvp,pre:true};
+  const g=cur;cur=r;calc();const v=plCalc(ci,true).pvp;cur=g;calc();
+  return {pvp:v,pre:false};
+}
+function pdfPropuesta(id){
+  const c=consPorId(id);if(!c)return;
+  const list=refsDeCons(id);
+  if(!list.length){toast('La tanda está vacía','Agrégale referencias con "+ Agregar referencias" o cargando sus fotos.');return}
+  let ci=CLI.findIndex(z=>z.id===c.cliId);
+  if(ci<0)ci=clienteBase();
+  const cli=CLI[ci];
+  if(!cli){toast('Falta el cliente','Crea un cliente en Configuración.');return}
+  if(!c.cliId)toast('Sin cliente elegido','La propuesta sale con los precios de '+cli.cli+'. Elige el cliente en la tanda para cambiarlo.','warn');
+  const grupos={};list.forEach(x=>{(grupos[x.cat||'(sin categoría)']=grupos[x.cat||'(sin categoría)']||[]).push(x)});
+  let sin=0;
+  const cards=Object.keys(grupos).sort().map(k=>
+    `<div style="grid-column:1/-1;font-weight:800;font-size:13px;margin-top:6px;border-bottom:1px solid #ddd;padding-bottom:4px">${escR(k)}</div>`
+    +grupos[k].map(x=>{
+      const p=precioPropuesta(x.r,ci);
+      if(!p.pvp)sin++;
+      return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</div>
+        <div class="pdf-b"><div class="r">${x.marca?escR(x.marca.toUpperCase())+' · ':''}REF ${escR(x.r)}${x.dep?' · '+escR(x.dep.toUpperCase()):''}</div>
+        <div class="n">${escR(x.n||'')}</div>
+        <div class="p">${p.pvp?fmt(p.pvp):'a cotizar'}${p.pvp?'<small>USD</small>':''}</div>
+        ${p.pre?'<span class="b">PRECIO DE PROPUESTA</span>':''}</div></div>`}).join('')
+  ).join('');
+  $('print-area').innerHTML=`<div class="pdf-h"><h1>${escR(c.nom)}</h1>
+    <span class="c">${escR(cli.cli)} · ${escR(cli.zona)}</span>
+    <span class="d">${hoy()} · ${list.length} referencia${list.length===1?'':'s'}</span></div>
+    <div class="pdf-g">${cards}</div>
+    <div class="pdf-foot">Precios en USD por prenda · TEMPOCODECA S.A.</div>`;
+  toast('Abriendo la propuesta · '+cli.cli,
+    list.length+' referencia(s)'+(sin?' · '+sin+' sin precio todavía (salen como "a cotizar")':'')
+    +'. En la ventana de impresión elige "Guardar como PDF".');
+  setTimeout(()=>window.print(),250);
 }
 function kpisCons(){
   const k=$('kpis-cons');if(!k)return;
@@ -2597,7 +2765,8 @@ const BULK_CAMPOS=[
   {k:'cat',      t:'Categoría',   lista:()=>Object.keys(CATEG)},
   {k:'sub',      t:'Tipo de producto',lista:()=>tiposDeSel()},
   {k:'ent',      t:'Fecha de entrega',fecha:true},
-  {k:'cons',     t:'Consolidado',      lista:()=>CONS.map(c=>c.id),etiqueta:id=>nombreCons(id)}
+  {k:'cons',     t:'Agregar al consolidado', lista:()=>CONS.map(c=>c.id),etiqueta:id=>nombreCons(id),tanda:'add'},
+  {k:'__quitarCons',t:'Quitar del consolidado',lista:()=>CONS.map(c=>c.id),etiqueta:id=>nombreCons(id),tanda:'del'}
 ];
 const bulkCampo=k=>BULK_CAMPOS.find(c=>c.k===k);
 /* Los tipos que ofrece el desplegable son los de las categorías que tienen los
@@ -2659,6 +2828,18 @@ function aplicarMasivo(campo){
       if(!confirm('¿Dejar sin '+c.t.toLowerCase()+' '+refs.length+' producto(s)?'))return;
       v='';
     }else if(!v){toast('Elige un valor','Selecciona qué '+c.t.toLowerCase()+' poner, o "Dejar sin definir".');return}
+  }
+  /* agregar o quitar de una tanda no es escribir un campo del producto */
+  if(c.tanda){
+    if(!v||v==='__vaciar__'){toast('Elige la tanda','Selecciona a qué consolidado.');return}
+    const rs=refs.map(({x})=>x.r);
+    const n=c.tanda==='add'?agregarACons(v,rs):quitarDeCons(v,rs);
+    rowsProd();if($('cons-lista'))rowsCons();autosave();
+    toast(n?(n+(c.tanda==='add'?' referencia(s) agregada(s)':' referencia(s) quitada(s)')):'Sin cambios',
+      nombreCons(v)+(c.tanda==='add'
+        ?(n<rs.length?' · '+(rs.length-n)+' ya estaba(n) en la tanda.':' · quedaron en la tanda.')
+        :' · '+refsDeCons(v).length+' referencia(s) le quedan.'));
+    return;
   }
   let n=0,saltados=[];
   refs.forEach(({x,i})=>{
@@ -2754,7 +2935,9 @@ const CAMPOS_PROD=[
 ];
 /* ====== CONSOLIDADOS ======
    La tanda que manda el cliente: sus referencias, su pre costeo y en qué punto
-   va la propuesta. Cada producto guarda a qué consolidado pertenece (x.cons). */
+   va la propuesta. La tanda guarda su lista de referencias (c.refs): la misma
+   prenda puede volver en otra tanda de otra temporada sin salirse de la
+   anterior, que es lo que pasa cuando el cliente repite un estilo. */
 let CONS=[];
 const CONS_ESTADOS=[
   {k:'pre',     t:'En pre costeo'},
@@ -2766,7 +2949,32 @@ const CONS_ESTADOS=[
 ];
 const consPorId=id=>CONS.find(c=>c.id===id);
 const nombreCons=id=>{const c=consPorId(id);return c?c.nom:''};
-const refsDeCons=id=>REFS.filter(x=>x.cons===id&&!x.arch);
+function listaCons(c){if(!c.refs)c.refs=[];return c.refs}
+const refsDeCons=id=>{const c=consPorId(id);if(!c)return [];
+  return listaCons(c).map(byRef).filter(x=>x&&!x.arch)};
+const consDeRef=r=>CONS.filter(c=>listaCons(c).includes(r));
+function agregarACons(id,refs){
+  const c=consPorId(id);if(!c)return 0;
+  const L=listaCons(c);let n=0;
+  refs.forEach(r=>{if(byRef(r)&&!L.includes(r)){L.push(r);n++}});
+  return n;
+}
+function quitarDeCons(id,refs){
+  const c=consPorId(id);if(!c)return 0;
+  const L=listaCons(c);let n=0;
+  refs.forEach(r=>{const i=L.indexOf(r);if(i>=0){L.splice(i,1);n++}});
+  return n;
+}
+/* Lo que hay en la nube de antes (cuando el producto guardaba su tanda) se
+   pasa a la lista de la tanda una sola vez. */
+function migrarCons(){
+  REFS.forEach(x=>{
+    if(!x.cons)return;
+    const c=consPorId(x.cons);
+    if(c&&!listaCons(c).includes(x.r))listaCons(c).push(x.r);
+    x.cons='';
+  });
+}
 let prodAgrupa=[];            /* campos por los que se agrupa, en orden */
 let FPROD={};                 /* campo -> valores marcados */
 let FDESDE='',FHASTA='';      /* rango de la fecha de entrega */
@@ -2786,7 +2994,13 @@ function estadoProd(x){
 function valorProd(x,k){
   if(k==='__estado')return estadoProd(x);
   if(k==='__mes'){const q=String(x.ent||'').split('-');return q.length===3?q[0]+'-'+q[1]:''}
+  if(k==='cons'){const c=consDeRef(x.r);return c.length?c[0].id:''}
   return String(x[k]==null?'':x[k]);
+}
+/* Una prenda puede estar en varias tandas: al filtrar y al agrupar valen todas. */
+function valoresProd(x,k){
+  if(k==='cons'){const c=consDeRef(x.r);return c.length?c.map(z=>z.id):['']}
+  return [valorProd(x,k)];
 }
 function etiquetaValor(k,v){
   if(!v)return '(sin asignar)';
@@ -2805,7 +3019,7 @@ function cmpValor(k,a,b){
 function pasaFiltros(x){
   for(const k in FPROD){
     const sel=FPROD[k];
-    if(sel&&sel.length&&!sel.includes(valorProd(x,k)))return false;
+    if(sel&&sel.length&&!valoresProd(x,k).some(v=>sel.includes(v)))return false;
   }
   if(FDESDE&&!(x.ent&&x.ent>=FDESDE))return false;
   if(FHASTA&&!(x.ent&&x.ent<=FHASTA))return false;
@@ -2856,7 +3070,7 @@ function pintarFiltros(){
   VALF={};
   const cols=CAMPOS_PROD.map(c=>{
     const cuenta={};
-    base.forEach(x=>{const v=valorProd(x,c.k);cuenta[v]=(cuenta[v]||0)+1});
+    base.forEach(x=>valoresProd(x,c.k).forEach(v=>{cuenta[v]=(cuenta[v]||0)+1}));
     const vals=Object.keys(cuenta).sort((a,b)=>cmpValor(c.k,a,b));
     if(!vals.length||(vals.length===1&&!vals[0]))return '';
     VALF[c.k]=vals;
@@ -3014,7 +3228,7 @@ function grupoHtml(items,nivel){
       ? '<div class="mural">'+items.map(tarjetaProd).join('')+'</div>'
       : items.map(filaProd).join('');
   const k=prodAgrupa[nivel],g={};
-  items.forEach(it=>{const v=valorProd(it.x,k);(g[v]=g[v]||[]).push(it)});
+  items.forEach(it=>valoresProd(it.x,k).forEach(v=>{(g[v]=g[v]||[]).push(it)}));
   return Object.keys(g).sort((a,b)=>cmpValor(k,a,b)).map(v=>
     `<div class="gh${nivel?' n1':''}" style="padding-left:${14+nivel*20}px">${escR(etiquetaValor(k,v))}
        <span class="mini" style="margin:0;font-weight:600">· ${g[v].length}</span></div>`
@@ -3226,12 +3440,13 @@ function cargarColeccion(fs){
     let ref=refDeArchivo(f.name);
     if(ref){
       const x=byRef(ref);
-      if(x){ if(!String(x.col||'').trim())x.col=col; else if(x.col!==col)otraCol.push(ref); if(destino)x.cons=destino; }
+      if(x){ if(!String(x.col||'').trim())x.col=col; else if(x.col!==col)otraCol.push(ref); if(destino)agregarACons(destino,[x.r]); }
       act++;
     }else{
       const n=refDeArchivoNueva(f.name);
       if(n){
-        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',col,cons:destino||'',creado:hoyISO()});
+        REFS.push({r:n.r,n:n.n,cat:'',sub:'',cu:'',col,creado:hoyISO()});
+        if(destino)agregarACons(destino,[n.r]);
         FICHAS[n.r]=nuevaFicha(recetaDe('',''));
         nuevos.push(n.r);ref=n.r;
       }
@@ -3589,7 +3804,8 @@ async function cargarNube(){
   if(co&&co.length){COLECCIONES.length=0;co.sort(porOrden).forEach(x=>COLECCIONES.push(x.data.nombre))}
   if(bs&&bs.length){BASE.length=0;bs.sort(porOrden).forEach(x=>{const {orden,...b}=x.data;BASE.push(b)})}
   /* los consolidados: manda la nube */
-  if(cn){CONS.length=0;cn.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;CONS.push(c)})}
+  if(cn){CONS.length=0;cn.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;c.refs=c.refs||[];CONS.push(c)})}
+  migrarCons();
   /* las categorías de la nube mandan; las del archivo solo rellenan lo que falte */
   if(ct&&ct.length){
     Object.keys(CATEG).forEach(k=>delete CATEG[k]);
@@ -5194,7 +5410,7 @@ function lpLista(){
   const co=v('lp-f-cons'),cl=v('lp-f-col'),ca=v('lp-f-cat'),te=v('lp-f-temp');
   return activos().filter(x=>FICHAS[x.r].saved)
     .filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q))
-    .filter(x=>(!co||x.cons===co)&&(!cl||x.col===cl)&&(!ca||x.cat===ca)&&(!te||x.temporada===te));
+    .filter(x=>(!co||consDeRef(x.r).some(c=>c.id===co))&&(!cl||x.col===cl)&&(!ca||x.cat===ca)&&(!te||x.temporada===te));
 }
 function limpiarFiltroLp(){
   ['lp-q','lp-f-cons','lp-f-col','lp-f-cat','lp-f-temp'].forEach(id=>{const e=$(id);if(e)e.value=''});
@@ -5219,7 +5435,7 @@ function rowsLista(){
     e.innerHTML='<option value="">'+etq+'</option>'+vals.map(x=>`<option value="${escR(x)}" ${x===v?'selected':''}>${escR(etiqueta?etiqueta(x):x)}</option>`).join('');
     if(vals.indexOf(v)>=0)e.value=v;};
   const con=activos().filter(x=>FICHAS[x.r].saved);
-  pon('lp-f-cons',[...new Set(con.map(x=>x.cons).filter(Boolean))],'Todos los consolidados',nombreCons);
+  pon('lp-f-cons',CONS.filter(c=>refsDeCons(c.id).length).map(c=>c.id),'Todos los consolidados',nombreCons);
   pon('lp-f-col',[...new Set(con.map(x=>x.col).filter(Boolean))].sort(),'Todas las colecciones');
   pon('lp-f-cat',[...new Set(con.map(x=>x.cat).filter(Boolean))].sort(),'Todas las categorías');
   pon('lp-f-temp',[...new Set(con.map(x=>x.temporada).filter(Boolean))].sort(),'Todas las temporadas');
