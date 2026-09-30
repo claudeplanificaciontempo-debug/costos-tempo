@@ -531,6 +531,34 @@ select.fld{border-color:var(--line)}
 .tabs{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
 .tab{border:1px solid var(--line);background:var(--card);border-radius:20px;padding:5px 13px;font-size:11.5px;font-weight:600;color:var(--ink-2);cursor:pointer}
 .tab.on{background:var(--vino);border-color:var(--vino);color:var(--sobre)}
+/* Filtros y agrupaciones de Productos, al estilo del sistema grande */
+.menu-wrap{position:relative;display:inline-block}
+.menu{position:absolute;top:calc(100% + 5px);left:0;z-index:60;min-width:210px;background:var(--card);
+  border:1px solid var(--line);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.16);padding:5px;max-height:70vh;overflow:auto}
+.menu button{display:block;width:100%;text-align:left;border:0;background:none;cursor:pointer;
+  padding:7px 10px;border-radius:7px;font-size:12px;color:var(--ink);font-family:inherit}
+.menu button:hover{background:var(--suave)}
+.menu button.on{font-weight:800;color:var(--vino-deep);background:var(--vino-soft)}
+.menu .sep{height:1px;background:var(--line-soft);margin:4px 2px}
+.filtros{padding:10px 14px;border-bottom:1px solid var(--line-soft);background:var(--suave);
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(186px,1fr));gap:12px;align-items:start}
+.fgrupo{background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 9px;max-height:232px;overflow:auto}
+.fgrupo .ft{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--ink-3);margin-bottom:6px}
+.fgrupo .ft button{margin-left:auto;border:0;background:none;color:var(--vino);font-size:10px;font-weight:700;
+  cursor:pointer;font-family:inherit;letter-spacing:.3px}
+.fgrupo label{display:flex;align-items:center;gap:6px;font-size:11.5px;padding:2px 0;cursor:pointer;color:var(--ink)}
+.fgrupo label .c{margin-left:auto;color:var(--ink-3);font-size:10px}
+.fgrupo label.sinv{color:var(--ink-3);font-style:italic}
+.fechas{display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;font-size:11.5px;color:var(--ink-2)}
+.fechas input{font-size:11.5px;padding:3px 5px;border:1px solid var(--line);border-radius:6px;
+  background:var(--card);color:var(--ink);font-family:inherit}
+.chips{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px 0}
+.chipf{display:inline-flex;align-items:center;gap:5px;background:var(--vino-soft);color:var(--vino-deep);
+  border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700}
+.chipf button{border:0;background:none;color:inherit;cursor:pointer;font-size:12px;line-height:1;padding:0;font-family:inherit}
+.gh{padding:9px 14px;background:var(--line-soft);font-weight:800;font-size:12.5px}
+.gh.n1{background:var(--suave);font-size:11.5px;font-weight:700}
 .catbadge{font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-radius:20px;padding:2px 7px;background:var(--line-soft);color:var(--ink-2)}
 .catbadge.mp{background:var(--cat-mp);color:var(--cat-mp-tx)}
 .catbadge.ins{background:var(--cat-ins);color:var(--cat-ins-tx)}
@@ -753,14 +781,16 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="hint"><b>Aquí se editan los productos: referencia, nombre, categoría, tipo y foto.</b> Con <b>Carga masiva</b> se pegan varios de una vez desde Excel. Con <b>Fotos</b> se suben las imágenes: si el archivo se llama <b>4831 SHORT DESFLECADO.jpg</b> y esa referencia no existe, el producto se crea solo con ese nombre. Clic en la foto o en el nombre para abrir su ficha de costos; el lápiz sobre la foto la reemplaza.</div>
   <div class="card">
     <div class="card-h"><h2>Productos</h2>
-      <div class="mini" style="margin:0 0 0 14px">Agrupar por</div>
-      <div class="tabs" id="tabs-agrupa-prod" style="margin:0 14px 0 6px">
-        <button class="tab on" onclick="agruparProd('')">Ninguno</button>
-        <button class="tab" onclick="agruparProd('cat')">Categoría</button>
-        <button class="tab" onclick="agruparProd('sub')">Tipo</button>
-        <button class="tab" onclick="agruparProd('col')">Colección</button>
+      <div class="menu-wrap" style="margin-left:14px">
+        <button class="btn ghost sm" id="bt-filtros" onclick="togglePanelFiltros()" title="Filtrar por categoría, temporada, año, colección, marca, departamento, estado o fechas">▼ Filtros</button>
+      </div>
+      <div class="menu-wrap">
+        <button class="btn ghost sm" id="bt-agrupa" onclick="toggleMenuAgrupa()" title="Agrupar la lista por uno o varios campos">≡ Agrupar por</button>
+        <div id="menu-agrupa" class="menu hide"></div>
       </div>
       <div class="sub" id="prod-sub"></div></div>
+    <div id="chips-prod" class="chips hide"></div>
+    <div id="panel-filtros" class="filtros hide"></div>
     <div id="bulk-prod" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--vino-soft);border-radius:10px;margin:0 14px 10px">
       <b id="bulk-n" style="white-space:nowrap"></b>
       <select id="bulk-marca" class="fld" style="width:170px"><option value="">Marca…</option></select>
@@ -3065,7 +3095,7 @@ function prodLista(){
     if(prodF==='sindesc')return sinDescribir(x);
     if(prodF==='sincu')return !String(x.cu||'').trim();
     return true;
-  });
+  }).filter(({x})=>pasaFiltros(x));
 }
 /* Producto creado por la carga de una colección: tiene foto y referencia, pero
    todavía no tiene con qué costearse. */
@@ -3163,13 +3193,154 @@ function kpis(){
     `<button class="kpi ok" onclick="go('prod');filtrarProd('ok')"><div class="k">Con precio cerrado</div><div class="v">${ok}</div><div class="h">${pct}% del catálogo</div></button>`+
     `<button class="kpi pend" onclick="go('prod');filtrarProd('pend')"><div class="k">Pendientes</div><div class="v">${pen}</div><div class="h">${pen?'clic para terminarlos':'nada por llenar'}</div></button>`;
 }
-let prodAgrupa='';
+/* ---- Filtros y agrupaciones de Productos ----------------------------------
+   Los mismos campos que se llenan en la fila se pueden agrupar y filtrar, como
+   en el sistema grande: se marcan varios valores de un campo (vale cualquiera
+   de los marcados) y los campos se van sumando entre ellos. */
+const CAMPOS_PROD=[
+  {k:'cat',      t:'Categoría'},
+  {k:'sub',      t:'Tipo de producto'},
+  {k:'col',      t:'Colección'},
+  {k:'temporada',t:'Temporada'},
+  {k:'anio',     t:'Año'},
+  {k:'marca',    t:'Marca'},
+  {k:'dep',      t:'Departamento'},
+  {k:'__estado', t:'Estado de la ficha'},
+  {k:'__mes',    t:'Mes de entrega'}
+];
+let prodAgrupa=[];            /* campos por los que se agrupa, en orden */
+let FPROD={};                 /* campo -> valores marcados */
+let FDESDE='',FHASTA='';      /* rango de la fecha de entrega */
+let VALF={};                  /* valores que se pintaron, para no escapar comillas */
+const MESES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+
+function estadoProd(x){
+  const f=FICHAS[x.r]||{};
+  if(x.arch)return 'Archivado';
+  if(f.aprob==='pendiente')return 'Por aprobar';
+  if(f.saved&&!f.edit)return 'Costeada';
+  if(f.edit)return 'Re-costeo';
+  if(enAvance(f))return 'En avance';
+  return 'Borrador';
+}
+function valorProd(x,k){
+  if(k==='__estado')return estadoProd(x);
+  if(k==='__mes'){const q=String(x.ent||'').split('-');return q.length===3?q[0]+'-'+q[1]:''}
+  return String(x[k]==null?'':x[k]);
+}
+function etiquetaValor(k,v){
+  if(!v)return '(sin asignar)';
+  if(k==='__mes'){const q=v.split('-');return MESES_C[(+q[1])-1]+'-'+q[0]}
+  return v;
+}
+const tituloCampo=k=>(CAMPOS_PROD.find(c=>c.k===k)||{t:k}).t;
+/* lo vacío va al final; el mes y el año, del más nuevo al más viejo */
+function cmpValor(k,a,b){
+  if(!a!==!b)return a?-1:1;
+  if(k==='__mes'||k==='anio')return b.localeCompare(a);
+  return a.localeCompare(b,'es');
+}
+function pasaFiltros(x){
+  for(const k in FPROD){
+    const sel=FPROD[k];
+    if(sel&&sel.length&&!sel.includes(valorProd(x,k)))return false;
+  }
+  if(FDESDE&&!(x.ent&&x.ent>=FDESDE))return false;
+  if(FHASTA&&!(x.ent&&x.ent<=FHASTA))return false;
+  return true;
+}
+function hayFiltros(){return Object.keys(FPROD).some(k=>FPROD[k]&&FPROD[k].length)||!!FDESDE||!!FHASTA}
+
+function toggleMenuAgrupa(){
+  const m=$('menu-agrupa');
+  if(m.classList.contains('hide')){pintarMenuAgrupa();m.classList.remove('hide')}
+  else m.classList.add('hide');
+}
+function pintarMenuAgrupa(){
+  $('menu-agrupa').innerHTML=
+    CAMPOS_PROD.map(c=>{const n=prodAgrupa.indexOf(c.k);
+      return `<button class="${n>=0?'on':''}" onclick="agruparProd('${c.k}')">${n>=0?'✓ ':''}${c.t}${n>=0&&prodAgrupa.length>1?' <span class="mini" style="margin:0">· nivel '+(n+1)+'</span>':''}</button>`}).join('')
+    +'<div class="sep"></div>'
+    +`<button onclick="agruparProd('')">Sin agrupar</button>`;
+}
+/* agrupa hasta por tres campos: se van sumando en el orden en que se eligen */
 function agruparProd(campo){
-  prodAgrupa=campo;
-  document.querySelectorAll('#tabs-agrupa-prod .tab').forEach(b=>b.classList.remove('on'));
-  const btn=[...document.querySelectorAll('#tabs-agrupa-prod .tab')].find(b=>b.getAttribute('onclick')===`agruparProd('${campo}')`);
-  if(btn)btn.classList.add('on');
+  if(!campo)prodAgrupa=[];
+  else{
+    const n=prodAgrupa.indexOf(campo);
+    if(n>=0)prodAgrupa.splice(n,1);
+    else{prodAgrupa.push(campo);if(prodAgrupa.length>3)prodAgrupa.shift()}
+  }
+  const b=$('bt-agrupa');
+  if(b)b.textContent=prodAgrupa.length?'≡ '+prodAgrupa.map(tituloCampo).join(' › '):'≡ Agrupar por';
+  pintarMenuAgrupa();
   rowsProd();
+}
+/* el menú se cierra al tocar cualquier otro lado */
+document.addEventListener('click',e=>{
+  const m=$('menu-agrupa');
+  if(m&&!m.classList.contains('hide')&&!e.target.closest('.menu-wrap'))m.classList.add('hide');
+});
+function togglePanelFiltros(){
+  const pn=$('panel-filtros');
+  pn.classList.toggle('hide');
+  if(!pn.classList.contains('hide'))pintarFiltros();
+  const b=$('bt-filtros');if(b)b.textContent=(pn.classList.contains('hide')?'▼':'▲')+' Filtros';
+}
+/* los valores que se ofrecen son los que de verdad hay en el catálogo */
+function pintarFiltros(){
+  const pn=$('panel-filtros');if(!pn||pn.classList.contains('hide'))return;
+  const base=REFS.filter(x=>prodF==='arch'?x.arch:!x.arch);
+  VALF={};
+  const cols=CAMPOS_PROD.map(c=>{
+    const cuenta={};
+    base.forEach(x=>{const v=valorProd(x,c.k);cuenta[v]=(cuenta[v]||0)+1});
+    const vals=Object.keys(cuenta).sort((a,b)=>cmpValor(c.k,a,b));
+    if(!vals.length||(vals.length===1&&!vals[0]))return '';
+    VALF[c.k]=vals;
+    const sel=FPROD[c.k]||[];
+    return `<div class="fgrupo">
+      <div class="ft">${c.t}${sel.length?`<button onclick="limpiarCampo('${c.k}')">QUITAR</button>`
+        :`<button onclick="todosCampo('${c.k}')">TODAS</button>`}</div>
+      ${vals.map((v,n)=>`<label class="${v?'':'sinv'}"><input type="checkbox" ${sel.includes(v)?'checked':''}
+        onchange="togFiltro('${c.k}',${n},this.checked)"><span>${escR(etiquetaValor(c.k,v))}</span><span class="c">${cuenta[v]}</span></label>`).join('')}
+    </div>`;
+  }).join('');
+  pn.innerHTML=cols+
+    `<div class="fgrupo" style="max-height:none">
+      <div class="ft">Fecha de entrega${(FDESDE||FHASTA)?'<button onclick="limpiarFechas()">QUITAR</button>':''}</div>
+      <div class="fechas">
+        <span>Desde</span><input type="date" value="${FDESDE}" onchange="setFecha('d',this.value)">
+        <span>Hasta</span><input type="date" value="${FHASTA}" onchange="setFecha('h',this.value)">
+      </div>
+      <div class="mini" style="margin:8px 0 0">Solo salen las que ya tienen día de entrega.</div>
+      <button class="btn ghost sm" style="margin-top:8px" onclick="limpiarFiltros()">Limpiar todos los filtros</button>
+    </div>`;
+}
+function togFiltro(k,n,on){
+  const v=(VALF[k]||[])[n];if(v===undefined)return;
+  const sel=FPROD[k]=(FPROD[k]||[]).slice();
+  const i=sel.indexOf(v);
+  if(on&&i<0)sel.push(v); else if(!on&&i>=0)sel.splice(i,1);
+  if(!sel.length)delete FPROD[k];
+  rowsProd();
+}
+function todosCampo(k){FPROD[k]=(VALF[k]||[]).slice();rowsProd()}
+function limpiarCampo(k){delete FPROD[k];rowsProd()}
+function limpiarFechas(){FDESDE=FHASTA='';rowsProd()}
+function setFecha(cual,v){if(cual==='d')FDESDE=v;else FHASTA=v;rowsProd()}
+function limpiarFiltros(){FPROD={};FDESDE=FHASTA='';rowsProd()}
+/* la fila de globos deja ver de un vistazo qué se está mirando */
+function pintarChips(){
+  const c=$('chips-prod');if(!c)return;
+  let h=Object.keys(FPROD).filter(k=>FPROD[k]&&FPROD[k].length).map(k=>
+    `<span class="chipf">${tituloCampo(k)}: ${FPROD[k].map(v=>escR(etiquetaValor(k,v))).join(' o ')}
+      <button title="Quitar este filtro" onclick="limpiarCampo('${k}')">×</button></span>`).join('');
+  if(FDESDE||FHASTA)h+=`<span class="chipf">Entregada ${FDESDE?'desde '+fechaBonita(FDESDE):''}${FDESDE&&FHASTA?' ':''}${FHASTA?'hasta '+fechaBonita(FHASTA):''}
+      <button title="Quitar las fechas" onclick="limpiarFechas()">×</button></span>`;
+  if(h)h+=`<button class="btn ghost sm" style="padding:2px 9px" onclick="limpiarFiltros()">Limpiar todo</button>`;
+  c.innerHTML=h;
+  c.classList.toggle('hide',!h);
 }
 function filaProd({x,i}){
   const f=FICHAS[x.r],t=totRef(x.r);
@@ -3231,24 +3402,27 @@ function rowsProd(){
   const bda=$('bt-arch-del');if(bda)bda.classList.toggle('hide',prodF!=='arch');
   const lista=prodLista();
   SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
-  let html;
-  if(prodAgrupa){
-    const grupos={};lista.forEach(item=>{const k=item.x[prodAgrupa]||'(sin asignar)';(grupos[k]=grupos[k]||[]).push(item)});
-    html=Object.keys(grupos).sort().map(k=>
-      `<div style="padding:9px 14px;background:var(--line-soft);font-weight:800;font-size:12.5px">${k} <span class="mini" style="margin:0;font-weight:600">· ${grupos[k].length}</span></div>`
-      +grupos[k].map(filaProd).join('')
-    ).join('');
-  }else{
-    html=lista.map(filaProd).join('');
-  }
+  const html=grupoHtml(lista,0);
   $('pr-rows').innerHTML=html||`<div class="empty">${prodF==='todos'?'Sin productos. Usa Carga masiva.':'Ninguna referencia en este estado. <button class="btn ghost sm" onclick="filtrarProd(\'todos\')">Ver todas</button>'}</div>`;
   autosave();
   $('prod-sub').innerHTML=(prodF==='pend'
       ?`<b>Pendientes</b> · ${lista.length} de ${REFS.length} <button class="btn ghost sm" style="margin-left:8px" onclick="siguientePend()">Terminar el siguiente</button> <button class="btn ghost sm" onclick="filtrarProd('todos')">Ver todas</button>`
-      :(prodF==='todos'?REFS.length+' productos · '+(REFS.length-pendientes().length)+' costeados'
+      :(prodF==='todos'&&!hayFiltros()?REFS.length+' productos · '+(REFS.length-pendientes().length)+' costeados'
         :lista.length+' de '+REFS.length+' <button class="btn ghost sm" style="margin-left:8px" onclick="filtrarProd(\'todos\')">Ver todas</button>'));
   $('nav-prod').textContent=REFS.length;
   pintarBulkProd();
+  pintarChips();
+  pintarFiltros();
+}
+/* Cada nivel de agrupación entra un poco más; el último nivel pinta las filas. */
+function grupoHtml(items,nivel){
+  if(nivel>=prodAgrupa.length)return items.map(filaProd).join('');
+  const k=prodAgrupa[nivel],g={};
+  items.forEach(it=>{const v=valorProd(it.x,k);(g[v]=g[v]||[]).push(it)});
+  return Object.keys(g).sort((a,b)=>cmpValor(k,a,b)).map(v=>
+    `<div class="gh${nivel?' n1':''}" style="padding-left:${14+nivel*20}px">${escR(etiquetaValor(k,v))}
+       <span class="mini" style="margin:0;font-weight:600">· ${g[v].length}</span></div>`
+    +grupoHtml(g[v],nivel+1)).join('');
 }
 function marcaSel(i,sel){
   if(sel.value==='__nueva__'){
