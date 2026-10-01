@@ -2088,6 +2088,15 @@ function aniosLista(){
 function setMat(i,f,v){
   const x=CAT[i];if(!x)return;
   if(f==='d'||f==='fam')v=MAY(v);
+  if(f==='c'){
+    const nuevo=String(v||'').trim().toUpperCase();
+    if(!nuevo||nuevo===x.c){rowsCatMat();return}
+    if(CAT.some((m,k)=>k!==i&&m.c===nuevo)){
+      toast('Ese código ya existe','Ya hay un material con el código '+nuevo+'. Dos materiales con el mismo código impiden guardar.','warn');
+      rowsCatMat();return;
+    }
+    v=nuevo;
+  }
   x[f]=v.trim();x.f=hoy();
   const e=$('mf-'+i);if(e)e.textContent=x.f;
   draw();rowsProd();
@@ -3356,7 +3365,16 @@ function setP(i,f,v){
   if(f==='r'||f==='n')v=MAY(v);
   const old=REFS[i].r;
   if(f==='r'){
-    v=v.trim();if(!v)return;
+    v=v.trim();
+    if(!v){rowsProd();return}
+    if(v===old)return;
+    /* Dos productos con la misma referencia rompen el guardado entero: la nube
+       rechaza el lote completo porque la llave viene repetida, y deja de
+       guardarse TODO, no solo ese producto. Por eso no se deja. */
+    if(REFS.some((z,k)=>k!==i&&z.r===v)){
+      toast('Esa referencia ya existe','Ya hay un producto con la referencia '+v+'. Ponle otra; si es una variante de la misma prenda, usa '+refCopia(v)+' o el botón de duplicar.','warn');
+      rowsProd();head();return;
+    }
     FICHAS[v]=FICHAS[old];delete FICHAS[old];
     if(FOTO[old]){FOTO[v]=FOTO[old];delete FOTO[old]}
     if(cur===old)cur=v;
@@ -3784,6 +3802,33 @@ function aplicarRolUI(){
     if(el)el.classList.toggle('hide',oculta);
   });
 }
+/* Red de seguridad: si por lo que sea quedaran dos productos con la misma
+   referencia, se le pone sufijo al segundo en vez de dejar que la nube rechace
+   el lote entero y se quede todo sin guardar. */
+function repararDuplicados(){
+  const visto=new Set(),arreglados=[];
+  REFS.forEach((x,i)=>{
+    const r=String(x.r||'').trim();
+    if(!r){x.r='SIN-REF-'+(i+1);visto.add(x.r);arreglados.push('(sin referencia) → '+x.r);return}
+    if(!visto.has(r)){x.r=r;visto.add(r);return}
+    let n=2,nuevo=r+'-'+n;
+    while(visto.has(nuevo)||REFS.some((z,k)=>k!==i&&z.r===nuevo))nuevo=r+'-'+(++n);
+    x.r=nuevo;visto.add(nuevo);
+    if(!FICHAS[nuevo])FICHAS[nuevo]=nuevaFicha(recetaDe(x.cat,x.sub));
+    arreglados.push(r+' → '+nuevo);
+  });
+  if(arreglados.length)toast('Referencias repetidas arregladas',
+    arreglados.slice(0,5).join(' · ')+(arreglados.length>5?' y '+(arreglados.length-5)+' más':'')
+    +'. Dos productos con la misma referencia impiden guardar; revisa que la nueva sea la que quieres.','warn');
+  return arreglados;
+}
+/* Una llave repetida dentro del mismo envío hace que la nube rechace la tabla
+   completa. Se manda una sola vez (gana la última) y se deja dicho cuál era. */
+function sinRepetidos(rows,tabla,avisos){
+  const m=new Map();
+  rows.forEach(r=>{if(m.has(r.id)&&avisos)avisos.push(tabla+' · '+r.id);m.set(r.id,r)});
+  return [...m.values()];
+}
 function filas(){
   /* La foto NUNCA se manda vacía si hay algo en pantalla:
      - si ya está subida al almacén, va su dirección;
@@ -3816,6 +3861,14 @@ function filas(){
   };
 }
 function snapshot(rows){const o={};rows.forEach(r=>o[r.id]=JSON.stringify(r.data));return o}
+/* Lo que se sube pasa siempre por aquí: ninguna tabla puede llevar dos filas
+   con la misma llave. */
+function filasLimpias(){
+  const F=filas(),avisos=[];
+  Object.keys(F).forEach(t=>{F[t]=sinRepetidos(F[t],t,avisos)});
+  if(avisos.length)console.warn('Filas repetidas que no se mandaron:',avisos.join(' | '));
+  return F;
+}
 /* La misma fila, pero sin el número de orden y con los campos en orden alfabético:
    sirve para saber si lo único que cambió fue la posición en la lista. */
 function sinOrden(o){
@@ -3913,7 +3966,8 @@ async function cargarNube(){
   cur=(FICHAS[cur]?cur:(REFS[0]&&REFS[0].r));
   const n=fusionarSemilla();aplicarMargenes();
   // lo que ya estaba en la nube se considera al día; solo se envía lo que el archivo trae de nuevo
-  const Fs=filas();
+  repararDuplicados();
+  const Fs=filasLimpias();
   T.forEach((t,i)=>{const enNube=new Set(R[i].map(x=>x.id));const s=snapshot(Fs[t]);
     Object.keys(s).forEach(id=>{if(!enNube.has(id))delete s[id]});lastSent[t]=s});
   ONLINE=true;
@@ -3987,7 +4041,8 @@ const noConfiables=new Set();
 let sinBorrarUnaVez=false;   // en la recuperación de cambios pendientes no se borra nada en la nube
 async function syncPush(){
   await sesionViva();          /* el mismo permiso vencido dejaba de guardar las tablas */
-  const Fs=filas();let n=0;const omitidas=[],errores=[];
+  repararDuplicados();
+  const Fs=filasLimpias();let n=0;const omitidas=[],errores=[];
   const LOTE=300;
   for(const t in Fs){
     if(noConfiables.has(t))continue;   // no se pudo leer: no se escribe encima
@@ -4259,7 +4314,7 @@ async function cicloSync(){
 setInterval(()=>{
   if(CARGANDO||syncing||!ONLINE||!puedeEditar())return;
   if(SUCIO||pendiente){programar(200);return}
-  let dif=false;const Fs=filas();
+  let dif=false;const Fs=filasLimpias();
   for(const t in Fs){
     if(tablasFaltantes.has(t)||noConfiables.has(t))continue;
     const s=snapshot(Fs[t]),p=lastSent[t]||{},ks=Object.keys(s);
