@@ -2303,7 +2303,7 @@ function pintarAddRef(){
     const cls=e==='Costeada'?'ok':(e==='Pre costeada'||e==='Por aprobar'?'pend':'');
     return `<label class="arow">
       <input type="checkbox" ${AR_SEL.has(x.r)?'checked':''} onchange="toggleAddRef('${x.r}',this.checked)">
-      <span class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
+      <span class="im" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
       <span class="rf">${escR(x.r)}</span>
       <span class="nm">${escR(x.n||'sin describir')}</span>
       <span class="dt">${escR([x.col,x.temporada,x.cat].filter(Boolean).join(' · '))}</span>
@@ -2399,7 +2399,7 @@ function filasCons(id){
     const e=estadoProd(x),p=precioPropuesta(x.r,ci);
     const cls=e==='Costeada'?'ok':(e==='Pre costeada'||e==='Por aprobar'?'pend':'');
     return `<div class="crow">
-      <span class="im">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
+      <span class="im" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</span>
       <span class="rf" onclick="verFicha('${x.r}')" title="Abrir su ficha de costos">${escR(x.r)}</span>
       <span class="nm">${escR(x.n||'sin describir')}</span>
       <span class="dt">${escR([x.col,x.temporada].filter(Boolean).join(' · '))}</span>
@@ -5608,7 +5608,7 @@ function rowsLista(){
       }).join('');
       rows+=`<tr>
         <td><input type="checkbox" class="lpsel" ${SELLP.has(x.r)?'checked':''} onchange="toggleLp('${x.r}',this.checked)"></td>
-        <td><div class="lpth">${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin foto</div>'}</div></td>
+        <td><div class="lpth" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin foto</div>'}</div></td>
         <td class="l" style="text-align:left">
           <div class="lpnm">${x.n}</div>
           <span class="lpref">${x.r}</span>
