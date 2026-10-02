@@ -631,6 +631,12 @@ select.fld{border-color:var(--line)}
 .pir-g2{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:14px;align-items:start}
 .pir-g2.sola{grid-template-columns:minmax(0,1fr)}
 .pir-elige{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
+.pir-mini{position:relative;margin-top:8px;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  background:#fff;cursor:zoom-in}
+.pir-mini img{width:100%;display:block}
+.pir-mini .lupita{position:absolute;right:6px;bottom:6px;background:rgba(0,0,0,.62);color:#fff;
+  font-size:9.5px;font-weight:700;border-radius:20px;padding:2px 8px;letter-spacing:.3px}
+.pir-mini:hover{border-color:var(--vino)}
 @media(max-width:1100px){.pir-g2{grid-template-columns:1fr}}
 .pir-lista{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:10px}
 .pir-it{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);
@@ -774,6 +780,13 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
           <button class="btn ghost sm" style="width:100%;margin-top:7px" onclick="go('prod')">Editar producto</button>
         </div>
       </div>
+
+      <div class="card" id="card-pir" style="margin-top:12px">
+        <div class="card-h" style="cursor:pointer;gap:6px" onclick="abrirPiramide()">
+          <h2 style="font-size:12.5px">Pirámide de precios</h2>
+          <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▾ Ver</button></div>
+        <div id="pir-cuerpo" class="hide"></div>
+      </div>
     </div>
 
     <!-- BLOQUE 2 -->
@@ -813,14 +826,6 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         </table>
         <div class="mod-tot"><b>Mano de obra</b>
           <span class="s" id="modsam"></span><span class="v" id="modval">$0.00</span></div>
-      </div>
-
-      <div class="card" id="card-pir">
-        <div class="card-h" style="cursor:pointer" onclick="abrirPiramide()">
-          <h2>Pirámide de precios</h2>
-          <div class="sub" id="pir-sub"></div>
-          <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▾ Ver</button></div>
-        <div id="pir-cuerpo" class="hide"></div>
       </div>
 
     </div>
@@ -1310,6 +1315,18 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-fotos')">Cancelar</button></div>
   </div>
 </div>
+<div id="ovl-pir" class="ovl hide">
+  <div class="modal" style="width:min(980px,100%)">
+    <div class="modal-h"><h2 id="pirm-t">Pirámide de precios</h2>
+      <div class="sub" id="pirm-s" style="margin-left:auto"></div></div>
+    <div class="modal-b" id="pirm-b"></div>
+    <div class="modal-f">
+      <button class="btn ghost" id="pirm-tela" onclick="verVistaPir(pirVista==='tipo'?'tela':'tipo')">Ver la pirámide por tela</button>
+      <button class="btn org" style="margin-left:auto" onclick="cerrar('ovl-pir')">Cerrar</button>
+    </div>
+  </div>
+</div>
+
 <div id="ovl-addref" class="ovl hide">
   <div class="modal" style="width:min(1020px,100%)">
     <div class="modal-h"><h2>Agregar referencias a la tanda</h2>
@@ -2662,6 +2679,7 @@ function piramidesDeTipo(){
   return dentro.sort((a,b)=>((PIRFOTO[b].g===dep)?1:0)-((PIRFOTO[a].g===dep)?1:0));
 }
 function verVistaPir(v){pirVista=v;rowsPiramide()}
+function verPiramide(i){pirSel=+i;rowsPiramide()}
 function verPirFoto(i){pirFoto=+i;rowsPiramide()}
 /* Qué pirámides le tocan a las telas de esta ficha */
 function piramidesDeLaFicha(){
@@ -2682,66 +2700,81 @@ function abrirPiramide(){
   if(c)c.classList.toggle('hide',!pirAbierta);
   if(b)b.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
   if(pirAbierta){const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
-    const t=piramidesDeTipo();if(t.length)pirFoto=t[0];
-    rowsPiramide()}
+    const t=piramidesDeTipo();if(t.length)pirFoto=t[0];}
+  rowsPiramide();
 }
-function verPiramide(i){pirSel=+i;rowsPiramide()}
+/* La tarjeta va debajo de la foto, en la misma ficha: se elige qué se está
+   costeando y se ve su pirámide. Con un clic se abre en grande. */
 function rowsPiramide(){
-  const sub=$('pir-sub');
-  const dentro=piramidesDeLaFicha(),deTipo=piramidesDeTipo();
-  /* al cambiar de referencia se propone lo que le toca a esa ficha */
+  const c=$('pir-cuerpo');if(!c)return;
+  const deTipo=piramidesDeTipo();
   if(pirRef!==cur){pirRef=cur;
-    if(dentro.length)pirSel=dentro[0];
+    const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
     if(deTipo.length)pirFoto=deTipo[0];}
-  if(sub)sub.textContent=deTipo.length
-    ? 'guía · '+PIRFOTO[deTipo[0]].n+(deTipo.length>1?' y '+(deTipo.length-1)+' más para esta categoría':'')
-    : 'guía · precios por tipo de prenda y por tela';
-  const c=$('pir-cuerpo');if(!c||!pirAbierta)return;
+  if(!pirAbierta){if(!$('ovl-pir').classList.contains('hide'))pintarPirModal();return}
+  const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
+  const opc=i=>{const p=PIRFOTO[i];
+    return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
+  const resto={};
+  PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
+  const grupos=Object.keys(resto).sort().map(k=>
+    `<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
+  const cat=(byRef(cur)||{}).cat||'';
+  c.innerHTML=`<div style="padding:10px 11px">
+    <div class="mini" style="margin:0 0 4px">¿Qué estás costeando?</div>
+    <select class="fld" id="pir-sel" style="width:100%" onchange="verPirFoto(this.value)">
+      ${deTipo.length?`<optgroup label="De esta prenda · ${escR(cat)}">${deTipo.map(opc).join('')}</optgroup>`:''}
+      ${grupos}
+    </select>
+    <div class="pir-mini" onclick="abrirPirGrande()" title="Clic para verla en grande"
+      data-zoom="piramides/${sel.f}.jpg" data-zoom-t="${escR(sel.n)}">
+      <img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"
+        onerror="this.style.display='none';this.nextElementSibling.classList.remove('hide')">
+      <div class="hide" style="padding:18px;color:var(--ink-3);font-size:11px">No se pudo cargar la imagen.</div>
+      <span class="lupita">⤢ ver en grande</span>
+    </div>
+    <div class="mini" style="margin:6px 0 0;line-height:1.4">${escR(sel.d)}${
+      deTipo.includes(pirFoto)?' · <b style="color:var(--green-txt)">es la de esta prenda</b>':''}</div>
+    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="verVistaPir('tela');abrirPirGrande()">Ver la pirámide por tela</button>
+    <div class="mini" style="margin:7px 0 0;line-height:1.4">Solo para guiarte: no cambia el costo de esta ficha.</div>
+  </div>`;
+  if(!$('ovl-pir').classList.contains('hide'))pintarPirModal();
+}
+function abrirPirGrande(){
+  $('ovl-pir').classList.remove('hide');
+  pintarPirModal();
+}
+function pintarPirModal(){
+  const b=$('pirm-b');if(!b)return;
+  const deTipo=piramidesDeTipo();
+  const bt=$('pirm-tela');
+  if(bt)bt.textContent=pirVista==='tipo'?'Ver la pirámide por tela':'Ver la pirámide por tipo de prenda';
   const d2=v=>v==null?'—':'$'+(+v).toFixed(2);
-  const vistas=`<div class="pir-tabs" style="margin-bottom:12px">
-    <button class="tab ${pirVista==='tipo'?'on':''}" onclick="verVistaPir('tipo')">Por tipo de prenda</button>
-    <button class="tab ${pirVista==='tela'?'on':''}" onclick="verVistaPir('tela')">Por tela</button></div>`;
-
   if(pirVista==='tipo'){
-    const x=byRef(cur)||{};
     const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
-    /* el desplegable: primero las de la categoría de esta prenda, después el resto
-       agrupado por categoría, para encontrarla rápido */
-    const opc=(i)=>{const p=PIRFOTO[i];
+    const opc=i=>{const p=PIRFOTO[i];
       return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
     const resto={};
     PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
     const grupos=Object.keys(resto).sort().map(k=>
       `<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
-    c.innerHTML=`<div class="pir-wrap">${vistas}
-      <div class="pir-elige">
+    $('pirm-t').textContent=sel.n;
+    $('pirm-s').textContent=sel.d+(sel.g?' · '+sel.g:'');
+    b.innerHTML=`<div class="pir-elige">
         <span class="mini" style="margin:0">¿Qué estás costeando?</span>
-        <select class="fld" id="pir-sel" style="min-width:300px;max-width:420px" onchange="verPirFoto(this.value)">
+        <select class="fld" style="min-width:300px;max-width:430px" onchange="verPirFoto(this.value)">
           ${deTipo.length?`<optgroup label="De esta prenda · ${escR((byRef(cur)||{}).cat||'')}">${deTipo.map(opc).join('')}</optgroup>`:''}
           ${grupos}
-        </select>
-        <span class="mini" style="margin:0">${PIRFOTO.length} pirámides del cliente</span>
-      </div>
-      <div class="pir-g2 sola">
-        <div class="pir-foto">
-          <img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"
-            onerror="this.style.display='none';this.nextElementSibling.classList.remove('hide')">
-          <div class="hide" style="padding:28px;color:var(--ink-3);font-size:12px">
-            No se pudo cargar la imagen de la pirámide. Abre la app desde su enlace para verla.</div>
-          <div class="pir-pie"><b>${escR(sel.n)}</b> · ${escR(sel.d)}${sel.g?' · '+escR(sel.g):''}
-            ${deTipo.includes(pirFoto)?' · <span style="color:var(--green-txt)">es la de esta categoría</span>':''}</div>
-        </div>
-      </div>
-      <div class="pir-nota"><b>Es solo una guía para mirar mientras costeas.</b> Son las pirámides que manda el
-        cliente, por tipo de prenda. No cambian el costo de esta ficha ni ningún precio de la app.</div>
-    </div>`;
+        </select></div>
+      <div class="pir-foto"><img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"></div>`;
     return;
   }
-
   const p=PIRAMIDE[pirSel]||PIRAMIDE[0];
+  const dentro=piramidesDeLaFicha();
   const sw=n=>PIR_COLOR[n]?`<i class="pir-sw" style="background:${PIR_COLOR[n]}"></i>`:'';
-  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}"
-      onclick="verPiramide(${i})" title="${dentro.includes(i)?'Es una de las telas de esta ficha':'Otra tela del cuadro'}">${
+  $('pirm-t').textContent='Pirámide por tela';
+  $('pirm-s').textContent=p.t;
+  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}" onclick="verPiramide(${i})">${
       dentro.includes(i)?'● ':''}${escR(z.t)}</button>`).join('');
   const arma=p.arma.map(([n,v])=>`<div class="pir-r"><span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('')
     +`<div class="pir-r base"><span class="et">Base por kilo</span><span class="vl">${d2(p.base)}</span></div>`;
@@ -2754,8 +2787,7 @@ function rowsPiramide(){
     </div>`).join('')
     +(p.prom?`<div class="pir-r base" style="border-radius:8px">
         <span class="et">Promedio del cuadro</span><span class="vl">${d2(p.prom)}</span></div>`:'');
-  c.innerHTML=`<div class="pir-wrap">${vistas}
-    <div class="pir-tabs">${tabs}</div>
+  b.innerHTML=`<div class="pir-tabs">${tabs}</div>
     <div class="pir-g">
       <div>
         <div class="pir-c" style="margin-bottom:10px"><div class="ct">Cómo se arma</div>${arma}</div>
@@ -2763,10 +2795,8 @@ function rowsPiramide(){
       </div>
       <div>${sal}</div>
     </div>
-    <div class="pir-nota"><b>Es solo una guía para mirar mientras costeas.</b> No cambia el precio de ningún material
-      ni entra en el costo de esta ficha: el costo sigue saliendo del precio que tiene la tela en Materiales.
-      Los valores son por kilo.</div>
-  </div>`;
+    <div class="pir-nota">Es solo una guía: no cambia el precio de ningún material ni el costo de esta ficha.
+      Los valores son por kilo.</div>`;
 }
 
 /* ====== PRE COSTEO ======
