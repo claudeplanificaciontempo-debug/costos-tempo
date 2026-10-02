@@ -1322,7 +1322,6 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <div class="sub" id="pirm-s" style="margin-left:auto"></div></div>
     <div class="modal-b" id="pirm-b"></div>
     <div class="modal-f">
-      <button class="btn ghost" id="pirm-tela" onclick="verVistaPir(pirVista==='tipo'?'tela':'tipo')">Ver la pirámide por tela</button>
       <button class="btn org" style="margin-left:auto" onclick="cerrar('ovl-pir')">Cerrar</button>
     </div>
   </div>
@@ -2541,67 +2540,6 @@ function kpisCons(){
     kk('ok','Suma de las propuestas',fmt(tot.prop),'precio del cliente base');
 }
 
-/* ====== PIRÁMIDE DE PRECIOS DE TELAS ======
-   La tabla con la que Martha arma el precio por kilo de cada tela: hilo, merma,
-   tejido, tinturado según el color y seguimiento de producción. Está aquí SOLO
-   PARA CONSULTAR mientras se costea: no entra en ningún cálculo, no se guarda y
-   no cambia el precio de ningún material. Viene del Excel HOLL 2026. */
-const PIRAMIDE=[
- {t:'PIQUE 30/1 · 52/48', re:'PIQUE', no:'LYCRA', base:3.9984, prom:7.6331,
-  arma:[['Hilo',2.98],['Merma 8%',3.2184],['Tejido',0.6],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'PIQUE',filas:[['C. blancos',5.6784,6.8141],['C. claros',6.0184,7.2221],
-    ['C. medios',6.3884,7.6661],['C. oscuros',7.3584,8.8301]]}]},
-
- {t:'PIQUE LYCRA 30/1 · 52/48', re:'PIQUE.*LYCRA|LYCRA.*PIQUE', base:4.3784, prom:8.0891,
-  arma:[['Hilo',2.98],['Merma 8%',3.2184],['Tejido',0.6],['Lycra 30 spandex',0.38],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'PIQUE LYCRA',filas:[['C. blancos',6.0584,7.2701],['C. claros',6.3984,7.6781],
-    ['C. medios',6.7684,8.1221],['C. oscuros',7.7384,9.2861]]}]},
-
- {t:'JERSEY 24/1 · 52/48', re:'JERSEY.*24|24.*JERSEY', no:'LYCRA', base:4.46, prom:8.187,
-  arma:[['Hilo',3.5],['Merma 10%',3.78],['Tejido',0.5],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'JERSEY',filas:[['C. blancos',6.14,7.368],['C. claros',6.48,7.776],
-    ['C. medios',6.85,8.22],['C. oscuros',7.82,9.384]]}]},
-
- {t:'JERSEY 20/1 · 100% algodón', re:'JERSEY.*(20|ALGOD)', no:'LYCRA', base:5.74, prom:8.4735,
-  arma:[['Hilo',4.6],['Merma 10%',5.06],['Tejido',0.5],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'JERSEY ALG',filas:[['C. blancos',7.42,8.904],['C. claros',7.76,null],
-    ['C. medios',8.13,null],['C. oscuros',9.1,null]]}]},
-
- {t:'JERSEY LYCRA 30/1 · 52/48', re:'JERSEY.*LYCRA|LYCRA.*JERSEY', base:4.978, prom:8.8086,
-  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.5],['Lycra 20 spandex',0.42],
-    ['Termofijación',0.6],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'JERSEY LYCRA',filas:[['C. blancos',6.658,7.9896],['C. claros',6.998,8.3976],
-    ['C. medios',7.368,8.8416],['C. oscuros',8.338,10.0056]]}]},
-
- {t:'FLEECE 24/1 · 52/48', re:'FLEECE|TERRY|PERCHAD', base:4.008, prom:8.7246,
-  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
-  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',6.028,null],
-    ['C. medios',6.398,null],['C. oscuros',7.368,null]]},
-   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,7.9056],['C. claros',6.928,8.3136],
-    ['C. medios',7.298,8.7576],['C. oscuros',8.268,9.9216]]}]},
-
- {t:'FLEECE 24/1 · tinturado normal', base:4.008, prom:7.0236,
-  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',0.7],['Colores medios',0.7],['Colores oscuros',0.7]],
-  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',4.708,null],
-    ['C. medios',4.708,null],['C. oscuros',4.708,null]]},
-   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,7.9056],['C. claros',5.608,6.7296],
-    ['C. medios',5.608,6.7296],['C. oscuros',5.608,6.7296]]}]},
-
- {t:'FLEECE 24/1 · tinturado pesado', base:4.008,
-  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
-  tint:[['Blanco',1.68],['Colores claros',1.1],['Colores medios',1.1],['Colores oscuros',1.1]],
-  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',5.108,null],
-    ['C. medios',5.108,null],['C. oscuros',5.108,null]]},
-   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,null],['C. claros',6.008,null],
-    ['C. medios',6.008,null],['C. oscuros',6.008,null]]}]}
-];
 /* Las 60 pirámides de precio por tipo de prenda, tal como las mandó el cliente.
    Cada una es una imagen con su escalera (Básico1, Básico2, Básico Moda…).
    Las imágenes viven al lado de la app, en la carpeta piramides/. */
@@ -2667,9 +2605,7 @@ const PIRFOTO=[
  {f:'59',n:'GIRLS LS · básica',d:'Camiseta manga larga básica',c:['CAMISETAS'],g:'Mujer'},
  {f:'60',n:'GIRLS DRESSES',d:'Vestidos en tela plana y tejido',c:['VESTIDOS'],g:'Mujer'}
 ];
-const PIR_COLOR={'C. blancos':'#ffffff','C. claros':'#e8dfd2','C. medios':'#9a7f63','C. oscuros':'#2f2a28',
-  'Blanco':'#ffffff','Colores claros':'#e8dfd2','Colores medios':'#9a7f63','Colores oscuros':'#2f2a28'};
-let pirSel=0,pirAbierta=true,pirRef='',pirVista='tipo',pirFoto=0,pirQ='';
+let pirAbierta=true,pirRef='',pirFoto=0,pirQ='';
 /* Las pirámides que le tocan a esta prenda, por su categoría y departamento */
 function piramidesDeTipo(){
   const x=byRef(cur);if(!x)return [];
@@ -2686,22 +2622,7 @@ function piramidesDeTipo(){
   PIRFOTO.forEach((p,i)=>{if(p.c.some(z=>z.toUpperCase()===cat))dentro.push(i)});
   return dentro.sort((a,b)=>punto(b)-punto(a));
 }
-function verVistaPir(v){pirVista=v;rowsPiramide()}
-function verPiramide(i){pirSel=+i;rowsPiramide()}
 function verPirFoto(i){pirFoto=+i;rowsPiramide()}
-/* Qué pirámides le tocan a las telas de esta ficha */
-function piramidesDeLaFicha(){
-  const f=F();if(!f)return [];
-  const telas=(f.lines||[]).map(l=>byCode(l.c)).filter(m=>m&&m.k==='mp')
-    .map(m=>String(m.d||'').toUpperCase()+' '+String(m.c||'').toUpperCase());
-  const dentro=[];
-  PIRAMIDE.forEach((p,i)=>{
-    if(!p.re)return;
-    const ok=telas.some(d=>new RegExp(p.re).test(d)&&!(p.no&&new RegExp(p.no).test(d)));
-    if(ok)dentro.push(i);
-  });
-  return dentro;
-}
 /* El desplegable de la pirámide, con buscador: escribe "polo", "vestido",
    "bordado"… y deja solo las que tengan esa palabra. */
 function sinTildes(t){return String(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
@@ -2741,8 +2662,7 @@ function abrirPiramide(){
   const c=$('pir-cuerpo'),b=$('pir-bt');
   if(c)c.classList.toggle('hide',!pirAbierta);
   if(b)b.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
-  if(pirAbierta){const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
-    const t=piramidesDeTipo();if(t.length)pirFoto=t[0];}
+  if(pirAbierta){const t=piramidesDeTipo();if(t.length)pirFoto=t[0];}
   rowsPiramide();
 }
 /* La tarjeta va debajo de la foto, en la misma ficha: se elige qué se está
@@ -2750,9 +2670,7 @@ function abrirPiramide(){
 function rowsPiramide(){
   const c=$('pir-cuerpo');if(!c)return;
   const deTipo=piramidesDeTipo();
-  if(pirRef!==cur){pirRef=cur;
-    const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
-    if(deTipo.length)pirFoto=deTipo[0];}
+  if(pirRef!==cur){pirRef=cur;if(deTipo.length)pirFoto=deTipo[0];}
   const cu=$('pir-cuerpo'),bt=$('pir-bt');
   if(cu)cu.classList.toggle('hide',!pirAbierta);
   if(bt)bt.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
@@ -2776,7 +2694,6 @@ function rowsPiramide(){
       deTipo.includes(pirFoto)?' · <b style="color:var(--green-txt)">es la de esta prenda</b>':''}</div>
     ${deTipo.length?'':`<div class="mini" style="margin:5px 0 0;line-height:1.4;color:var(--vino-2)">
       No tengo pirámide guardada para la categoría ${escR(cat||'de esta prenda')}: elige arriba la que se parezca.</div>`}
-    <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="verVistaPir('tela');abrirPirGrande()">Ver la pirámide por tela</button>
     <div class="mini" style="margin:7px 0 0;line-height:1.4">Solo para guiarte: no cambia el costo de esta ficha.</div>
   </div>`;
   if(!$('ovl-pir').classList.contains('hide'))pintarPirModal();
@@ -2787,51 +2704,17 @@ function abrirPirGrande(){
 }
 function pintarPirModal(){
   const b=$('pirm-b');if(!b)return;
-  const deTipo=piramidesDeTipo();
-  const bt=$('pirm-tela');
-  if(bt)bt.textContent=pirVista==='tipo'?'Ver la pirámide por tela':'Ver la pirámide por tipo de prenda';
-  const d2=v=>v==null?'—':'$'+(+v).toFixed(2);
-  if(pirVista==='tipo'){
-    const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
-    $('pirm-t').textContent=sel.n;
-    $('pirm-s').textContent=sel.d+(sel.g?' · '+sel.g:'');
-    b.innerHTML=`<div class="pir-elige">
-        <span class="mini" style="margin:0">¿Qué estás costeando?</span>
-        <input class="fld" id="pirm-q" type="text" style="width:190px" value="${escR(pirQ)}"
-          placeholder="Buscar: polo, vestido…" oninput="buscarPir(this.value)">
-        <select class="fld" id="pirm-sel" style="min-width:290px;max-width:430px" onchange="verPirFoto(this.value)">${opcionesPir()}</select>
-        <span class="mini" id="pirm-n" style="margin:0">${contarPir()}</span></div>
-      <div class="pir-foto"><img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"></div>`;
-    return;
-  }
-  const p=PIRAMIDE[pirSel]||PIRAMIDE[0];
-  const dentro=piramidesDeLaFicha();
-  const sw=n=>PIR_COLOR[n]?`<i class="pir-sw" style="background:${PIR_COLOR[n]}"></i>`:'';
-  $('pirm-t').textContent='Pirámide por tela';
-  $('pirm-s').textContent=p.t;
-  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}" onclick="verPiramide(${i})">${
-      dentro.includes(i)?'● ':''}${escR(z.t)}</button>`).join('');
-  const arma=p.arma.map(([n,v])=>`<div class="pir-r"><span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('')
-    +`<div class="pir-r base"><span class="et">Base por kilo</span><span class="vl">${d2(p.base)}</span></div>`;
-  const tint=p.tint.map(([n,v])=>`<div class="pir-r">${sw(n)}<span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('');
-  const sal=p.salidas.map(sx=>`<div class="pir-c" style="margin-bottom:10px">
-      <div class="ct">${escR(sx.n)} · precio por kilo</div>
-      <div class="pir-r cab"><span class="gr">Color</span><span class="vl">$/kg</span><span class="x2">+20%</span></div>
-      ${sx.filas.map(([n,v,v2])=>`<div class="pir-r">${sw(n)}<span class="et">${escR(n)}</span>
-        <span class="vl">${d2(v)}</span><span class="x2">${d2(v2)}</span></div>`).join('')}
-    </div>`).join('')
-    +(p.prom?`<div class="pir-r base" style="border-radius:8px">
-        <span class="et">Promedio del cuadro</span><span class="vl">${d2(p.prom)}</span></div>`:'');
-  b.innerHTML=`<div class="pir-tabs">${tabs}</div>
-    <div class="pir-g">
-      <div>
-        <div class="pir-c" style="margin-bottom:10px"><div class="ct">Cómo se arma</div>${arma}</div>
-        <div class="pir-c"><div class="ct">Tinturado según el color</div>${tint}</div>
-      </div>
-      <div>${sal}</div>
-    </div>
-    <div class="pir-nota">Es solo una guía: no cambia el precio de ningún material ni el costo de esta ficha.
-      Los valores son por kilo.</div>`;
+  const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
+  $('pirm-t').textContent=sel.n;
+  $('pirm-s').textContent=sel.d+(sel.g?' · '+sel.g:'');
+  b.innerHTML=`<div class="pir-elige">
+      <span class="mini" style="margin:0">¿Qué estás costeando?</span>
+      <input class="fld" id="pirm-q" type="text" style="width:190px" value="${escR(pirQ)}"
+        placeholder="Buscar: polo, vestido…" oninput="buscarPir(this.value)">
+      <select class="fld" id="pirm-sel" style="min-width:290px;max-width:430px" onchange="verPirFoto(this.value)">${opcionesPir()}</select>
+      <span class="mini" id="pirm-n" style="margin:0">${contarPir()}</span></div>
+    <div class="pir-foto"><img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"></div>
+    <div class="pir-nota">Es solo una guía: no cambia el precio de ningún material ni el costo de esta ficha.</div>`;
 }
 
 /* ====== PRE COSTEO ======
