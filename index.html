@@ -628,6 +628,20 @@ select.fld{border-color:var(--line)}
 .pir-r.cab .vl,.pir-r.cab .x2{font-weight:800;color:var(--ink-3)}
 .pir-sw{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid var(--line);flex:none}
 .pir-nota{font-size:11px;color:var(--ink-3);margin-top:10px;line-height:1.45}
+.pir-g2{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:1100px){.pir-g2{grid-template-columns:1fr}}
+.pir-lista{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:10px}
+.pir-it{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);
+  background:none;cursor:pointer;padding:6px 10px;font-size:11.5px;color:var(--ink);font-family:inherit}
+.pir-it:last-child{border-bottom:0}
+.pir-it:hover{background:var(--suave)}
+.pir-it.on{background:var(--vino-soft);color:var(--vino-deep);font-weight:800}
+.pir-it b{color:var(--vino)}
+.pir-it span{display:block;font-size:9.5px;color:var(--ink-3);font-weight:600;letter-spacing:.3px;text-transform:uppercase}
+.pir-foto{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff;text-align:center}
+.pir-foto img{max-width:100%;display:block;margin:0 auto}
+.pir-pie{padding:8px 10px;font-size:11.5px;color:var(--ink-2);border-top:1px solid var(--line-soft);
+  background:var(--suave);text-align:left}
 .arow{display:grid;grid-template-columns:24px 40px 62px minmax(150px,1fr) minmax(140px,220px) 104px 72px;
   gap:9px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line-soft);cursor:pointer;font-size:12px}
 .arow:hover{background:var(--suave)}
@@ -801,7 +815,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 
       <div class="card" id="card-pir">
         <div class="card-h" style="cursor:pointer" onclick="abrirPiramide()">
-          <h2>Pirámide de precios de telas</h2>
+          <h2>Pirámide de precios</h2>
           <div class="sub" id="pir-sub"></div>
           <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▾ Ver</button></div>
         <div id="pir-cuerpo" class="hide"></div>
@@ -2568,9 +2582,85 @@ const PIRAMIDE=[
    {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,null],['C. claros',6.008,null],
     ['C. medios',6.008,null],['C. oscuros',6.008,null]]}]}
 ];
+/* Las 60 pirámides de precio por tipo de prenda, tal como las mandó el cliente.
+   Cada una es una imagen con su escalera (Básico1, Básico2, Básico Moda…).
+   Las imágenes viven al lado de la app, en la carpeta piramides/. */
+const PIRFOTO=[
+ {f:'01',n:'GIRLS KNIT PANTS',d:'Pantalón básico en fleece',c:['JOGGER'],g:'Mujer'},
+ {f:'02',n:'GIRLS KNIT PANTS OTHER',d:'Pantalón moda en fleece',c:['JOGGER'],g:'Mujer'},
+ {f:'03',n:'GIRLS SS HENLEY',d:'Blusa MC con bincha y botones',c:['HENLEY'],g:'Mujer'},
+ {f:'04',n:'GRAPHIC LEVEL 1',d:'Camiseta con estampados de 1 a 2 colores',c:['CAMISETAS'],g:'Mujer'},
+ {f:'05',n:'GRAPHIC LEVEL 2',d:'Camiseta con técnicas de estampado',c:['CAMISETAS'],g:'Mujer'},
+ {f:'06',n:'GUYS FLEECE PANTS',d:'Pantalón deportivo en fleece',c:['JOGGER'],g:'Hombre'},
+ {f:'07',n:'GUYS FASHION GRAPHICS',d:'Camiseta con bordados y estampados',c:['CAMISETAS'],g:'Hombre'},
+ {f:'08',n:'GUYS TANKS',d:'BVD básico, diferentes fits',c:['BVD','FITS'],g:'Hombre'},
+ {f:'09',n:'GUYS FASHION GRAPHICS · 2',d:'Camiseta con bordados y estampados',c:['CAMISETAS'],g:'Hombre'},
+ {f:'10',n:'GUYS LS OTHER',d:'Buzo manga larga con detalles',c:['CAMISETAS','FLEECE BASICO'],g:'Hombre'},
+ {f:'11',n:'GIRLS FASHION GRAPHICS',d:'Camiseta moda con gráficos',c:['CAMISETAS'],g:'Mujer'},
+ {f:'12',n:'GIRLS FASHION GRAPHICS · 2',d:'Camiseta moda con gráficos',c:['CAMISETAS'],g:'Mujer'},
+ {f:'13',n:'GUYS POPOVER HOODIES',d:'Hoodie en fleece con capucha',c:['HODDIE'],g:'Hombre'},
+ {f:'14',n:'GUYS POPOVER CREW NECK',d:'Fleece con cuello redondo o en V',c:['FLEECE BASICO'],g:'Hombre'},
+ {f:'15',n:'GIRLS FLEECE CREW',d:'Buzo en fleece cuello redondo o en V',c:['FLEECE BASICO'],g:'Mujer'},
+ {f:'16',n:'GUYS NOVELTY HOODIES',d:'Fleece moda con distintivos',c:['HODDIE'],g:'Hombre'},
+ {f:'17',n:'GIRLS FLEECE POP OVER',d:'Hoodie en fleece con capucha',c:['HODDIE'],g:'Mujer'},
+ {f:'18',n:'GUYS FULL ZIP HOODIES',d:'Fleece con cierre completo',c:['CHOMPA'],g:'Hombre'},
+ {f:'19',n:'GIRLS FLEECE ZIP FRONT',d:'Fleece con capucha y cierre completo',c:['CHOMPA'],g:'Mujer'},
+ {f:'20',n:'GUYS FLEECE SHORTS',d:'Short deportivo en fleece',c:['SHORT FLEECE'],g:'Hombre'},
+ {f:'21',n:'GIRLS FLEECE FASHION',d:'Fleece moda con distintivos',c:['FLEECE BASICO','FLEECE PESADO'],g:'Mujer'},
+ {f:'22',n:'GIRLS KNIT SHORTY',d:'Shorts en tela de punto',c:['SHORT FLEECE'],g:'Mujer'},
+ {f:'23',n:'GIRLS KNIT NOVELTY SHORTS',d:'Shorts de punto con detalles',c:['SHORT FLEECE'],g:'Mujer'},
+ {f:'24',n:'GUYS FASHION GRAPHICS · 3',d:'Camiseta con bordados y estampados',c:['CAMISETAS'],g:'Hombre'},
+ {f:'25',n:'AERO G ACTIVE SS TEES',d:'Camiseta deportiva manga corta',c:['CAMISETAS'],g:'Mujer'},
+ {f:'26',n:'GIRLS LS HENLEY',d:'Blusa ML con bincha delantera',c:['HENLEY'],g:'Mujer'},
+ {f:'27',n:'GIRLS FASHION SS',d:'Camiseta moda manga corta',c:['CAMISETAS'],g:'Mujer'},
+ {f:'28',n:'GUYS TRACK JACKETS',d:'Chompa moda',c:['BOMBER','CHOMPA'],g:'Hombre'},
+ {f:'29',n:'AERO G ACTIVE ZIP FRONT',d:'Chompa deportiva con cierre',c:['CHOMPA'],g:'Mujer'},
+ {f:'30',n:'CAMISAS MC',d:'Camisa manga corta',c:['CAMISAS'],g:''},
+ {f:'31',n:'SOLID POLO',d:'Polo básica sólida o con bordado pequeño',c:['POLOS'],g:''},
+ {f:'32',n:'CAMISAS ML',d:'Camisa manga larga',c:['CAMISAS'],g:''},
+ {f:'33',n:'CAMISAS MC · 2',d:'Camisa manga corta',c:['CAMISAS'],g:''},
+ {f:'34',n:'CAMISAS ML · 2',d:'Camisa manga larga',c:['CAMISAS'],g:''},
+ {f:'35',n:'CAMISAS MC · 3',d:'Camisa manga corta',c:['CAMISAS'],g:''},
+ {f:'36',n:'BC SWEATERS',d:'Suéter tejido básico',c:['TEJIDOS'],g:''},
+ {f:'37',n:'GUYS POLO OTHER',d:'Polos con diferentes fits y telas',c:['POLOS'],g:'Hombre'},
+ {f:'38',n:'GUYS SS SOLID POLO',d:'Polo manga corta sólida',c:['POLOS'],g:'Hombre'},
+ {f:'39',n:'GUYS SS NOVELTY POLO',d:'Polo MC con detalles en cuellos',c:['POLOS'],g:'Hombre'},
+ {f:'40',n:'AERO G ACTIVE PANTS',d:'Pantalón deportivo, cualquier fit',c:['JOGGER'],g:'Mujer'},
+ {f:'41',n:'GIRLS BASIC WVN PANTS',d:'Pantalón básico en tela plana',c:['PANTALONES PLANOS'],g:'Mujer'},
+ {f:'42',n:'BC WOVEN PANTS',d:'Pantalón en tela plana',c:['PANTALONES PLANOS'],g:'Hombre'},
+ {f:'43',n:'GUYS FASHION PANTS',d:'Pantalón moda',c:['PANTALONES PLANOS'],g:'Hombre'},
+ {f:'44',n:'BC SHORTS',d:'Short de gabardina básico',c:['SHORT PLANOS'],g:'Hombre'},
+ {f:'45',n:'GUYS CARGO SHORTS',d:'Short de gabardina con bolsillos cargo',c:['SHORT PLANOS'],g:'Hombre'},
+ {f:'46',n:'GUYS OTHER SHORT',d:'Shorts moda, diferentes telas y cortes',c:['SHORT PLANOS'],g:'Hombre'},
+ {f:'47',n:'GUYS SWIM SHORTS',d:'Short de baño',c:['SHORT PLANOS'],g:'Hombre'},
+ {f:'48',n:'GIRLS OTHER SHORTS',d:'Shorts en tela plana con detalles',c:['SHORT PLANOS'],g:'Mujer'},
+ {f:'49',n:'GIRLS KNIT SKIRTS',d:'Faldas en tela de punto',c:['FALDAS'],g:'Mujer'},
+ {f:'50',n:'GIRLS WOVEN SKIRTS',d:'Faldas en tela plana, falda short',c:['FALDAS'],g:'Mujer'},
+ {f:'51',n:'AERO G ACTIVE SHORTS',d:'Shorts deportivos',c:['SHORT FLEECE','SHORT PLANOS'],g:'Mujer'},
+ {f:'52',n:'FASHION BARE SOLID',d:'Top básico de un solo color',c:['FITS'],g:'Mujer'},
+ {f:'53',n:'GIRLS WVNS FASHION',d:'Top moda en tela plana',c:['FITS','CAMISAS'],g:'Mujer'},
+ {f:'54',n:'GIRLS WVNS BARE',d:'Top básico en tela plana',c:['FITS'],g:'Mujer'},
+ {f:'55',n:'GIRLS WVNS FASHION · 2',d:'Top moda en tela plana',c:['FITS','CAMISAS'],g:'Mujer'},
+ {f:'56',n:'FASHION BARE GRAPHIC',d:'Top con estampado o bordado',c:['FITS'],g:'Mujer'},
+ {f:'57',n:'CORE SOLID BASIC BARE',d:'Blusa de tiras en jersey lycra',c:['FITS'],g:'Mujer'},
+ {f:'58',n:'GIRLS SOLID SS',d:'Camiseta básica con bordado pequeño',c:['CAMISETAS'],g:'Mujer'},
+ {f:'59',n:'GIRLS LS · básica',d:'Camiseta manga larga básica',c:['CAMISETAS'],g:'Mujer'},
+ {f:'60',n:'GIRLS DRESSES',d:'Vestidos en tela plana y tejido',c:['VESTIDOS'],g:'Mujer'}
+];
 const PIR_COLOR={'C. blancos':'#ffffff','C. claros':'#e8dfd2','C. medios':'#9a7f63','C. oscuros':'#2f2a28',
   'Blanco':'#ffffff','Colores claros':'#e8dfd2','Colores medios':'#9a7f63','Colores oscuros':'#2f2a28'};
-let pirSel=0,pirAbierta=false,pirRef='';
+let pirSel=0,pirAbierta=false,pirRef='',pirVista='tipo',pirFoto=0;
+/* Las pirámides que le tocan a esta prenda, por su categoría y departamento */
+function piramidesDeTipo(){
+  const x=byRef(cur);if(!x)return [];
+  const cat=String(x.cat||'').toUpperCase(),dep=String(x.dep||'');
+  const dentro=[];
+  PIRFOTO.forEach((p,i)=>{if(p.c.some(z=>z.toUpperCase()===cat))dentro.push(i)});
+  /* las del mismo departamento primero */
+  return dentro.sort((a,b)=>((PIRFOTO[b].g===dep)?1:0)-((PIRFOTO[a].g===dep)?1:0));
+}
+function verVistaPir(v){pirVista=v;rowsPiramide()}
+function verPirFoto(i){pirFoto=+i;rowsPiramide()}
 /* Qué pirámides le tocan a las telas de esta ficha */
 function piramidesDeLaFicha(){
   const f=F();if(!f)return [];
@@ -2589,22 +2679,57 @@ function abrirPiramide(){
   const c=$('pir-cuerpo'),b=$('pir-bt');
   if(c)c.classList.toggle('hide',!pirAbierta);
   if(b)b.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
-  if(pirAbierta){const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];rowsPiramide()}
+  if(pirAbierta){const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
+    const t=piramidesDeTipo();if(t.length)pirFoto=t[0];
+    rowsPiramide()}
 }
 function verPiramide(i){pirSel=+i;rowsPiramide()}
 function rowsPiramide(){
   const sub=$('pir-sub');
-  const dentro=piramidesDeLaFicha();
-  /* al cambiar de referencia se propone la tela de esa ficha */
-  if(pirRef!==cur){pirRef=cur;if(dentro.length)pirSel=dentro[0]}
-  if(sub)sub.textContent=dentro.length
-    ? 'guía · '+dentro.map(i=>PIRAMIDE[i].t.split(' · ')[0]).join(', ')+' según la tela de esta ficha'
-    : 'guía · precio por kilo según el color';
+  const dentro=piramidesDeLaFicha(),deTipo=piramidesDeTipo();
+  /* al cambiar de referencia se propone lo que le toca a esa ficha */
+  if(pirRef!==cur){pirRef=cur;
+    if(dentro.length)pirSel=dentro[0];
+    if(deTipo.length)pirFoto=deTipo[0];}
+  if(sub)sub.textContent=deTipo.length
+    ? 'guía · '+PIRFOTO[deTipo[0]].n+(deTipo.length>1?' y '+(deTipo.length-1)+' más para esta categoría':'')
+    : 'guía · precios por tipo de prenda y por tela';
   const c=$('pir-cuerpo');if(!c||!pirAbierta)return;
-  const p=PIRAMIDE[pirSel]||PIRAMIDE[0];
   const d2=v=>v==null?'—':'$'+(+v).toFixed(2);
+  const vistas=`<div class="pir-tabs" style="margin-bottom:12px">
+    <button class="tab ${pirVista==='tipo'?'on':''}" onclick="verVistaPir('tipo')">Por tipo de prenda</button>
+    <button class="tab ${pirVista==='tela'?'on':''}" onclick="verVistaPir('tela')">Por tela</button></div>`;
+
+  if(pirVista==='tipo'){
+    const x=byRef(cur)||{};
+    const lista=PIRFOTO.map((p,i)=>({p,i,mia:deTipo.includes(i)}))
+      .sort((a,b)=>(b.mia-a.mia)||a.i-b.i);
+    const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
+    c.innerHTML=`<div class="pir-wrap">${vistas}
+      <div class="pir-g2">
+        <div class="pir-lista">
+          ${lista.map(({p,i,mia})=>`<button class="pir-it ${i===pirFoto?'on':''}" onclick="verPirFoto(${i})"
+            title="${escR(p.d)}">${mia?'<b>●</b> ':''}${escR(p.n)}
+            <span>${escR(p.c.join(' · '))}${p.g?' · '+escR(p.g):''}</span></button>`).join('')}
+        </div>
+        <div class="pir-foto">
+          <img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"
+            onerror="this.style.display='none';this.nextElementSibling.classList.remove('hide')">
+          <div class="hide" style="padding:28px;color:var(--ink-3);font-size:12px">
+            No se pudo cargar la imagen de la pirámide. Abre la app desde su enlace para verla.</div>
+          <div class="pir-pie"><b>${escR(sel.n)}</b> · ${escR(sel.d)}${sel.g?' · '+escR(sel.g):''}
+            ${deTipo.includes(pirFoto)?' · <span style="color:var(--green-txt)">es la de esta categoría</span>':''}</div>
+        </div>
+      </div>
+      <div class="pir-nota"><b>Es solo una guía para mirar mientras costeas.</b> Son las pirámides que manda el
+        cliente, por tipo de prenda. No cambian el costo de esta ficha ni ningún precio de la app.</div>
+    </div>`;
+    return;
+  }
+
+  const p=PIRAMIDE[pirSel]||PIRAMIDE[0];
   const sw=n=>PIR_COLOR[n]?`<i class="pir-sw" style="background:${PIR_COLOR[n]}"></i>`:'';
-  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}${dentro.includes(i)?'':''}"
+  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}"
       onclick="verPiramide(${i})" title="${dentro.includes(i)?'Es una de las telas de esta ficha':'Otra tela del cuadro'}">${
       dentro.includes(i)?'● ':''}${escR(z.t)}</button>`).join('');
   const arma=p.arma.map(([n,v])=>`<div class="pir-r"><span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('')
@@ -2618,7 +2743,7 @@ function rowsPiramide(){
     </div>`).join('')
     +(p.prom?`<div class="pir-r base" style="border-radius:8px">
         <span class="et">Promedio del cuadro</span><span class="vl">${d2(p.prom)}</span></div>`:'');
-  c.innerHTML=`<div class="pir-wrap">
+  c.innerHTML=`<div class="pir-wrap">${vistas}
     <div class="pir-tabs">${tabs}</div>
     <div class="pir-g">
       <div>
@@ -2629,7 +2754,7 @@ function rowsPiramide(){
     </div>
     <div class="pir-nota"><b>Es solo una guía para mirar mientras costeas.</b> No cambia el precio de ningún material
       ni entra en el costo de esta ficha: el costo sigue saliendo del precio que tiene la tela en Materiales.
-      Viene del cuadro de HOLL 2026 · los valores son por kilo.</div>
+      Los valores son por kilo.</div>
   </div>`;
 }
 
