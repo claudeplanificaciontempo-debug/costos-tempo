@@ -607,6 +607,27 @@ select.fld{border-color:var(--line)}
 .crow .nm{color:var(--ink);line-height:1.25}
 .crow .dt{color:var(--ink-3);font-size:11px}
 .crow .px{text-align:right;font-weight:700}
+/* Pirámide de telas · solo consulta */
+.pir-wrap{padding:12px 14px}
+.pir-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:11px}
+.pir-tabs .tab{font-size:11px;padding:4px 11px}
+.pir-g{display:grid;grid-template-columns:minmax(210px,1fr) minmax(250px,1.2fr);gap:14px;align-items:start}
+@media(max-width:1100px){.pir-g{grid-template-columns:1fr}}
+.pir-c{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.pir-c .ct{background:var(--suave);padding:6px 10px;font-size:10px;font-weight:800;letter-spacing:.5px;
+  text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line-soft)}
+.pir-r{display:flex;align-items:center;gap:8px;padding:4.5px 10px;font-size:12px;border-bottom:1px solid var(--line-soft)}
+.pir-r:last-child{border-bottom:0}
+.pir-r .et{color:var(--ink-2)}
+.pir-r .gr{font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-3);width:74px;flex:none}
+.pir-r .vl{margin-left:auto;font-weight:700;white-space:nowrap}
+.pir-r.base{background:var(--vino-soft)}
+.pir-r.base .vl,.pir-r.base .et{color:var(--vino-deep);font-weight:800}
+.pir-r .x2{width:66px;text-align:right;color:var(--ink-3);font-weight:600;flex:none}
+.pir-r.cab{background:var(--card);font-size:9.5px;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--ink-3)}
+.pir-r.cab .vl,.pir-r.cab .x2{font-weight:800;color:var(--ink-3)}
+.pir-sw{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid var(--line);flex:none}
+.pir-nota{font-size:11px;color:var(--ink-3);margin-top:10px;line-height:1.45}
 .arow{display:grid;grid-template-columns:24px 40px 62px minmax(150px,1fr) minmax(140px,220px) 104px 72px;
   gap:9px;align-items:center;padding:6px 10px;border-bottom:1px solid var(--line-soft);cursor:pointer;font-size:12px}
 .arow:hover{background:var(--suave)}
@@ -776,6 +797,14 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         </table>
         <div class="mod-tot"><b>Mano de obra</b>
           <span class="s" id="modsam"></span><span class="v" id="modval">$0.00</span></div>
+      </div>
+
+      <div class="card" id="card-pir">
+        <div class="card-h" style="cursor:pointer" onclick="abrirPiramide()">
+          <h2>Pirámide de precios de telas</h2>
+          <div class="sub" id="pir-sub"></div>
+          <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▾ Ver</button></div>
+        <div id="pir-cuerpo" class="hide"></div>
       </div>
 
     </div>
@@ -2478,6 +2507,132 @@ function kpisCons(){
     kk('ok','Suma de las propuestas',fmt(tot.prop),'precio del cliente base');
 }
 
+/* ====== PIRÁMIDE DE PRECIOS DE TELAS ======
+   La tabla con la que Martha arma el precio por kilo de cada tela: hilo, merma,
+   tejido, tinturado según el color y seguimiento de producción. Está aquí SOLO
+   PARA CONSULTAR mientras se costea: no entra en ningún cálculo, no se guarda y
+   no cambia el precio de ningún material. Viene del Excel HOLL 2026. */
+const PIRAMIDE=[
+ {t:'PIQUE 30/1 · 52/48', re:'PIQUE', no:'LYCRA', base:3.9984, prom:7.6331,
+  arma:[['Hilo',2.98],['Merma 8%',3.2184],['Tejido',0.6],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'PIQUE',filas:[['C. blancos',5.6784,6.8141],['C. claros',6.0184,7.2221],
+    ['C. medios',6.3884,7.6661],['C. oscuros',7.3584,8.8301]]}]},
+
+ {t:'PIQUE LYCRA 30/1 · 52/48', re:'PIQUE.*LYCRA|LYCRA.*PIQUE', base:4.3784, prom:8.0891,
+  arma:[['Hilo',2.98],['Merma 8%',3.2184],['Tejido',0.6],['Lycra 30 spandex',0.38],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'PIQUE LYCRA',filas:[['C. blancos',6.0584,7.2701],['C. claros',6.3984,7.6781],
+    ['C. medios',6.7684,8.1221],['C. oscuros',7.7384,9.2861]]}]},
+
+ {t:'JERSEY 24/1 · 52/48', re:'JERSEY.*24|24.*JERSEY', no:'LYCRA', base:4.46, prom:8.187,
+  arma:[['Hilo',3.5],['Merma 10%',3.78],['Tejido',0.5],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'JERSEY',filas:[['C. blancos',6.14,7.368],['C. claros',6.48,7.776],
+    ['C. medios',6.85,8.22],['C. oscuros',7.82,9.384]]}]},
+
+ {t:'JERSEY 20/1 · 100% algodón', re:'JERSEY.*(20|ALGOD)', no:'LYCRA', base:5.74, prom:8.4735,
+  arma:[['Hilo',4.6],['Merma 10%',5.06],['Tejido',0.5],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'JERSEY ALG',filas:[['C. blancos',7.42,8.904],['C. claros',7.76,null],
+    ['C. medios',8.13,null],['C. oscuros',9.1,null]]}]},
+
+ {t:'JERSEY LYCRA 30/1 · 52/48', re:'JERSEY.*LYCRA|LYCRA.*JERSEY', base:4.978, prom:8.8086,
+  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.5],['Lycra 20 spandex',0.42],
+    ['Termofijación',0.6],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'JERSEY LYCRA',filas:[['C. blancos',6.658,7.9896],['C. claros',6.998,8.3976],
+    ['C. medios',7.368,8.8416],['C. oscuros',8.338,10.0056]]}]},
+
+ {t:'FLEECE 24/1 · 52/48', re:'FLEECE|TERRY|PERCHAD', base:4.008, prom:8.7246,
+  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',2.02],['Colores medios',2.39],['Colores oscuros',3.36]],
+  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',6.028,null],
+    ['C. medios',6.398,null],['C. oscuros',7.368,null]]},
+   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,7.9056],['C. claros',6.928,8.3136],
+    ['C. medios',7.298,8.7576],['C. oscuros',8.268,9.9216]]}]},
+
+ {t:'FLEECE 24/1 · tinturado normal', base:4.008, prom:7.0236,
+  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',0.7],['Colores medios',0.7],['Colores oscuros',0.7]],
+  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',4.708,null],
+    ['C. medios',4.708,null],['C. oscuros',4.708,null]]},
+   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,7.9056],['C. claros',5.608,6.7296],
+    ['C. medios',5.608,6.7296],['C. oscuros',5.608,6.7296]]}]},
+
+ {t:'FLEECE 24/1 · tinturado pesado', base:4.008,
+  arma:[['Hilo',2.98],['Merma 10%',3.278],['Tejido',0.55],['Seg. producción',0.18]],
+  tint:[['Blanco',1.68],['Colores claros',1.1],['Colores medios',1.1],['Colores oscuros',1.1]],
+  salidas:[{n:'TERRY',filas:[['C. blancos',5.688,null],['C. claros',5.108,null],
+    ['C. medios',5.108,null],['C. oscuros',5.108,null]]},
+   {n:'PERCHADO 0,90',filas:[['C. blancos',6.588,null],['C. claros',6.008,null],
+    ['C. medios',6.008,null],['C. oscuros',6.008,null]]}]}
+];
+const PIR_COLOR={'C. blancos':'#ffffff','C. claros':'#e8dfd2','C. medios':'#9a7f63','C. oscuros':'#2f2a28',
+  'Blanco':'#ffffff','Colores claros':'#e8dfd2','Colores medios':'#9a7f63','Colores oscuros':'#2f2a28'};
+let pirSel=0,pirAbierta=false,pirRef='';
+/* Qué pirámides le tocan a las telas de esta ficha */
+function piramidesDeLaFicha(){
+  const f=F();if(!f)return [];
+  const telas=(f.lines||[]).map(l=>byCode(l.c)).filter(m=>m&&m.k==='mp')
+    .map(m=>String(m.d||'').toUpperCase()+' '+String(m.c||'').toUpperCase());
+  const dentro=[];
+  PIRAMIDE.forEach((p,i)=>{
+    if(!p.re)return;
+    const ok=telas.some(d=>new RegExp(p.re).test(d)&&!(p.no&&new RegExp(p.no).test(d)));
+    if(ok)dentro.push(i);
+  });
+  return dentro;
+}
+function abrirPiramide(){
+  pirAbierta=!pirAbierta;
+  const c=$('pir-cuerpo'),b=$('pir-bt');
+  if(c)c.classList.toggle('hide',!pirAbierta);
+  if(b)b.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
+  if(pirAbierta){const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];rowsPiramide()}
+}
+function verPiramide(i){pirSel=+i;rowsPiramide()}
+function rowsPiramide(){
+  const sub=$('pir-sub');
+  const dentro=piramidesDeLaFicha();
+  /* al cambiar de referencia se propone la tela de esa ficha */
+  if(pirRef!==cur){pirRef=cur;if(dentro.length)pirSel=dentro[0]}
+  if(sub)sub.textContent=dentro.length
+    ? 'guía · '+dentro.map(i=>PIRAMIDE[i].t.split(' · ')[0]).join(', ')+' según la tela de esta ficha'
+    : 'guía · precio por kilo según el color';
+  const c=$('pir-cuerpo');if(!c||!pirAbierta)return;
+  const p=PIRAMIDE[pirSel]||PIRAMIDE[0];
+  const d2=v=>v==null?'—':'$'+(+v).toFixed(2);
+  const sw=n=>PIR_COLOR[n]?`<i class="pir-sw" style="background:${PIR_COLOR[n]}"></i>`:'';
+  const tabs=PIRAMIDE.map((z,i)=>`<button class="tab ${i===pirSel?'on':''}${dentro.includes(i)?'':''}"
+      onclick="verPiramide(${i})" title="${dentro.includes(i)?'Es una de las telas de esta ficha':'Otra tela del cuadro'}">${
+      dentro.includes(i)?'● ':''}${escR(z.t)}</button>`).join('');
+  const arma=p.arma.map(([n,v])=>`<div class="pir-r"><span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('')
+    +`<div class="pir-r base"><span class="et">Base por kilo</span><span class="vl">${d2(p.base)}</span></div>`;
+  const tint=p.tint.map(([n,v])=>`<div class="pir-r">${sw(n)}<span class="et">${escR(n)}</span><span class="vl">${d2(v)}</span></div>`).join('');
+  const sal=p.salidas.map(sx=>`<div class="pir-c" style="margin-bottom:10px">
+      <div class="ct">${escR(sx.n)} · precio por kilo</div>
+      <div class="pir-r cab"><span class="gr">Color</span><span class="vl">$/kg</span><span class="x2">+20%</span></div>
+      ${sx.filas.map(([n,v,v2])=>`<div class="pir-r">${sw(n)}<span class="et">${escR(n)}</span>
+        <span class="vl">${d2(v)}</span><span class="x2">${d2(v2)}</span></div>`).join('')}
+    </div>`).join('')
+    +(p.prom?`<div class="pir-r base" style="border-radius:8px">
+        <span class="et">Promedio del cuadro</span><span class="vl">${d2(p.prom)}</span></div>`:'');
+  c.innerHTML=`<div class="pir-wrap">
+    <div class="pir-tabs">${tabs}</div>
+    <div class="pir-g">
+      <div>
+        <div class="pir-c" style="margin-bottom:10px"><div class="ct">Cómo se arma</div>${arma}</div>
+        <div class="pir-c"><div class="ct">Tinturado según el color</div>${tint}</div>
+      </div>
+      <div>${sal}</div>
+    </div>
+    <div class="pir-nota"><b>Es solo una guía para mirar mientras costeas.</b> No cambia el precio de ningún material
+      ni entra en el costo de esta ficha: el costo sigue saliendo del precio que tiene la tela en Materiales.
+      Viene del cuadro de HOLL 2026 · los valores son por kilo.</div>
+  </div>`;
+}
+
 /* ====== PRE COSTEO ======
    El costo con el que se presentó la propuesta al cliente. Se guarda aparte del
    costo final: la ficha sigue abierta, pero queda la foto de con qué números se
@@ -2638,7 +2793,7 @@ function draw(soft){
       tr.cells[5].textContent=fmt(real*precio(l,m));
     });
   }
-  rowsCenFicha();rowsSum();rowsHist();autosave();
+  rowsCenFicha();rowsSum();rowsHist();rowsPiramide();autosave();
   if(soft)paintPL();else rowsPL();
 }
 
