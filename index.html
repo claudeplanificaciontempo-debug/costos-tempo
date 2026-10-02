@@ -147,7 +147,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{ba
 .hide{display:none !important}
 
 .topbar{position:fixed;top:0;left:0;right:0;z-index:40;background:var(--barra);border-bottom:1px solid var(--barra-line)}
-.tb1{display:flex;align-items:center;gap:12px;padding:10px 26px;max-width:1560px;margin:0 auto}
+.tb1{display:flex;align-items:center;gap:12px;padding:10px 26px;max-width:1900px;margin:0 auto}
 .logo{width:28px;height:28px;border-radius:10px;flex:none;display:grid;place-items:center;font-size:14px;font-weight:800;
   color:var(--sobre);background:linear-gradient(135deg,var(--vino),var(--vino-claro))}
 .brand{font-weight:800;font-size:16.5px;letter-spacing:-.01em;line-height:1.1;color:var(--vino-deep)}
@@ -161,7 +161,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{ba
 /* El menú va en su propia franja, más oscura que la cabecera, para que se
    separe de la marca y del nombre de quien entró. */
 .navband{background:var(--nav-bg);border-top:1px solid var(--nav-line-soft)}
-.nav{display:flex;gap:2px;padding:0 26px;max-width:1560px;margin:0 auto;overflow-x:auto}
+.nav{display:flex;gap:2px;padding:0 26px;max-width:1900px;margin:0 auto;overflow-x:auto}
 .nav-item{border:0;background:none;padding:10px 13px;font-size:12.5px;font-weight:600;color:var(--nav-txt);
   cursor:pointer;border-bottom:2.5px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:7px}
 .nav-item:hover{color:var(--nav-txt-on)}
@@ -180,7 +180,7 @@ input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea{ba
 .nav-item .cnt{font-size:10px;color:var(--nav-txt-on);background:var(--nav-chip);border-radius:20px;padding:1.5px 7px;font-weight:700}
 .nav-item.on .cnt{background:var(--nav-line);color:var(--nav-bg)}
 .navsep{width:1px;background:var(--nav-line-soft);margin:9px 10px;flex:none}
-.main{margin:92px auto 0;padding:18px 26px 80px;max-width:1560px}
+.main{margin:92px auto 0;padding:18px 26px 80px;max-width:1900px}
 .crumb{font-size:11.5px;color:var(--ink-3);margin-bottom:10px}
 .crumb b{color:var(--ink-2);font-weight:600}
 .crumb a{color:var(--ink-3);cursor:pointer}
@@ -244,6 +244,7 @@ input.n:focus{border-color:var(--vino);outline:none}
 
 /* ficha en 3 bloques */
 .tri{display:grid;grid-template-columns:236px minmax(0,1fr) 340px;gap:16px;align-items:start}
+@media(min-width:1660px){.tri{grid-template-columns:272px minmax(0,1fr) 384px;gap:18px}}
 .blk-t{display:flex;align-items:center;gap:8px;margin-bottom:9px}
 .blk-t .n{width:20px;height:20px;border-radius:6px;background:var(--vino);color:var(--sobre);display:grid;place-items:center;font-size:11px;font-weight:800}
 .blk-t h3{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-2);font-weight:800}
