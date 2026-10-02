@@ -629,6 +629,8 @@ select.fld{border-color:var(--line)}
 .pir-sw{display:inline-block;width:11px;height:11px;border-radius:3px;border:1px solid var(--line);flex:none}
 .pir-nota{font-size:11px;color:var(--ink-3);margin-top:10px;line-height:1.45}
 .pir-g2{display:grid;grid-template-columns:minmax(190px,250px) minmax(0,1fr);gap:14px;align-items:start}
+.pir-g2.sola{grid-template-columns:minmax(0,1fr)}
+.pir-elige{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:11px}
 @media(max-width:1100px){.pir-g2{grid-template-columns:1fr}}
 .pir-lista{max-height:430px;overflow:auto;border:1px solid var(--line);border-radius:10px}
 .pir-it{display:block;width:100%;text-align:left;border:0;border-bottom:1px solid var(--line-soft);
@@ -2702,16 +2704,25 @@ function rowsPiramide(){
 
   if(pirVista==='tipo'){
     const x=byRef(cur)||{};
-    const lista=PIRFOTO.map((p,i)=>({p,i,mia:deTipo.includes(i)}))
-      .sort((a,b)=>(b.mia-a.mia)||a.i-b.i);
     const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
+    /* el desplegable: primero las de la categoría de esta prenda, después el resto
+       agrupado por categoría, para encontrarla rápido */
+    const opc=(i)=>{const p=PIRFOTO[i];
+      return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
+    const resto={};
+    PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
+    const grupos=Object.keys(resto).sort().map(k=>
+      `<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
     c.innerHTML=`<div class="pir-wrap">${vistas}
-      <div class="pir-g2">
-        <div class="pir-lista">
-          ${lista.map(({p,i,mia})=>`<button class="pir-it ${i===pirFoto?'on':''}" onclick="verPirFoto(${i})"
-            title="${escR(p.d)}">${mia?'<b>●</b> ':''}${escR(p.n)}
-            <span>${escR(p.c.join(' · '))}${p.g?' · '+escR(p.g):''}</span></button>`).join('')}
-        </div>
+      <div class="pir-elige">
+        <span class="mini" style="margin:0">¿Qué estás costeando?</span>
+        <select class="fld" id="pir-sel" style="min-width:300px;max-width:420px" onchange="verPirFoto(this.value)">
+          ${deTipo.length?`<optgroup label="De esta prenda · ${escR((byRef(cur)||{}).cat||'')}">${deTipo.map(opc).join('')}</optgroup>`:''}
+          ${grupos}
+        </select>
+        <span class="mini" style="margin:0">${PIRFOTO.length} pirámides del cliente</span>
+      </div>
+      <div class="pir-g2 sola">
         <div class="pir-foto">
           <img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"
             onerror="this.style.display='none';this.nextElementSibling.classList.remove('hide')">
