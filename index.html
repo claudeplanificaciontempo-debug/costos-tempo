@@ -2669,7 +2669,7 @@ const PIRFOTO=[
 ];
 const PIR_COLOR={'C. blancos':'#ffffff','C. claros':'#e8dfd2','C. medios':'#9a7f63','C. oscuros':'#2f2a28',
   'Blanco':'#ffffff','Colores claros':'#e8dfd2','Colores medios':'#9a7f63','Colores oscuros':'#2f2a28'};
-let pirSel=0,pirAbierta=true,pirRef='',pirVista='tipo',pirFoto=0;
+let pirSel=0,pirAbierta=true,pirRef='',pirVista='tipo',pirFoto=0,pirQ='';
 /* Las pirámides que le tocan a esta prenda, por su categoría y departamento */
 function piramidesDeTipo(){
   const x=byRef(cur);if(!x)return [];
@@ -2702,6 +2702,40 @@ function piramidesDeLaFicha(){
   });
   return dentro;
 }
+/* El desplegable de la pirámide, con buscador: escribe "polo", "vestido",
+   "bordado"… y deja solo las que tengan esa palabra. */
+function sinTildes(t){return String(t||'').toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')}
+function piramidesBuscadas(){
+  const pal=sinTildes(pirQ).split(/\s+/).filter(Boolean);
+  if(!pal.length)return null;
+  const dentro=[];
+  PIRFOTO.forEach((p,i)=>{
+    const txt=sinTildes(p.n+' '+p.d+' '+p.c.join(' ')+' '+(p.g||''));
+    if(pal.every(w=>txt.includes(w)))dentro.push(i);
+  });
+  return dentro;
+}
+function opcionesPir(){
+  const hay=piramidesBuscadas();
+  const deTipo=piramidesDeTipo().filter(i=>!hay||hay.includes(i));
+  const opc=i=>{const p=PIRFOTO[i];
+    return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
+  const resto={};
+  PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;if(hay&&!hay.includes(i)&&i!==pirFoto)return;
+    const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
+  const cat=(byRef(cur)||{}).cat||'';
+  return (deTipo.length?`<optgroup label="De esta prenda · ${escR(cat)}">${deTipo.map(opc).join('')}</optgroup>`:'')
+    +Object.keys(resto).sort().map(k=>`<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
+}
+function contarPir(){
+  const hay=piramidesBuscadas();
+  return hay?(hay.length?hay.length+' de '+PIRFOTO.length:'ninguna con esa palabra'):PIRFOTO.length+' pirámides';
+}
+function buscarPir(q){
+  pirQ=q;
+  ['pir-sel','pirm-sel'].forEach(id=>{const e=$(id);if(e)e.innerHTML=opcionesPir()});
+  ['pir-n','pirm-n'].forEach(id=>{const e=$(id);if(e)e.textContent=contarPir()});
+}
 function abrirPiramide(){
   pirAbierta=!pirAbierta;
   const c=$('pir-cuerpo'),b=$('pir-bt');
@@ -2724,19 +2758,13 @@ function rowsPiramide(){
   if(bt)bt.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
   if(!pirAbierta){if(!$('ovl-pir').classList.contains('hide'))pintarPirModal();return}
   const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
-  const opc=i=>{const p=PIRFOTO[i];
-    return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
-  const resto={};
-  PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
-  const grupos=Object.keys(resto).sort().map(k=>
-    `<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
   const cat=(byRef(cur)||{}).cat||'';
   c.innerHTML=`<div style="padding:10px 11px">
     <div class="mini" style="margin:0 0 4px">¿Qué estás costeando?</div>
-    <select class="fld" id="pir-sel" style="width:100%" onchange="verPirFoto(this.value)">
-      ${deTipo.length?`<optgroup label="De esta prenda · ${escR(cat)}">${deTipo.map(opc).join('')}</optgroup>`:''}
-      ${grupos}
-    </select>
+    <input class="fld" id="pir-q" type="text" style="width:100%;margin-bottom:5px" value="${escR(pirQ)}"
+      placeholder="Buscar: polo, vestido, bordado…" oninput="buscarPir(this.value)">
+    <select class="fld" id="pir-sel" style="width:100%" onchange="verPirFoto(this.value)">${opcionesPir()}</select>
+    <div class="mini" id="pir-n" style="margin:3px 0 0">${contarPir()}</div>
     <div class="pir-mini" onclick="abrirPirGrande()" title="Clic para verla en grande"
       data-zoom="piramides/${sel.f}.jpg" data-zoom-t="${escR(sel.n)}">
       <img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"
@@ -2765,20 +2793,14 @@ function pintarPirModal(){
   const d2=v=>v==null?'—':'$'+(+v).toFixed(2);
   if(pirVista==='tipo'){
     const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
-    const opc=i=>{const p=PIRFOTO[i];
-      return `<option value="${i}" ${i===pirFoto?'selected':''}>${escR(p.n)}${p.g?' · '+escR(p.g):''}</option>`};
-    const resto={};
-    PIRFOTO.forEach((p,i)=>{if(deTipo.includes(i))return;const k=p.c[0]||'OTRAS';(resto[k]=resto[k]||[]).push(i)});
-    const grupos=Object.keys(resto).sort().map(k=>
-      `<optgroup label="${escR(k)}">${resto[k].map(opc).join('')}</optgroup>`).join('');
     $('pirm-t').textContent=sel.n;
     $('pirm-s').textContent=sel.d+(sel.g?' · '+sel.g:'');
     b.innerHTML=`<div class="pir-elige">
         <span class="mini" style="margin:0">¿Qué estás costeando?</span>
-        <select class="fld" style="min-width:300px;max-width:430px" onchange="verPirFoto(this.value)">
-          ${deTipo.length?`<optgroup label="De esta prenda · ${escR((byRef(cur)||{}).cat||'')}">${deTipo.map(opc).join('')}</optgroup>`:''}
-          ${grupos}
-        </select></div>
+        <input class="fld" id="pirm-q" type="text" style="width:190px" value="${escR(pirQ)}"
+          placeholder="Buscar: polo, vestido…" oninput="buscarPir(this.value)">
+        <select class="fld" id="pirm-sel" style="min-width:290px;max-width:430px" onchange="verPirFoto(this.value)">${opcionesPir()}</select>
+        <span class="mini" id="pirm-n" style="margin:0">${contarPir()}</span></div>
       <div class="pir-foto"><img src="piramides/${sel.f}.jpg" alt="${escR(sel.n)}"></div>`;
     return;
   }
