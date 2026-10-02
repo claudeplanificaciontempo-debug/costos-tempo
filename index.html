@@ -785,8 +785,8 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <div class="card" id="card-pir" style="margin-top:12px">
         <div class="card-h" style="cursor:pointer;gap:6px" onclick="abrirPiramide()">
           <h2 style="font-size:12.5px">Pirámide de precios</h2>
-          <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▾ Ver</button></div>
-        <div id="pir-cuerpo" class="hide"></div>
+          <button class="btn ghost sm" id="pir-bt" style="margin-left:auto">▴ Ocultar</button></div>
+        <div id="pir-cuerpo"></div>
       </div>
     </div>
 
@@ -2669,15 +2669,22 @@ const PIRFOTO=[
 ];
 const PIR_COLOR={'C. blancos':'#ffffff','C. claros':'#e8dfd2','C. medios':'#9a7f63','C. oscuros':'#2f2a28',
   'Blanco':'#ffffff','Colores claros':'#e8dfd2','Colores medios':'#9a7f63','Colores oscuros':'#2f2a28'};
-let pirSel=0,pirAbierta=false,pirRef='',pirVista='tipo',pirFoto=0;
+let pirSel=0,pirAbierta=true,pirRef='',pirVista='tipo',pirFoto=0;
 /* Las pirámides que le tocan a esta prenda, por su categoría y departamento */
 function piramidesDeTipo(){
   const x=byRef(cur);if(!x)return [];
   const cat=String(x.cat||'').toUpperCase(),dep=String(x.dep||'');
+  /* palabras del tipo y del nombre, para afinar cuál de la categoría es la que toca */
+  const pal=(String(x.sub||'')+' '+String(x.n||'')).toUpperCase()
+    .split(/[^A-ZÁÉÍÓÚÑ0-9]+/).filter(z=>z.length>3);
+  const punto=i=>{const p=PIRFOTO[i];let v=0;
+    if(p.g===dep)v+=4;
+    const txt=(p.n+' '+p.d).toUpperCase();
+    pal.forEach(w=>{if(txt.includes(w))v+=2});
+    return v;};
   const dentro=[];
   PIRFOTO.forEach((p,i)=>{if(p.c.some(z=>z.toUpperCase()===cat))dentro.push(i)});
-  /* las del mismo departamento primero */
-  return dentro.sort((a,b)=>((PIRFOTO[b].g===dep)?1:0)-((PIRFOTO[a].g===dep)?1:0));
+  return dentro.sort((a,b)=>punto(b)-punto(a));
 }
 function verVistaPir(v){pirVista=v;rowsPiramide()}
 function verPiramide(i){pirSel=+i;rowsPiramide()}
@@ -2712,6 +2719,9 @@ function rowsPiramide(){
   if(pirRef!==cur){pirRef=cur;
     const d=piramidesDeLaFicha();if(d.length)pirSel=d[0];
     if(deTipo.length)pirFoto=deTipo[0];}
+  const cu=$('pir-cuerpo'),bt=$('pir-bt');
+  if(cu)cu.classList.toggle('hide',!pirAbierta);
+  if(bt)bt.textContent=pirAbierta?'▴ Ocultar':'▾ Ver';
   if(!pirAbierta){if(!$('ovl-pir').classList.contains('hide'))pintarPirModal();return}
   const sel=PIRFOTO[pirFoto]||PIRFOTO[0];
   const opc=i=>{const p=PIRFOTO[i];
@@ -2736,6 +2746,8 @@ function rowsPiramide(){
     </div>
     <div class="mini" style="margin:6px 0 0;line-height:1.4">${escR(sel.d)}${
       deTipo.includes(pirFoto)?' · <b style="color:var(--green-txt)">es la de esta prenda</b>':''}</div>
+    ${deTipo.length?'':`<div class="mini" style="margin:5px 0 0;line-height:1.4;color:var(--vino-2)">
+      No tengo pirámide guardada para la categoría ${escR(cat||'de esta prenda')}: elige arriba la que se parezca.</div>`}
     <button class="btn ghost sm" style="width:100%;margin-top:8px" onclick="verVistaPir('tela');abrirPirGrande()">Ver la pirámide por tela</button>
     <div class="mini" style="margin:7px 0 0;line-height:1.4">Solo para guiarte: no cambia el costo de esta ficha.</div>
   </div>`;
