@@ -476,10 +476,18 @@ input.n:focus{border-color:var(--vino);outline:none}
   .pdf-b .b{display:inline-block;font-size:8px;font-weight:700;color:var(--amber);background:var(--amber-soft);border-radius:10px;padding:1px 6px;margin-top:3px}
   .pdf-foot{margin-top:12px;font-size:9px;color:#8a7a7e;text-align:right}
   .pdf-tab{width:100%;border-collapse:collapse;font-size:10px}
-  .pdf-tab th{text-align:left;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a7e;border-bottom:1px solid #d8caca;padding:5px 6px}
-  .pdf-tab td{padding:5px 6px;border-bottom:1px solid #f0e9ea}
-  .pdf-tab td.n{text-align:right;font-weight:700}
-  .pdf-tab tr.grp td{background:var(--suave);font-weight:700;padding-top:10px}
+  .pdf-tab th{text-align:left!important;font-size:8.5px;letter-spacing:.05em;text-transform:uppercase;color:#8a7a7e;border-bottom:1px solid #d8caca;padding:5px 6px}
+  .pdf-tab td{padding:5px 6px;border-bottom:1px solid #f0e9ea;text-align:left}
+  .pdf-tab td.n{text-align:right;font-weight:700;white-space:nowrap}
+  .pdf-tab th.n{text-align:right!important}
+  .pdf-tab tr.grp td{background:var(--suave);font-weight:700;padding-top:10px;text-align:left}
+  .pdf-tab thead{display:table-header-group}
+  .pdf-tab tr{break-inside:avoid;page-break-inside:avoid}
+  .pdf-tab td.ft{padding:3px 6px}
+  .pdf-tab td.ft img{width:34px;height:44px;object-fit:cover;border-radius:3px;display:block}
+  .pdf-tab td.rf{font-weight:700;color:var(--vino-deep)}
+  .pdf-tab td.sec{color:#8a7a7e;font-size:9px}
+  .pdf-tab tr.tot td{border-top:1.5px solid var(--vino);border-bottom:0;font-weight:800;padding-top:8px}
   @page{size:A4;margin:12mm}
 }
 .tri2{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
@@ -519,6 +527,9 @@ input.n:focus{border-color:var(--vino);outline:none}
 .hrow.now{background:var(--suave)}
 .pname{font-weight:600;font-size:12.5px;cursor:pointer;padding:6px 2px}
 .pname:hover{color:var(--vino-2);text-decoration:underline}
+.ednom{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:11px;padding:0 4px;opacity:0;transition:.15s}
+.prow:hover .ednom{opacity:1}
+.ednom:hover{color:var(--vino)}
 .reg{font-size:10px;color:var(--ink-3);padding:0 2px 4px}
 /* visto de muestra aprobada: verde cuando está aprobada, contorno gris cuando no */
 .vst{border:1.5px solid var(--line);background:var(--entrada);color:var(--ink-3);border-radius:7px;
@@ -1374,7 +1385,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
 
 <div id="ovl-clasif" class="ovl hide">
   <div class="modal" style="width:min(780px,100%)">
-    <div class="modal-h"><h2>Clasificar producto</h2><div class="sub" id="cl-cuenta" style="margin-left:auto"></div></div>
+    <div class="modal-h"><h2 id="cl-tit">Clasificar producto</h2><div class="sub" id="cl-cuenta" style="margin-left:auto"></div></div>
     <div class="modal-b">
       <div style="display:grid;grid-template-columns:240px minmax(0,1fr);gap:18px;align-items:start">
         <div class="photo"><div class="im"><img id="cl-img" alt=""></div></div>
@@ -1398,7 +1409,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </div>
     <div class="modal-f">
       <button class="btn ghost" onclick="cerrar('ovl-clasif')">Cancelar</button>
-      <button class="btn ghost" onclick="guardarClasif(true)">Guardar y siguiente</button>
+      <button class="btn ghost" id="cl-sig" onclick="guardarClasif(true)">Guardar y siguiente</button>
       <button class="btn org" onclick="guardarClasif(false)">Guardar</button>
     </div>
   </div>
@@ -2091,9 +2102,11 @@ function moverZoom(e){
   if(y+h>innerHeight-8)y=Math.max(8,innerHeight-h-8);
   z.style.left=x+'px';z.style.top=y+'px';
 }
+let ZOOMEL=null;
 document.addEventListener('mouseover',e=>{
   const el=e.target.closest&&e.target.closest('[data-zoom]');
   const z=$('zoom');if(!z)return;
+  ZOOMEL=el&&el.dataset.zoom?el:null;
   if(!el||!el.dataset.zoom){z.classList.add('hide');return}
   $('zoom-img').src=el.dataset.zoom;
   $('zoom-t').textContent=el.dataset.zoomT||'';
@@ -2104,9 +2117,12 @@ document.addEventListener('mousemove',moverZoom);
 document.addEventListener('mouseout',e=>{
   const z=$('zoom');if(!z)return;
   const a=e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('[data-zoom]');
+  ZOOMEL=a||null;
   if(!a)z.classList.add('hide');
 });
-window.addEventListener('scroll',()=>{const z=$('zoom');if(z)z.classList.add('hide')},true);
+/* Al rodar la pantalla la lupa estorba, pero si el mouse sigue encima de la
+   misma foto se queda: si no, un acomodo de la página la apagaba sola. */
+window.addEventListener('scroll',()=>{const z=$('zoom');if(z&&!ZOOMEL)z.classList.add('hide')},true);
 
 /* ====== BLOQUE 2 · MATERIALES ====== */
 function rowsLines(){
@@ -3440,7 +3456,10 @@ function filaProd({x,i}){
       <div><input class="fld cod may" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
       <div>
-        <div class="pname${x.n?'':' sindef'}" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n||'sin describir'}</div>
+        <div style="display:flex;align-items:center;gap:3px">
+          <div class="pname${x.n?'':' sindef'}" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos">${x.n||'sin describir'}</div>
+          <button class="ednom" title="Cambiarle el nombre, la categoría o el tipo"
+            onclick="event.stopPropagation();abrirClasificar('${x.r}')">✎</button></div>
         ${sinDescribir(x)?`<button class="btn ghost sm" style="margin:2px 0 4px" title="Ponerle nombre, categoría y tipo" onclick="event.stopPropagation();abrirClasificar('${x.r}')">Clasificar</button>`:''}
         <div class="reg">Registrado ${fechaBonita(x.creado)} ·
           <span class="ent${x.ent?' si':''}">Entregada
@@ -4798,6 +4817,8 @@ function abrirFotos(){$('ovl-fotos').classList.remove('hide')}
    referencia. Encadena con "Guardar y siguiente" para despachar una tanda. */
 let CLASIF='';
 const porClasificar=()=>activos().filter(sinDescribir);
+/* Sirve para los que llegan sin describir y también para corregirle el nombre
+   a cualquier producto: el lápiz de la lista entra por aquí. */
 function abrirClasificar(ref){
   const x=byRef(ref)||porClasificar()[0];
   if(!x){toast('No queda ninguno','Todos los productos tienen nombre y categoría.');return}
@@ -4815,14 +4836,20 @@ function pintarClasif(){
   const x=byRef(CLASIF);if(!x){cerrar('ovl-clasif');return}
   $('cl-ref').textContent=x.r;
   const f=FOTO[x.r]||'';$('cl-img').src=f;$('cl-img').style.display=f?'':'none';
-  const generico=/^(SIN NOMBRE|PRODUCTO NUEVO)$/i.test(String(x.n||'').trim());
+  const generico=/^(SIN NOMBRE|PRODUCTO NUEVO|SIN DEFINIR\b.*)$/i.test(String(x.n||'').trim());
   $('cl-nom').value=(generico||!x.n)?nombrePropuesto(x):x.n;
   const cats=Object.keys(CATEG);
   $('cl-cat').innerHTML=(x.cat?'':'<option value="" selected>sin definir</option>')+
     cats.map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('');
   clasifCat(x.sub);
-  const n=porClasificar().length;
-  $('cl-cuenta').textContent=n>1?('quedan '+n+' sin describir'):'es el último sin describir';
+  /* Se entra aquí de dos maneras: terminando los que están sin describir, o
+     con el lápiz, para cambiarle el nombre a uno que ya lo tiene. */
+  const pend=porClasificar().some(z=>z.r===x.r),n=porClasificar().length;
+  const sig=$('cl-sig');if(sig)sig.classList.toggle('hide',!pend);
+  if($('cl-tit'))$('cl-tit').textContent=pend?'Clasificar producto':'Cambiar el nombre';
+  $('cl-cuenta').textContent=pend
+    ?(n>1?('quedan '+n+' sin describir'):'es el último sin describir')
+    :'se cambia solo lo que escribas aquí';
 }
 function clasifCat(sub){
   const c=$('cl-cat').value,tipos=CATEG[c]||[];
@@ -5936,6 +5963,8 @@ function rowsLista(){
   pintarSubLp();
 }
 /* El PDF que se le manda al cliente: lo marcado, o todo lo que quedó filtrado. */
+/* El PDF de la lista: una fila por estilo, igual que el Excel, con la foto
+   pequeña, la referencia, el producto y el precio de ese cliente. */
 function pdfListaCliente(){
   const sel=listaEnvio();
   const list=activos().filter(x=>sel.has(x.r)&&FICHAS[x.r].saved);
@@ -5944,21 +5973,30 @@ function pdfListaCliente(){
   const ci=CLI.findIndex(c=>c.id===id);
   const c=CLI[ci<0?0:ci];
   if(!c){toast('Falta el cliente','Crea un cliente en Configuración.');return}
-  const g=cur;
-  const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
-  const cards=Object.keys(grupos).sort().map(sub=>
-    `<div style="grid-column:1/-1;font-weight:800;font-size:13px;margin-top:6px;border-bottom:1px solid #ddd;padding-bottom:4px">${escR(sub)}</div>`
-    +grupos[sub].map(x=>{cur=x.r;calc();const r=plCalc(ci<0?0:ci);
-      return `<div class="pdf-c"><div class="pdf-f">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</div>
-        <div class="pdf-b"><div class="r">${x.marca?escR(x.marca.toUpperCase())+' · ':''}REF ${escR(x.r)}${x.dep?' · '+escR(x.dep.toUpperCase()):''}</div>
-        <div class="n">${escR(x.n)}</div>
-        <div class="p">${fmt(r.pvp)}<small>USD</small></div></div></div>`}).join('')
+  const g=cur;let total=0;
+  const grupos={};list.forEach(x=>{(grupos[x.sub||'—']=grupos[x.sub||'—']||[]).push(x)});
+  const filas=Object.keys(grupos).sort().map(sub=>
+    `<tr class="grp"><td colspan="6">${escR(sub)}</td></tr>`
+    +grupos[sub].map(x=>{cur=x.r;calc();const r=plCalc(ci<0?0:ci);total+=r.pvp||0;
+      return `<tr>
+        <td class="ft">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</td>
+        <td class="rf">${escR(x.r)}</td>
+        <td>${escR(x.n)}</td>
+        <td class="sec">${escR(x.cat||'')}${x.dep?' · '+escR(x.dep):''}</td>
+        <td class="sec">${escR(x.col||'')}</td>
+        <td class="n">${fmt(r.pvp)}</td></tr>`}).join('')
   ).join('');
   cur=g;calc();
   $('print-area').innerHTML=`<div class="pdf-h"><h1>Lista de precios · TEMPO</h1>
     <span class="c">${escR(c.cli)} · ${escR(c.zona)}</span>
     <span class="d">${hoy()} · ${list.length} referencia${list.length===1?'':'s'}</span></div>
-    <div class="pdf-g">${cards}</div>
+    <table class="pdf-tab"><thead><tr>
+      <th style="width:46px"></th><th style="width:60px">Referencia</th><th>Producto</th>
+      <th style="width:150px">Categoría</th><th style="width:110px">Colección</th>
+      <th class="n" style="width:70px">PVP USD</th></tr></thead>
+      <tbody>${filas}
+      <tr class="tot"><td colspan="5">Total · ${list.length} estilo${list.length===1?'':'s'}</td>
+        <td class="n">${fmt(total)}</td></tr></tbody></table>
     <div class="pdf-foot">Precios en USD por prenda · TEMPOCODECA S.A.</div>`;
   toast('Abriendo el PDF para '+c.cli,
     list.length+' estilo(s) de la lista. En la ventana de impresión elige "Guardar como PDF".');
