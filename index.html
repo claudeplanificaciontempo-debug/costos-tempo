@@ -337,6 +337,23 @@ input.n:focus{border-color:var(--vino);outline:none}
   box-shadow:0 1px 3px var(--sombra);opacity:0;transition:opacity .12s}
 .prow:hover .edf{opacity:1}
 .edf:hover{color:var(--ink);border-color:var(--vino)}
+/* La lista que se le va a enviar al cliente: se arma estilo por estilo */
+.envio{border-bottom:1px solid var(--line-soft);background:var(--suave);padding:9px 14px}
+.envio-h{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.envio-h .ct{font-size:12.5px;font-weight:800;color:var(--vino-deep)}
+.envio-h .tot{font-size:11.5px;color:var(--ink-2);font-weight:700}
+.envio-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.echip{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);
+  border-radius:20px;padding:3px 5px 3px 4px;font-size:11px;max-width:290px}
+.echip img{width:22px;height:22px;border-radius:50%;object-fit:cover;flex:none;background:var(--suave)}
+.echip b{font-weight:800;color:var(--vino-deep);flex:none}
+.echip .nm{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.echip .px{font-weight:800;flex:none}
+.echip .x{border:0;background:none;cursor:pointer;color:var(--ink-3);font-size:13px;line-height:1;padding:0 3px;flex:none}
+.echip .x:hover{color:var(--falta)}
+.envio-vacio{font-size:11.5px;color:var(--ink-3);margin-top:6px;line-height:1.45}
+.lpadd{min-width:30px;padding:4px 8px;font-size:12px;font-weight:800;line-height:1}
+.lpadd.on{background:var(--vino);color:var(--sobre);border-color:var(--vino)}
 .lpwrap{overflow-x:auto}
 .lptab{width:100%;border-collapse:collapse}
 .lptab thead th{background:var(--suave);color:var(--vino-deep);font-size:10px;letter-spacing:.07em;text-transform:uppercase;
@@ -1105,10 +1122,10 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <select id="lp-f-cat" class="fld" style="width:auto" onchange="rowsLista()"></select>
       <select id="lp-f-temp" class="fld" style="width:auto" onchange="rowsLista()"></select>
       <button class="btn ghost sm" onclick="limpiarFiltroLp()">Limpiar</button>
-      <span class="mini" style="margin:0 0 0 auto">PDF para</span>
-      <select id="lp-cli" class="fld" style="width:auto" title="De qué cliente sale el precio que va en el PDF"></select>
-      <button class="btn org sm" onclick="pdfListaCliente()" title="Una hoja con la foto, la referencia y el precio de ese cliente: lo marcado, o todo lo que quedó en el filtro">PDF para el cliente</button>
+      <span class="mini" style="margin:0 0 0 auto">Armando la lista de</span>
+      <select id="lp-cli" class="fld" style="width:auto" title="Cada cliente tiene su propia lista" onchange="cambiarCliLp()"></select>
     </div>
+    <div id="lp-envio" class="envio"></div>
     <div class="lpwrap"><table class="lptab">
       <thead id="lp-head"></thead>
       <tbody id="lp-body"></tbody>
@@ -5787,7 +5804,58 @@ function abbr(s){return s.split(/\s+/).map(w=>w[0]).join('').toUpperCase().slice
 /* ====== LISTA DE PRECIOS ======
    La misma pantalla sirve para consultar y para armar el PDF del cliente: se
    filtra, se marca lo que va, y sale la hoja con foto, referencia y precio. */
-let SELLP=new Set();
+let SELLP=new Set(),ENVIOS={},ENVIOS_OK=false;
+/* Cada cliente tiene su propia lista. Se guarda en este navegador para que no
+   se pierda al recargar: son solo referencias, no toca nada del catálogo. */
+function cargarEnvios(){
+  if(ENVIOS_OK)return;ENVIOS_OK=true;
+  try{const t=localStorage.getItem('cst_envios');if(t)ENVIOS=JSON.parse(t)||{}}catch(e){ENVIOS={}}
+}
+function guardarEnvios(){
+  try{const o={};Object.keys(ENVIOS).forEach(k=>{const v=[...ENVIOS[k]];if(v.length)o[k]=v});
+    localStorage.setItem('cst_envios',JSON.stringify(o))}catch(e){}
+}
+function cliLp(){const e=$('lp-cli');return (e&&e.value)||(CLI[0]&&CLI[0].id)||''}
+function listaEnvio(){
+  cargarEnvios();const id=cliLp();
+  if(!(ENVIOS[id] instanceof Set))ENVIOS[id]=new Set(ENVIOS[id]||[]);
+  SELLP=ENVIOS[id];
+  return SELLP;
+}
+function cambiarCliLp(){listaEnvio();rowsLista()}
+function vaciarEnvio(){
+  const n=listaEnvio().size;
+  if(!n)return;
+  if(!confirm('¿Quitar las '+n+' referencias de la lista de '+nombreCliLp()+'?'))return;
+  SELLP.clear();guardarEnvios();rowsLista();
+  toast('Lista vacía','Puedes empezar a armarla otra vez.');
+}
+function nombreCliLp(){const c=CLI.find(c=>c.id===cliLp());return c?c.cli+' · '+c.zona:'—'}
+/* El panel de arriba: qué llevo en la lista de este cliente y cuánto suma */
+function pintarEnvio(){
+  const e=$('lp-envio');if(!e)return;
+  const sel=listaEnvio();
+  const g=cur;let total=0;
+  const ci=Math.max(0,CLI.findIndex(c=>c.id===cliLp()));
+  const chips=[...sel].map(r=>byRef(r)).filter(Boolean).map(x=>{
+    cur=x.r;calc();const px=plCalc(ci).pvp;total+=px||0;
+    return `<span class="echip" title="${escR(x.n)}">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}
+      <b>${escR(x.r)}</b><span class="nm">${escR(x.n)}</span><span class="px">${fmt(px)}</span>
+      <button class="x" title="Quitar de la lista" onclick="toggleLp('${escR(x.r)}',false)">✕</button></span>`;
+  }).join('');
+  cur=g;calc();
+  const n=sel.size;
+  e.innerHTML=`<div class="envio-h">
+      <span class="ct">Lista para ${escR(nombreCliLp())}</span>
+      <span class="tot">${n} estilo${n===1?'':'s'}${n?' · suman '+fmt(total):''}</span>
+      <span style="margin-left:auto"></span>
+      <button class="btn org sm" ${n?'':'disabled'} onclick="pdfListaCliente()" title="Una hoja con la foto, la referencia y el precio de este cliente">PDF de la lista</button>
+      <button class="btn sm" ${n?'':'disabled'} onclick="xlsxEnvio()" title="La misma lista en Excel">Excel de la lista</button>
+      <button class="btn ghost sm" ${n?'':'disabled'} onclick="vaciarEnvio()">Vaciar</button>
+    </div>
+    ${n?`<div class="envio-chips">${chips}</div>`
+      :`<div class="envio-vacio">Todavía no has añadido nada. Busca o filtra abajo y pulsa <b>+</b> en cada estilo que le vas a enviar a ${escR(nombreCliLp())}. La lista se queda guardada aunque cambies de filtro o cierres la página.</div>`}`;
+}
 function lpLista(){
   const q=($('lp-q')&&$('lp-q').value||'').toLowerCase();
   const v=id=>($(id)&&$(id).value)||'';
@@ -5800,18 +5868,21 @@ function limpiarFiltroLp(){
   ['lp-q','lp-f-cons','lp-f-col','lp-f-cat','lp-f-temp'].forEach(id=>{const e=$(id);if(e)e.value=''});
   rowsLista();
 }
-function toggleLp(r,v){if(v)SELLP.add(r);else SELLP.delete(r);pintarSubLp()}
+function toggleLp(r,v){
+  const sel=listaEnvio();
+  if(v)sel.add(r);else sel.delete(r);
+  guardarEnvios();rowsLista();
+}
 function toggleAllLp(v){
-  const rs=lpLista().map(x=>x.r);
-  if(v)rs.forEach(r=>SELLP.add(r));else rs.forEach(r=>SELLP.delete(r));
-  rowsLista();
+  const rs=lpLista().map(x=>x.r),sel=listaEnvio();
+  if(v)rs.forEach(r=>sel.add(r));else rs.forEach(r=>sel.delete(r));
+  guardarEnvios();rowsLista();
 }
 function pintarSubLp(){
-  const lista=lpLista(),marcadas=lista.filter(x=>SELLP.has(x.r)).length;
+  const lista=lpLista(),sel=listaEnvio(),marcadas=lista.filter(x=>sel.has(x.r)).length;
   if($('lp-s'))$('lp-s').innerHTML=lista.length+' de '+REFS.length+' referencias con precio cerrado'
-    +(marcadas?' · <b>'+marcadas+' marcada'+(marcadas===1?'':'s')+' para el PDF</b>':'');
-  const all=$('lp-all');
-  if(all)all.checked=lista.length>0&&lista.every(x=>SELLP.has(x.r));
+    +(marcadas?' · <b>'+marcadas+' de la lista est'+(marcadas===1?'á':'án')+' aquí</b>':'');
+  pintarEnvio();
 }
 function rowsLista(){
   /* los desplegables se arman con lo que de verdad hay en el catálogo */
@@ -5827,12 +5898,15 @@ function rowsLista(){
   if(sc){const v=sc.value;sc.innerHTML=CLI.map(c=>`<option value="${c.id}">${escR(c.cli)} · ${escR(c.zona)}</option>`).join('');
     if(CLI.some(c=>c.id===v))sc.value=v;}
 
-  $('lp-head').innerHTML='<tr><th style="width:34px"><input type="checkbox" id="lp-all" title="Marcar todo lo que está en el filtro" onchange="toggleAllLp(this.checked)"></th>'
+  const g=cur;let vis=0;
+  const list=lpLista(),sel=listaEnvio();
+  sel.forEach(r=>{if(!byRef(r))sel.delete(r)});
+  const todas=list.length>0&&list.every(x=>sel.has(x.r));
+  $('lp-head').innerHTML=`<tr><th style="width:62px"><button class="btn ghost sm" id="lp-all"
+      title="${todas?'Quitar de la lista todo lo que está en el filtro':'Añadir a la lista todo lo que está en el filtro'}"
+      onclick="toggleAllLp(${todas?'false':'true'})">${todas?'− todo':'+ todo'}</button></th>`
     +'<th class="l" style="width:52px"></th><th class="l">Producto</th>'+
     CLI.map(c=>`<th title="${c.cli} · ${c.zona}">${abbr(c.cli)} USD</th>`).join('')+'</tr>';
-  const g=cur;let vis=0;
-  const list=lpLista();
-  SELLP.forEach(r=>{if(!byRef(r))SELLP.delete(r)});
   const cols=CLI.length+3;
   const grupos={};list.forEach(x=>{(grupos[x.sub]=grupos[x.sub]||[]).push(x)});
   let rows='';
@@ -5846,7 +5920,8 @@ function rowsLista(){
         return `<td><span class="lppx${r.pvp?'':' cero'}" title="${r.pvp?'Precio de la v'+f.ver+' · guardada '+f.fecha:'Sin precio: la ficha todavía no tiene costo'}">${fmt(r.pvp)}</span></td>`;
       }).join('');
       rows+=`<tr>
-        <td><input type="checkbox" class="lpsel" ${SELLP.has(x.r)?'checked':''} onchange="toggleLp('${x.r}',this.checked)"></td>
+        <td><button class="btn ghost sm lpadd ${sel.has(x.r)?'on':''}" onclick="toggleLp('${x.r}',${sel.has(x.r)?'false':'true'})"
+          title="${sel.has(x.r)?'Quitar de la lista de '+escR(nombreCliLp()):'Añadir a la lista de '+escR(nombreCliLp())}">${sel.has(x.r)?'✓':'+'}</button></td>
         <td><div class="lpth" ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin foto</div>'}</div></td>
         <td class="l" style="text-align:left">
           <div class="lpnm">${x.n}</div>
@@ -5862,10 +5937,9 @@ function rowsLista(){
 }
 /* El PDF que se le manda al cliente: lo marcado, o todo lo que quedó filtrado. */
 function pdfListaCliente(){
-  const lista=lpLista();
-  const marcadas=lista.filter(x=>SELLP.has(x.r));
-  const list=marcadas.length?marcadas:lista;
-  if(!list.length){toast('Nada que imprimir','No hay referencias con ese filtro.');return}
+  const sel=listaEnvio();
+  const list=activos().filter(x=>sel.has(x.r)&&FICHAS[x.r].saved);
+  if(!list.length){toast('La lista está vacía','Pulsa + en los estilos que le vas a enviar a este cliente.');return}
   const id=($('lp-cli')&&$('lp-cli').value)||(CLI[0]&&CLI[0].id);
   const ci=CLI.findIndex(c=>c.id===id);
   const c=CLI[ci<0?0:ci];
@@ -5881,18 +5955,13 @@ function pdfListaCliente(){
         <div class="p">${fmt(r.pvp)}<small>USD</small></div></div></div>`}).join('')
   ).join('');
   cur=g;calc();
-  const filtro=[['Consolidado',$('lp-f-cons')&&nombreCons($('lp-f-cons').value)],
-    ['Colección',$('lp-f-col')&&$('lp-f-col').value],
-    ['Categoría',$('lp-f-cat')&&$('lp-f-cat').value],
-    ['Temporada',$('lp-f-temp')&&$('lp-f-temp').value]]
-    .filter(([t,v])=>v).map(([t,v])=>t+': '+v).join(' · ');
   $('print-area').innerHTML=`<div class="pdf-h"><h1>Lista de precios · TEMPO</h1>
     <span class="c">${escR(c.cli)} · ${escR(c.zona)}</span>
-    <span class="d">${hoy()} · ${list.length} referencia${list.length===1?'':'s'}${filtro?' · '+escR(filtro):''}</span></div>
+    <span class="d">${hoy()} · ${list.length} referencia${list.length===1?'':'s'}</span></div>
     <div class="pdf-g">${cards}</div>
     <div class="pdf-foot">Precios en USD por prenda · TEMPOCODECA S.A.</div>`;
   toast('Abriendo el PDF para '+c.cli,
-    (marcadas.length?list.length+' marcada(s)':'las '+list.length+' del filtro')+'. En la ventana de impresión elige "Guardar como PDF".');
+    list.length+' estilo(s) de la lista. En la ventana de impresión elige "Guardar como PDF".');
   setTimeout(()=>window.print(),250);
 }
 function exportarBOM(){
@@ -6262,6 +6331,53 @@ async function xlsxPrecios(){
     document.body.appendChild(a);a.click();document.body.removeChild(a);
     toast('Lista de precios generada',
       lib.nombre+' · '+list.length+' productos, '+CLI.length+' clientes y '+lib.fotos+' fotos.'+
+      (sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
+  }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
+  return lib;
+}
+
+/* ====== EXCEL DE LA LISTA DE ENVÍO ======
+   Lo mismo que el PDF, pero en hoja de cálculo: una fila por estilo con la
+   foto y el precio de ese cliente, para pegarlo en el correo o en el formato
+   que pida la marca. */
+async function xlsxEnvio(){
+  const sel=listaEnvio();
+  const list=activos().filter(x=>sel.has(x.r)&&FICHAS[x.r].saved);
+  if(!list.length){toast('La lista está vacía','Pulsa + en los estilos que le vas a enviar a este cliente.');return}
+  const ci=Math.max(0,CLI.findIndex(c=>c.id===cliLp())),c=CLI[ci];
+  if(!c){toast('Falta el cliente','Crea un cliente en Configuración.');return}
+  const g=cur,fl=[],altos={};
+  fl.push([{v:'LISTA DE PRECIOS · TEMPO',s:5},'','',{v:'generado el '+hoy(),s:1}]);
+  fl.push([{v:c.cli+' · '+c.zona,s:4}]);
+  fl.push([]);
+  fl.push(['FOTO','REFERENCIA','PRODUCTO','CATEGORÍA','TIPO','COLECCIÓN','TEMPORADA','PVP USD']
+    .map(t=>({v:t,s:3})));
+  const conFoto=[];let total=0;
+  list.forEach(x=>{
+    cur=x.r;calc();const px=plCalc(ci).pvp;total+=px||0;
+    const r=fl.length+1;
+    fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'',x.temporada||'',{v:px,s:2}]);
+    altos[r]=54;
+    if(FOTO[x.r])conFoto.push({ref:x.r,fila:r-1});
+  });
+  fl.push([]);
+  fl.push(['','','','','','',{v:'TOTAL',s:3},{v:total,s:2}]);
+  cur=g;calc();
+  marcaSave('Armando la lista…','');
+  const fotos=[];let sinFoto=0;
+  for(const f of conFoto){
+    const im=await fotoParaExcel(FOTO[f.ref],64);
+    if(im)fotos.push({datos:im.datos,ancho:im.ancho,alto:im.alto,col:0,fila:f.fila,dx:3,dy:3});
+    else sinFoto++;
+  }
+  estadoOk();
+  const hoja={nombre:'LISTA',filas:fl,anchos:[11,13,40,17,17,17,15,13],altos,fotos};
+  const lib=libroXlsx([hoja],'TEMPO_Lista_'+c.cli.replace(/[^A-Za-z0-9]+/g,'_')+'_'+
+    new Date().toISOString().slice(0,10)+'.xlsx');
+  try{
+    const a=document.createElement('a');a.href=URL.createObjectURL(lib.blob);a.download=lib.nombre;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    toast('Lista generada',lib.nombre+' · '+list.length+' estilo(s) y '+lib.fotos+' foto(s).'+
       (sinFoto?' '+sinFoto+' foto(s) no se pudieron leer.':''));
   }catch(e){toast('No se pudo descargar',String((e&&e.message)||e))}
   return lib;
