@@ -1123,6 +1123,11 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="kpis" id="kpis-lp"></div>
   <div class="card">
     <div class="card-h"><h2>Precios por referencia</h2>
+      <div class="pir-tabs" style="margin:0 0 0 10px">
+        <button class="tab on" id="lp-m-cerradas" onclick="modoLp('cerradas')">Costeadas</button>
+        <button class="tab" id="lp-m-pre" onclick="modoLp('pre')">Pre costeadas</button>
+        <button class="tab" id="lp-m-todas" onclick="modoLp('todas')">Todas</button>
+      </div>
       <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
       <button class="btn sm" style="margin-left:8px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios()">Excel con costo</button>
       <div class="sub" id="lp-s"></div></div>
@@ -6040,7 +6045,7 @@ function pintarEnvio(){
   const g=cur;let total=0;
   const ci=Math.max(0,CLI.findIndex(c=>c.id===cliLp()));
   const chips=[...sel].map(r=>byRef(r)).filter(Boolean).map(x=>{
-    cur=x.r;calc();const px=plCalc(ci).pvp;total+=px||0;
+    cur=x.r;calc();const px=precioLp(x.r,ci).pvp;total+=px||0;
     return `<span class="echip" title="${escR(x.n)}">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}
       <b>${escR(x.r)}</b><span class="nm">${escR(x.n)}</span><span class="px">${fmt(px)}</span>
       <button class="x" title="Quitar de la lista" onclick="toggleLp('${escR(x.r)}',false)">✕</button></span>`;
@@ -6058,11 +6063,34 @@ function pintarEnvio(){
     ${n?`<div class="envio-chips">${chips}</div>`
       :`<div class="envio-vacio">Todavía no has añadido nada. Busca o filtra abajo y pulsa <b>+</b> en cada estilo que le vas a enviar a ${escR(nombreCliLp())}. La lista se queda guardada aunque cambies de filtro o cierres la página.</div>`}`;
 }
+/* La pantalla muestra tres cosas: lo que ya tiene costo cerrado, lo que
+   todavía está en pre costeo (con el precio con que se ofreció) o las dos. */
+let lpModo='cerradas';
+function modoLp(m){
+  lpModo=m;
+  ['cerradas','pre','todas'].forEach(k=>{const b=$('lp-m-'+k);if(b)b.classList.toggle('on',k===m)});
+  rowsLista();
+}
+function enLpModo(r){
+  const f=FICHAS[r]||{};
+  if(lpModo==='pre')return !!f.pre;
+  if(lpModo==='todas')return !!(f.saved||f.pre);
+  return !!f.saved;
+}
+/* El precio que se muestra: el del pre costeo mientras la ficha no esté
+   cerrada, y el de hoy cuando ya lo está. */
+function precioLp(r,ci){
+  const f=FICHAS[r]||{};
+  const cerrada=f.saved&&!f.edit;
+  if(!cerrada&&f.pre&&f.pre.pvp&&f.pre.pvp[ci]&&f.pre.pvp[ci].pvp)
+    return {pvp:f.pre.pvp[ci].pvp,pre:true,fecha:f.pre.fecha};
+  return {pvp:plCalc(ci).pvp,pre:false};
+}
 function lpLista(){
   const q=($('lp-q')&&$('lp-q').value||'').toLowerCase();
   const v=id=>($(id)&&$(id).value)||'';
   const co=v('lp-f-cons'),cl=v('lp-f-col'),ca=v('lp-f-cat'),te=v('lp-f-temp');
-  return activos().filter(x=>FICHAS[x.r].saved)
+  return activos().filter(x=>enLpModo(x.r))
     .filter(x=>!q||(x.r+' '+x.n).toLowerCase().includes(q))
     .filter(x=>(!co||consDeRef(x.r).some(c=>c.id===co))&&(!cl||x.col===cl)&&(!ca||x.cat===ca)&&(!te||x.temporada===te));
 }
@@ -6082,7 +6110,8 @@ function toggleAllLp(v){
 }
 function pintarSubLp(){
   const lista=lpLista(),sel=listaEnvio(),marcadas=lista.filter(x=>sel.has(x.r)).length;
-  if($('lp-s'))$('lp-s').innerHTML=lista.length+' de '+REFS.length+' referencias con precio cerrado'
+  const qt=lpModo==='pre'?'referencias con pre costeo':lpModo==='todas'?'referencias con precio (cerrado o de pre costeo)':'referencias con precio cerrado';
+  if($('lp-s'))$('lp-s').innerHTML=lista.length+' de '+REFS.length+' '+qt
     +(marcadas?' · <b>'+marcadas+' de la lista est'+(marcadas===1?'á':'án')+' aquí</b>':'');
   pintarEnvio();
 }
@@ -6118,8 +6147,10 @@ function rowsLista(){
       cur=x.r;calc();const f=FICHAS[x.r];
       vis++;
       const px=CLI.map((c,ci)=>{
-        const r=plCalc(ci);
-        return `<td><span class="lppx${r.pvp?'':' cero'}" title="${r.pvp?'Precio de la v'+f.ver+' · guardada '+f.fecha:'Sin precio: la ficha todavía no tiene costo'}">${fmt(r.pvp)}</span></td>`;
+        const r=precioLp(x.r,ci);
+        const t=r.pre?'Precio del pre costeo del '+r.fecha+' · la ficha sigue abierta'
+          :(r.pvp?'Precio de la v'+f.ver+' · guardada '+f.fecha:'Sin precio: la ficha todavía no tiene costo');
+        return `<td><span class="lppx${r.pvp?(r.pre?' prov':''):' cero'}" title="${t}">${fmt(r.pvp)}</span></td>`;
       }).join('');
       rows+=`<tr>
         <td><button class="btn ghost sm lpadd ${sel.has(x.r)?'on':''}" onclick="toggleLp('${x.r}',${sel.has(x.r)?'false':'true'})"
@@ -6128,7 +6159,8 @@ function rowsLista(){
         <td class="l" style="text-align:left">
           <div class="lpnm">${x.n}</div>
           <span class="lpref">${x.r}</span>
-          <div class="lptipo">${x.marca?x.marca+' · ':''}${x.dep?x.dep+' · ':''}${x.cat} · ${x.sub} · v${f.ver}</div></td>
+          <div class="lptipo">${x.marca?x.marca+' · ':''}${x.dep?x.dep+' · ':''}${x.cat} · ${x.sub} · ${
+            (f.saved&&!f.edit)?'v'+f.ver:(f.pre?'pre costeo '+f.pre.fecha:'en avance')}</div></td>
         ${px}</tr>`;
     });
   });
@@ -6142,7 +6174,7 @@ function rowsLista(){
    pequeña, la referencia, el producto y el precio de ese cliente. */
 function pdfListaCliente(){
   const sel=listaEnvio();
-  const list=activos().filter(x=>sel.has(x.r)&&FICHAS[x.r].saved);
+  const list=activos().filter(x=>sel.has(x.r)&&enLpModo(x.r));
   if(!list.length){toast('La lista está vacía','Pulsa + en los estilos que le vas a enviar a este cliente.');return}
   const id=($('lp-cli')&&$('lp-cli').value)||(CLI[0]&&CLI[0].id);
   const ci=CLI.findIndex(c=>c.id===id);
@@ -6152,7 +6184,7 @@ function pdfListaCliente(){
   const grupos={};list.forEach(x=>{(grupos[x.sub||'—']=grupos[x.sub||'—']||[]).push(x)});
   const filas=Object.keys(grupos).sort().map(sub=>
     `<tr class="grp"><td colspan="6">${escR(sub)}</td></tr>`
-    +grupos[sub].map(x=>{cur=x.r;calc();const r=plCalc(ci<0?0:ci);total+=r.pvp||0;
+    +grupos[sub].map(x=>{cur=x.r;calc();const r=precioLp(x.r,ci<0?0:ci);total+=r.pvp||0;
       return `<tr>
         <td class="ft">${FOTO[x.r]?`<img src="${escR(FOTO[x.r])}">`:''}</td>
         <td class="rf">${escR(x.r)}</td>
@@ -6555,7 +6587,7 @@ async function xlsxPrecios(){
    que pida la marca. */
 async function xlsxEnvio(){
   const sel=listaEnvio();
-  const list=activos().filter(x=>sel.has(x.r)&&FICHAS[x.r].saved);
+  const list=activos().filter(x=>sel.has(x.r)&&enLpModo(x.r));
   if(!list.length){toast('La lista está vacía','Pulsa + en los estilos que le vas a enviar a este cliente.');return}
   const ci=Math.max(0,CLI.findIndex(c=>c.id===cliLp())),c=CLI[ci];
   if(!c){toast('Falta el cliente','Crea un cliente en Configuración.');return}
@@ -6567,7 +6599,7 @@ async function xlsxEnvio(){
     .map(t=>({v:t,s:3})));
   const conFoto=[];let total=0;
   list.forEach(x=>{
-    cur=x.r;calc();const px=plCalc(ci).pvp;total+=px||0;
+    cur=x.r;calc();const px=precioLp(x.r,ci).pvp;total+=px||0;
     const r=fl.length+1;
     fl.push(['',x.r,x.n,x.cat||'',x.sub||'',x.col||'',x.temporada||'',{v:px,s:2}]);
     altos[r]=54;
