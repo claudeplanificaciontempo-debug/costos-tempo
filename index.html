@@ -3272,6 +3272,7 @@ const CAMPOS_PROD=[
   {k:'dep',      t:'Departamento'},
   {k:'__estado', t:'Estado de la ficha'},
   {k:'__mes',    t:'Mes de entrega'},
+  {k:'creado',   t:'Día en que se registró'},
   {k:'cons',     t:'Consolidado'}
 ];
 /* ====== CONSOLIDADOS ======
@@ -3319,6 +3320,7 @@ function migrarCons(){
 let prodAgrupa=[];            /* campos por los que se agrupa, en orden */
 let FPROD={};                 /* campo -> valores marcados */
 let FDESDE='',FHASTA='';      /* rango de la fecha de entrega */
+let RDESDE='',RHASTA='';      /* rango del día en que se registró el producto */
 let VALF={};                  /* valores que se pintaron, para no escapar comillas */
 const MESES_C=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
@@ -3345,6 +3347,7 @@ function valoresProd(x,k){
 }
 function etiquetaValor(k,v){
   if(!v)return '(sin asignar)';
+  if(k==='creado')return fechaBonita(v)+(v===hoyISO()?' · hoy':'');
   if(k==='__mes'){const q=v.split('-');return MESES_C[(+q[1])-1]+'-'+q[0]}
   if(k==='cons')return nombreCons(v)||v;
   return v;
@@ -3353,7 +3356,7 @@ const tituloCampo=k=>(CAMPOS_PROD.find(c=>c.k===k)||{t:k}).t;
 /* lo vacío va al final; el mes y el año, del más nuevo al más viejo */
 function cmpValor(k,a,b){
   if(!a!==!b)return a?-1:1;
-  if(k==='__mes'||k==='anio')return b.localeCompare(a);
+  if(k==='__mes'||k==='anio'||k==='creado')return b.localeCompare(a);
   if(k==='cons')return (nombreCons(a)||a).localeCompare(nombreCons(b)||b,'es');
   return a.localeCompare(b,'es');
 }
@@ -3364,9 +3367,11 @@ function pasaFiltros(x){
   }
   if(FDESDE&&!(x.ent&&x.ent>=FDESDE))return false;
   if(FHASTA&&!(x.ent&&x.ent<=FHASTA))return false;
+  if(RDESDE&&!(x.creado&&x.creado>=RDESDE))return false;
+  if(RHASTA&&!(x.creado&&x.creado<=RHASTA))return false;
   return true;
 }
-function hayFiltros(){return Object.keys(FPROD).some(k=>FPROD[k]&&FPROD[k].length)||!!FDESDE||!!FHASTA}
+function hayFiltros(){return Object.keys(FPROD).some(k=>FPROD[k]&&FPROD[k].length)||!!FDESDE||!!FHASTA||!!RDESDE||!!RHASTA}
 
 function toggleMenuAgrupa(){
   const m=$('menu-agrupa');
@@ -3425,7 +3430,13 @@ function pintarFiltros(){
   }).join('');
   pn.innerHTML=cols+
     `<div class="fgrupo" style="max-height:none">
-      <div class="ft">Fecha de entrega${(FDESDE||FHASTA)?'<button onclick="limpiarFechas()">QUITAR</button>':''}</div>
+      <div class="ft">Día en que se registró${(RDESDE||RHASTA)?'<button onclick="limpiarRegistro()">QUITAR</button>':''}</div>
+      <div class="fechas">
+        <span>Desde</span><input type="date" value="${RDESDE}" onchange="setRegistro('d',this.value)">
+        <span>Hasta</span><input type="date" value="${RHASTA}" onchange="setRegistro('h',this.value)">
+      </div>
+      <button class="btn ghost sm" style="margin-top:8px;width:100%" onclick="registroHoy()">Lo que cargué hoy</button>
+      <div class="ft" style="margin-top:14px">Fecha de entrega${(FDESDE||FHASTA)?'<button onclick="limpiarFechas()">QUITAR</button>':''}</div>
       <div class="fechas">
         <span>Desde</span><input type="date" value="${FDESDE}" onchange="setFecha('d',this.value)">
         <span>Hasta</span><input type="date" value="${FHASTA}" onchange="setFecha('h',this.value)">
@@ -3446,7 +3457,12 @@ function todosCampo(k){FPROD[k]=(VALF[k]||[]).slice();rowsProd()}
 function limpiarCampo(k){delete FPROD[k];rowsProd()}
 function limpiarFechas(){FDESDE=FHASTA='';rowsProd()}
 function setFecha(cual,v){if(cual==='d')FDESDE=v;else FHASTA=v;rowsProd()}
-function limpiarFiltros(){FPROD={};FDESDE=FHASTA='';rowsProd()}
+function limpiarRegistro(){RDESDE=RHASTA='';rowsProd()}
+function setRegistro(cual,v){if(cual==='d')RDESDE=v;else RHASTA=v;rowsProd()}
+/* el atajo de todos los días: ver solo lo que entró hoy */
+function registroHoy(){RDESDE=RHASTA=hoyISO();rowsProd();
+  toast('Lo que registraste hoy',fechaBonita(hoyISO())+' · '+prodLista().length+' producto(s).');}
+function limpiarFiltros(){FPROD={};FDESDE=FHASTA='';RDESDE=RHASTA='';rowsProd()}
 /* la fila de globos deja ver de un vistazo qué se está mirando */
 function pintarChips(){
   const c=$('chips-prod');if(!c)return;
@@ -3455,6 +3471,9 @@ function pintarChips(){
       <button title="Quitar este filtro" onclick="limpiarCampo('${k}')">×</button></span>`).join('');
   if(FDESDE||FHASTA)h+=`<span class="chipf">Entregada ${FDESDE?'desde '+fechaBonita(FDESDE):''}${FDESDE&&FHASTA?' ':''}${FHASTA?'hasta '+fechaBonita(FHASTA):''}
       <button title="Quitar las fechas" onclick="limpiarFechas()">×</button></span>`;
+  if(RDESDE||RHASTA)h+=`<span class="chipf">${(RDESDE===RHASTA&&RDESDE===hoyISO())?'Registradas hoy':
+      'Registradas '+(RDESDE?'desde '+fechaBonita(RDESDE):'')+(RDESDE&&RHASTA?' ':'')+(RHASTA?'hasta '+fechaBonita(RHASTA):'')}
+      <button title="Quitar el filtro de registro" onclick="limpiarRegistro()">×</button></span>`;
   if(h)h+=`<button class="btn ghost sm" style="padding:2px 9px" onclick="limpiarFiltros()">Limpiar todo</button>`;
   c.innerHTML=h;
   c.classList.toggle('hide',!h);
