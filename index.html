@@ -3777,16 +3777,18 @@ function subirFoto1(fs){
    vienen como "foto_4823.jpg", así que también se busca la referencia dentro
    del nombre. Nunca se adivina: solo empareja con una referencia que exista. */
 function refDeArchivo(nombre){
-  const base=String(nombre||'').replace(/\.[^.]+$/,'').trim();
-  if(byRef(base))return base;
-  const limpio=base.replace(/\s*\(\d+\)\s*$/,'').trim();     // la copia "(1)" que agrega el navegador
-  if(byRef(limpio))return limpio;
-  const porMayus=REFS.find(x=>String(x.r).toLowerCase()===limpio.toLowerCase());
-  if(porMayus)return porMayus.r;
-  /* la referencia metida dentro del nombre: se toma la más larga que encaje,
-     para que "4823" no le gane a "4823-2" si las dos existen */
-  const trozos=limpio.split(/[^A-Za-z0-9]+/).filter(Boolean).sort((a,b)=>b.length-a.length);
-  for(const t of trozos){const m=REFS.find(x=>String(x.r).toLowerCase()===t.toLowerCase());if(m)return m.r}
+  const base=String(nombre||'').replace(/\.[^.]+$/,'').trim()
+    .replace(/\s*\(\d+\)\s*$/,'').trim();                    // la copia "(1)" que agrega el navegador
+  const prueba=t=>{if(!t)return '';const m=REFS.find(x=>String(x.r).toLowerCase()===String(t).toLowerCase());return m?m.r:''};
+  let r=prueba(base); if(r)return r;
+  const pal=base.split(/\s+/).filter(Boolean);
+  /* primero los nombres compuestos del principio: "BASC 1 CAMISETA…" es la BASC 1 */
+  for(let n=Math.min(3,pal.length);n>=1;n--){r=prueba(pal.slice(0,n).join(' '));if(r)return r}
+  /* después cualquier palabra suelta, con su guion: así "4900-1" gana antes que "4900",
+     que es otra prenda distinta */
+  for(const t of [...pal].sort((a,b)=>b.length-a.length)){r=prueba(t);if(r)return r}
+  /* y por último los trozos alfanuméricos, para nombres como "foto_4797.jpg" */
+  for(const t of base.split(/[^A-Za-z0-9]+/).filter(Boolean).sort((a,b)=>b.length-a.length)){r=prueba(t);if(r)return r}
   return '';
 }
 /* Si el archivo trae una referencia que no existe, se crea el producto ahí
