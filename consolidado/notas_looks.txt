@@ -1,0 +1,89 @@
+# pagina_look | titulo/grupo | referencias impresas | colores | nota
+1 | LOOK 02 soft campus · LEVEL 1 GRAPHICS (3) + LEVEL 2 GRAPHICS (3) | SIN REF | Bright White, Petal Pink, Arena / Vintage Cream, Coastal Sky, Black | camisetas MC graficas
+3 | LOOK 02 coastal graphic · LEVEL 1 (3) + LEVEL 2 (3) | SIN REF | Vintage Cream, Petal Pink, Grey Jaspe / Aero Midnight, Coastal Sky, Butter Sun | camisetas MC graficas
+5 | LOOK 03 sunny varsity · LEVEL 1 (3) + LEVEL 2 (3) | SIN REF | Aero Midnight, Grey Jaspe, Vintage Cream / Petal Pink, Butter Sun, Coastal Sky | camisetas MC graficas
+7 | LOOK 01 casual heritage · LEVEL 2 GRAPHIC TEES | 7449, 7458, 7451 (x2 colores c/u) | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Acrylic Purple | DBL LAYER FLT EMB
+9 | LEVEL 2 GRAPHIC TEES | 179836 (3), 179835 (2), 179834 (1) | Dark Black, Gris Jaspe, Bright White, Peach Whip, Crudo, Antique Ruby | graficas
+11 | LOOK 01 easy basics · CUELLO REDONDO (3) + CUELLO V (3) | SIN REF | Bright White, Coastal Sky, Petal Pink / Grey Jaspe, Vintage Cream, Butter Sun | basicas MC
+13 | LOOK 02 sunny mood · POLOS | SIN REF | Bright White, Cafe, Arena, Grey Jaspe, Butter Sun, Vintage Berry | polos MC
+15 | LOOK 01 easy basics (repite p11) | SIN REF | igual p11 | basicas MC
+17 | LOOK 01 Easy Classics · POLOS | SIN REF | Bright White, Crudo, Peach Whip, Negro, Aero Midnight, Blue Frost | polos
+19 | LOOK 01 coastal prep · LEVEL 2 POLOS | 180240 (6 colores) | Blue Frost, Bright White, Crudo, Spa Retreat, Arena, Aero Midnight | POLO PIQUE
+21 | LOOK 02 easy basics · TOPS SUMMER | SIN REF | Vintage Cream, Coastal Sky, Petal Pink, Butter Sun, Aero Midnight, Black | tops MC
+23 | LOOK 02 easy basics · TOPS | 7457, 7448, 7447, 7449 | Vintage Cream, Coastal Sky, Petal Pink, Aero Midnight | 4 estilos distintos
+25 | TOPS (blusa tiras fruncida) | 7460, 7461, 7462, 7463, 7464, 7465 | Bright White, Crudo, Arena, Peach Whip, Spa Retreat, Aero Midnight | 6 refs
+27 | LOOK 02 easy basics · TOPS (cardigan/ML botones) | 7450, 7451, 7452, 7453, 7454, 7455 | Bright White, Crudo, Gris Jaspe LHG, Aero Midnight, Spa Retreat, Acrylic Purple | 6 refs
+29 | LOOK 03 effortless style · TOP hombros descubiertos | 1477 | P-01 Bright White, P-04 Vintage Cream, P-02 Coastal Sky, P-03 Petal Pink | 20% OFF en todo el look
+31 | LOOK 04 soft romance · TOP OFF-SHOULDER | SIN REF VISIBLE | P-01 Bright White, P-07 Black, P-03 Petal Pink, P-04 Vintage Berry | 20% OFF
+33 | LOOK 04 sunny side up · TOPS (bvd tiras encaje) | 7450 (los 6) | Bright White, Vintage Cream, Gris Jaspe LHG, Aero Midnight, Spa Retreat, Acrylic Purple | OJO: 7450 tambien en p27
+35 | LOOK 06 clean essentials · TOPS (cuello alto MC ribb) | 7460,7461,7462,7463,7464,7465 | Bright White, Crudo, Arena, Aero Midnight, Wine, Olive Green | OJO: mismos nros que p25
+37 | LOOK 07 sunny vibes · TOPS (bvd fruncido lateral) | 7470,7471,7472,7473,7474,7475 | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Peach Whip |
+39 | LOOK 08 soft escape · TOPS (crop manga murcielago) | 7480,7481,7482,7483,7484,7485 | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Peach Whip |
+41 | LOOK 10 easy reversible · TOPS (MC reversible) | 7500 (los 6) | Bright White, Crudo, Arena, Cafe, Spa Retreat, Peach Whip |
+43 | LOOK 10 easy reversible · TOPS (manga caida) | 7506,7507,7508,7509,7510,7511 | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Peach Whip |
+45 | LOOK 10 easy reversible · TOPS (bvd tiras Aero) | 7500 (los 6) | Bright White, Tofu, Gris Jaspe LHG, Acrylic Purple, Spa Retreat, Peach Whip | OJO: 7500 repetido
+47 | LOOK 11 soft drape · TOPS (drapeado hombro) | 7520 (los 6) | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Acrylic Purple |
+49 | LOOK 11 soft drape · TOPS (bvd AERO 87) | 4909 (los 6) | Bright White, Crudo, Arena, Aero Midnight, Spa Retreat, Peach Whip |
+51 | LOOK 12 coastal stripe · TOPS (bvd rayas botones) | 7521 (los 6) | Bright White Stripe, Crudo Stripe, Arena Stripe, Aero Midnight Stripe, Blue Frost Stripe, Antique Ruby Stripe |
+53 | LOOK 20 essential tank · TANK TOPS | 7543 (los 6) | Bright White, Crudo, Negro, Grey Jaspe, Spa Retreat 13-4908, Antique Ruby |
+55 | LOOK 08 striped polo · STRIPED POLO TEE (STYLE 7545, FIT SLIM, LENGTH 46 CM, LYCRA) | 7545 (4) | Bright White, Grey Jaspe, Arena, Aero Midnight PANTONE 19-3920 |
+57 | LOOK 13 easy mock tee · TOPS | 7522 (los 6) | Bright White, Crudo, Arena, Aero Midnight, Blue Frost, Antique Ruby |
+59 | LOOK 13 easy rib · TOPS | 7523 (los 6) | Bright White, Crudo, Arena, Cafe, Antique Ruby, Blue Frost |
+61 | LOOK 20 flame tee · FLAME TEE | 7544 (los 6) | Bright White, Grey Jaspe, Arena, Cafe, Spa Retreat 13-4908, Blue Frost |
+63 | LOOK 06 soft coast · TOP (fruncido botones manga corta) | SIN REF (P-01..P-06) | Bright White, Black, Vintage Cream, Arena, Coastal Sky, Petal Pink |
+65 | LOOK 05 soft lounge · TOP (MC fruncido lazos) | SIN REF (P-01,P-02,P-05,P-06) | Bright White, Grey Jaspe, Petal Pink, Vintage Berry | 20% OFF
+67 | LOOK 20 flame tee · FLAME TEE (cuello V bolsillo) | 7543 (4) | Bright White, Crudo, Grey Jaspe, Aero Midnight | OJO: 7543 tambien p53 tank
+69 | LOOK 17 stripe tee · STRIPED TEES (MC rayas) | 7528 (6) | combinaciones de rayas; 3 BASIC + 3 FASHION | Crudo/Aero Midnight/Grey Jaspe, Arena/Crudo/Cafe, Grey Jaspe/Crudo/Aero Midnight, Negro/Crudo/Grey Jaspe, Blue Frost/Crudo/Aero Midnight, Antique Ruby/Crudo/Grey Jaspe
+71 | LOOK 17 cozy stripe tee · STRIPES (buzo ML rayas anchas) | 7529 (6) | Aero Midnight, Crudo, Grey Jaspe, Arena, Spa Retreat 13-4908, Petal Pink
+73 | LOOK 18 slim stripe tee · STRIPES (ML rayas finas) | 7530 (6) | Aero Midnight, Crudo, Grey Jaspe, Arena, Spa Retreat 13-4908, Antique Ruby
+75 | LOOK 17 slim stripe tee · STRIPED TEES (MC rayas finas) | 7532 (6) | Grey Jaspe/Crudo, Aero Midnight/Bright White, Crudo/Aero Midnight, Arena/Crudo, Antique Ruby/Blue Frost, Spa Retreat/Crudo
+77 | LOOK 15 clean body · TOPS (body MC cuadrado) | 7527 (6) | Bright White, Crudo, Negro, Aero Midnight, Spa Retreat, Antique Ruby
+79 | LOOK 17 sleek body · BODYSUITS (body cuello alto sin manga) | 7531 (6) | Crudo, Negro, Grey Jaspe, Aero Midnight, Doeskin Cream, Antique Ruby
+81 | LOOK 17 henley body · BODYSUITS (body ML botones) | 7533 (6) | Crudo, Grey Jaspe, Arena, Aero Midnight, Spa Retreat 13-4908, Antique Ruby
+83 | LOOK 17 cozy body · BODYSUITS (body ML henley) | 7534 (6) | Crudo, Cafe, Aero Midnight, Negro, Spa Retreat 13-4908, Antique Ruby
+85 | LOOK 13 easy stripe · SHORTS (rayas elastico) | 7525 (6) | Bright White Stripe, Crudo Stripe, Arena Stripe, Aero Midnight Stripe, Blue Frost Stripe, Antique Ruby Stripe
+87 | LOOK 12 coastal stripe · BOTTOMS (pantalon ancho rayas) | 4912 (6) | Bright White Stripe, Crudo Stripe, Arena Stripe, Aero Midnight Stripe, Blue Frost Stripe, Antique Ruby Stripe
+89 | LOOK 12 coastal stripe · TOPS (blusa tiras lazo rayas) | 7526 (6) | Bright White/Crudo/Arena/Aero Midnight/Blue Frost/Antique Ruby Stripe
+91 | LOOK 13 heritage check · SHORTS (cuadros) | 3616 (6) | Bright White, Crudo, Arena, Cafe, Blue Frost, Antique Ruby
+93 | LOOK 13 heritage check · SHORTS (sastre cuadros) | 7524 (6) | Bright White, Crudo, Arena, Aero Midnight, Blue Frost, Antique Ruby
+95 | LOOK 13 easy linen short · SHORTS (lino cordon) | 3553 (6) | Bright White, Crudo, Arena, Cafe, Blue Frost, Antique Ruby
+97 | LOOK 18 cozy half zip · FLEECE TOPS (medio cierre) | 7535 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+99 | LOOK 16 cozy pant · PANTS (fleece ancho) | 7536 (6) | Grey Jaspe, Crudo, Arena, Petal Pink, Spa Retreat 13-4908, Aero Midnight
+101 | FLEECE TOPS (medio cierre manga corta) | 7538 (3) | Black, Chocolate, Habano
+103 | LOOK 19 cozy pant · FLEECE PANTS | 7539 (3) | Negro, Cafe, Habano
+105 | LOOK 17 cozy top · FLEECE TOPS (polo medio boton) | 7537 (6) | Bright White, Grey Jaspe, Crudo, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+107 | LOOK 12 henley tee · HENLEY TOP (ML grafico) | 1445 (6) | Bright White, Crudo, Gris Jaspe, Aero Midnight PANTONE 19-3828, Spa Retreat PANTONE 13-4908, Acrylic Purple PANTONE 18-3011
+109 | LOOK 19 soft henley · HENLEY TOPS (ML AERO) | 1446 (6) | Grey Jaspe, Crudo, Negro, Cafe, Spa Retreat 13-4908, Antique Ruby
+111 | LOOK 20 soft henley · HENLEY TOPS (MC AEROPOSTALE) | 1346 (6) | Bright White, Grey Jaspe, Negro, Aero Midnight, Blue Frost, Antique Ruby
+113 | LOOK 08 henley tee · HENLEY TEE (MC AERO) | 7541 (6) | Bright White, Gris Jaspe, Black, Chocolate, Spa Retreat 13-4908, Acrylic Purple 18-3011
+115 | LOOK 19 raglan henley · HENLEYS (MC aeropostale 1987 NYC) | 7540 (6) | Bright White, Crudo, Grey Jaspe, Negro, Spa Retreat 13-4908, Antique Ruby
+117 | LOOK 19 raglan henley · HENLEY TOPS (ML AERO NY) | 7542 (6) | Crudo, Grey Jaspe, Aero Midnight, Arena, Blue Frost, Antique Ruby
+119 | LOOK 19 woven pant · WOVEN PANTS | 4894 (4) | Grey Jaspe, Crudo, Arena, Cafe
+121 | LOOK 20 linen pant · LINEN PANTS | 4851 (4) | Bright White, Crudo, Arena, Cafe
+123 | LOOK 19 barrel pant · BARREL PANTS | 4851 (4) | Aero Midnight, Negro, Arena, Crudo | OJO: 4851 repetido con p121
+125 | LOOK 19 palazzo pant · PALAZZO PANTS | 4922 (4) | Crudo, Arena, Cafe, Aero Midnight
+127 | PALAZZO PANTS (franjas laterales) | 4923 (4) | Crudo, Arena, Cafe, Negro
+129 | LOOK 14 soft zip hoodie · HOODIES | 4114 (6) | Aero Midnight, Grey Jaspe, Crudo, Arena, Spa Retreat 13-4908, Acrylic Purple 18-3011
+131 | LOOK 13 easy flare · PANTS (fleece flare) | 3850 (6) | Crudo, Arena, Grey Jaspe, Aero Midnight, Spa Retreat 13-4908, Acrylic Purple 18-3011
+133 | LOOK 15 cozy crew · FLEECE TOPS (buzo AERO 87) | 4900 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Peach Whip, Acrylic Purple
+135 | LOOK 15 cozy short · SHORTS (fleece) | 4901 (5) + 4903 (1 Grey Jaspe) | Peach Whip, Crudo, Grey Jaspe(4903), Arena, Aero Midnight, Acrylic Purple
+137 | LOOK 16 heritage crew · FLEECE TOPS (buzo 87) | 4902 (6) | Crudo, Arena, Grey Jaspe, Aero Midnight, Petal Pink, Vintage Ruby
+139 | LOOK 16 cozy pant · PANTS (fleece 87) | 4903 (6) | Crudo, Arena, Grey Jaspe, Aero Midnight, Petal Pink, Vintage Ruby
+141 | LOOK 16 cozy zip hoodie · HOODIES | 7528 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat | OJO: 7528 tambien en p69 (striped tees)
+143 | LOOK 16 cozy short · SHORTS (fleece AERO) | 7529 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat | OJO: 7529 tambien p71
+145 | LOOK 16 relaxed hoodie · HOODIES (AERO NY) | 4898 (6) | Aero Midnight, Grey Jaspe, Crudo, Arena, Spa Retreat 13-4908, Petal Pink
+147 | LOOK 16 cozy short · SHORTS (fleece AERO NY) | 4899 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+149 | LOOK 18 cozy hoodie · HOODIES (aeropostale 87 NY) | 4906 (6) | Vintage Cream, Arena, Grey Jaspe, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+151 | LOOK 17 cozy skirt · SKIRTS (falda fleece AERO 87) | 4907 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+153 | LOOK 17 cozy crew · FLEECE TOPS (buzo AERO NYC) | 4908 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+155 | LOOK 18 cozy crop · FLEECE TOPS (buzo crop NEW YORK 87) | 4913 (6) | Grey Jaspe, Crudo, Arena, Aero Midnight, Petal Pink, Spa Retreat 13-4908
+157 | LOOK 14 easy zip hoodie · HOODIES (A NY EIGHTY SEVEN) | 4113 (6) | Crudo, Arena, Grey Jaspe, Aero Midnight, Blue Frost, Acrylic Purple
+159 | LOOK 13 easy flare · PANTS (fleece flare AEROPOSTALE) | 3849 (6) | Crudo, Arena, Grey Jaspe, Aero Midnight, Blue Frost, Acrylic Purple
+161 | LOOK 20 flame tee · FLAME TEE | 7546 (4) | Bright White, Grey Jaspe, Arena, Cafe
+163 | LOOK 21 embroidered tee · EMBROIDERED TEE (bordado flor) | 7547 (6) | Bright White, Crudo, Grey Jaspe, Arena, Spa Retreat 13-4908, Peach Whip
+165 | LOOK 21 graphic tee · GRAPHIC TEE (estampado grande) | 7548 (6) | Bright White, Crudo, Grey Jaspe, Arena, Spa Retreat 13-4908, Antique Ruby
+167 | LOOK 21 boxy tee · BOXY TEE (bordado flores) | 7549 (6) | Bright White, Crudo, Arena, Cafe, Spa Retreat 13-4908, Acrylic Purple 18-3011
+169 | LOOK 22 relaxed tee · RELAXED TEE (flor grande) | 7550 (6) | Bright White, Crudo, Arena, Grey Jaspe, Spa Retreat 13-4908, Acrylic Purple 18-3011
+171 | LOOK 22 oversized tee · OVERSIZED TEE (surf supply) | 7551 (6) | Bright White, Crudo, Grey Jaspe, Aero Midnight, Blue Frost, Spa Retreat 13-4908
+173 | LOOK 23 crop tee · CROP TEE (shell club) | 7552 (6) | Bright White, Crudo, Grey Jaspe, Arena, Spa Retreat 13-4908, Peach Whip
+175 | LOOK 23 island days tee · RELAXED TEE (island days) | 7553 (6) | Bright White, Crudo, Grey Jaspe, Aero Midnight 19-3828, Spa Retreat 13-4908, Antique Ruby
