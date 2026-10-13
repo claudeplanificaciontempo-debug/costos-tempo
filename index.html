@@ -1449,7 +1449,20 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="modal">
     <div class="modal-h"><h2 id="mm-t">Carga masiva de productos</h2></div>
     <div class="modal-b">
+      <div class="pir-tabs" style="margin-bottom:10px">
+        <button class="tab" id="mm-t-prod" onclick="modoMasiva('prod')">Productos</button>
+        <button class="tab" id="mm-t-mat" onclick="modoMasiva('mat')">Materiales</button>
+        <button class="tab" id="mm-t-receta" onclick="modoMasiva('receta')">Receta de las fichas</button>
+        <button class="tab" id="mm-t-tiempos" onclick="modoMasiva('tiempos')">Tiempos por centro</button>
+      </div>
       <div class="mini" id="mm-h"></div>
+      <div class="addrow" style="border:0;padding:0 0 8px;background:none">
+        <button class="btn" onclick="$('mm-file').value='';$('mm-file').click()">Elegir archivo de Excel o CSV</button>
+        <input type="file" id="mm-file" accept=".xlsx,.xlsm,.csv,.txt" class="hide" onchange="leerArchivoMasiva(this.files[0])">
+        <span class="mini" id="mm-file-s" style="margin:0">…o pega las filas copiadas de Excel aquí abajo.</span>
+        <label class="mini hide" id="mm-reemp-l" style="margin:0 0 0 auto;display:flex;gap:6px;align-items:center;cursor:pointer">
+          <input type="checkbox" id="mm-reemp" checked> Reemplazar lo que ya tenga la ficha</label>
+      </div>
       <textarea class="ta" id="mm-ta"></textarea>
       <div class="drop" id="mm-drop">
         Las fotos se suben aparte con el botón <b>Fotos</b> (el nombre del archivo manda: 4831.jpg, o 4831 SHORT DESFLECADO.jpg para crear el producto con su nombre) o con <b>Recortar de una imagen</b>, si vienen varias prendas en una sola imagen.
@@ -4961,24 +4974,42 @@ function aplicarRecortes(){
 
 /* ====== CARGA MASIVA ====== */
 let masivaModo='prod';
+const MASIVA={
+  prod:{t:'Carga masiva de productos',
+    h:'Una fila por producto: <b>Referencia ; Nombre ; Categoría ; Tipo de producto ; Departamento ; Marca ; Colección</b> (de Departamento en adelante todo es opcional). Si la referencia ya existe, se actualiza.'},
+  mat:{t:'Carga masiva de materiales',
+    h:'Una fila por ítem: <b>Código ; Descripción ; Tipo (mp/ins/dec/srv) ; UM ; Costo</b>. Si el código ya existe, se actualiza (también el precio).'},
+  receta:{t:'Carga masiva de la receta',
+    h:'Una fila por material de cada ficha: <b>Referencia ; Código del material ; Consumo ; Desperdicio %</b> (el desperdicio es opcional). Solo entra en las fichas que todavía no están cerradas.'},
+  tiempos:{t:'Carga masiva de tiempos',
+    h:'Una fila por centro: <b>Referencia ; Centro ; Tiempo</b>. El centro puede ser corte, estampado, bordado, confección o empaque. El bordado va en <b>puntadas</b>; los demás, en minutos. Con 0 se apaga el centro.'}
+};
+function modoMasiva(m){
+  masivaModo=m;
+  $('mm-t').textContent=MASIVA[m].t;
+  $('mm-h').innerHTML=MASIVA[m].h;
+  $('mm-drop').classList.toggle('hide',m!=='prod');
+  $('mm-reemp-l').classList.toggle('hide',m!=='receta');
+  ['prod','mat','receta','tiempos'].forEach(k=>{const b=$('mm-t-'+k);if(b)b.classList.toggle('on',k===m)});
+}
 function abrirMasiva(){
-  masivaModo='prod';
-  $('mm-t').textContent='Carga masiva de productos';
-  $('mm-h').innerHTML='Pega desde Excel una fila por producto: <b>Referencia ; Nombre ; Categoría ; Tipo de producto ; Departamento ; Marca ; Colección</b> (de Departamento en adelante todo es opcional). Sirve punto y coma, tabulación o coma. Si la referencia ya existe, se actualiza.';
-  $('mm-ta').value='';$('mm-drop').classList.remove('hide');
+  modoMasiva('prod');
+  $('mm-ta').value='';$('mm-file-s').textContent='…o pega las filas copiadas de Excel aquí abajo.';
   $('ovl2').classList.remove('hide');
 }
 function abrirMasivaMat(){
-  masivaModo='mat';
-  $('mm-t').textContent='Carga masiva de materiales';
-  $('mm-h').innerHTML='Pega desde Excel una fila por ítem: <b>Código ; Descripción ; Tipo (mp/ins/dec/srv) ; UM ; Costo</b>.';
-  $('mm-ta').value='';$('mm-drop').classList.add('hide');
+  modoMasiva('mat');
+  $('mm-ta').value='';$('mm-file-s').textContent='…o pega las filas copiadas de Excel aquí abajo.';
   $('ovl2').classList.remove('hide');
 }
 function plantilla(){
-  $('mm-ta').value=masivaModo==='prod'
-    ? '4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop'
-    : 'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35';
+  const P={
+    prod:'4831;CAMISETA MC RIBB BASICA;CAMISETAS;Camiseta CR;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4832;BVD RIBB TIRA FINA;FITS;Bare Tiras;Dama;Aeropostale;BASICOS RIBB Y LYCRA\n4833;TOP CROP RIBB;CAMISETAS;Basica Crop',
+    mat:'TJ-RIB6X6;RIBB 6x6 24/1;mp;kg;8.40\nIN-CIE001;Cierre 12 cm;ins;u;0.22\nSV-BOR001;Servicio de bordado externo;srv;prenda;0.35',
+    receta:'4831;MP-JERSEY241;0,180;0\n4831;MP-RIBB241;0,020;0\n4831;IN-HILOPARACOSE;1;0\n4832;MP-JERSEYLYCRA;0,130;0',
+    tiempos:'4831;confeccion;5\n4831;corte;0,95\n4831;empaque;1,25\n4831;bordado;2500'
+  };
+  $('mm-ta').value=P[masivaModo]||'';
 }
 /* Si la fila ya viene separada por tabulación o punto y coma —que es como llega
    pegada desde Excel— la coma NO separa: es la coma decimal de "0,45" o parte del
@@ -4987,11 +5018,102 @@ function partes(l){
   const sep=/[\t;]/.test(l)?/[\t;]/:/,(?=\s*\S)/;
   return l.split(sep).map(s=>s.trim());
 }
+/* ====== LEER EL ARCHIVO DE LA CARGA MASIVA ======
+   Se puede elegir el archivo en vez de pegar el texto. El .xlsx es un ZIP con
+   XML adentro: se abre a mano (el navegador descomprime con DecompressionStream)
+   y se lee la primera hoja. El .csv llega como texto y entra directo. */
+async function leerArchivoMasiva(f){
+  if(!f)return;
+  const nom=f.name||'archivo';
+  $('mm-file-s').textContent='Leyendo '+nom+'…';
+  try{
+    let txt='';
+    if(/\.(xlsx|xlsm)$/i.test(nom)) txt=await filasDeXlsx(await f.arrayBuffer());
+    else txt=await f.text();
+    txt=txt.replace(/\r\n?/g,'\n').split('\n').filter(l=>l.trim()).join('\n');
+    if(!txt){toast('El archivo vino vacío','Revisa que la primera hoja tenga las filas.','warn');
+      $('mm-file-s').textContent='El archivo no traía filas.';return}
+    $('mm-ta').value=txt;
+    const n=txt.split('\n').length;
+    $('mm-file-s').innerHTML='<b>'+escR(nom)+'</b> · '+n+' fila(s) leída(s). Revisa abajo y pulsa Procesar.';
+  }catch(e){
+    $('mm-file-s').textContent='No se pudo leer el archivo.';
+    toast('No se pudo leer el archivo',String((e&&e.message)||e)+'. Si es .xls viejo, guárdalo como .xlsx o como CSV.','err');
+  }
+}
+/* Descomprime un archivo del ZIP: 0 = guardado tal cual, 8 = deflate */
+async function inflar(buf,metodo){
+  if(metodo===0)return new Uint8Array(buf);
+  if(typeof DecompressionStream!=='function')throw new Error('este navegador no puede abrir .xlsx; usa CSV');
+  const ds=new DecompressionStream('deflate-raw');
+  const r=new Response(new Blob([buf]).stream().pipeThrough(ds));
+  return new Uint8Array(await r.arrayBuffer());
+}
+async function archivosDeZip(ab){
+  const u=new Uint8Array(ab),dv=new DataView(ab),dec=new TextDecoder();
+  let fin=-1;
+  for(let i=u.length-22;i>=0&&i>u.length-66000;i--){if(dv.getUint32(i,true)===0x06054b50){fin=i;break}}
+  if(fin<0)throw new Error('no parece un archivo de Excel');
+  const n=dv.getUint16(fin+10,true);let off=dv.getUint32(fin+16,true);
+  const out={};
+  for(let k=0;k<n;k++){
+    const met=dv.getUint16(off+10,true),comp=dv.getUint32(off+20,true);
+    const ln=dv.getUint16(off+28,true),le=dv.getUint16(off+30,true),lc=dv.getUint16(off+32,true);
+    const loc=dv.getUint32(off+42,true);
+    const nombre=dec.decode(u.subarray(off+46,off+46+ln));
+    const lnL=dv.getUint16(loc+26,true),leL=dv.getUint16(loc+28,true);
+    const ini=loc+30+lnL+leL;
+    out[nombre]={datos:u.subarray(ini,ini+comp),met};
+    off+=46+ln+le+lc;
+  }
+  return out;
+}
+async function filasDeXlsx(ab){
+  const z=await archivosDeZip(ab),dec=new TextDecoder();
+  const leer=async k=>z[k]?dec.decode(await inflar(z[k].datos,z[k].met)):'';
+  /* los textos largos viven aparte, en sharedStrings */
+  const ss=[];
+  const xs=await leer('xl/sharedStrings.xml');
+  if(xs)xs.split(/<si[ >]/).slice(1).forEach(b=>{
+    const t=(b.match(/<t[^>]*>([\s\S]*?)<\/t>/g)||[]).map(x=>x.replace(/<[^>]+>/g,'')).join('');
+    ss.push(desescapar(t));
+  });
+  /* la primera hoja del libro */
+  let hoja='xl/worksheets/sheet1.xml';
+  if(!z[hoja]){const k=Object.keys(z).filter(x=>/^xl\/worksheets\/.*\.xml$/.test(x)).sort();if(k.length)hoja=k[0]}
+  const xml=await leer(hoja);
+  if(!xml)throw new Error('no encontré la hoja dentro del archivo');
+  const filas=[];
+  (xml.match(/<row[\s\S]*?<\/row>|<row[^>]*\/>/g)||[]).forEach(r=>{
+    const cel=[];
+    (r.match(/<c[^>]*(?:\/>|>[\s\S]*?<\/c>)/g)||[]).forEach(c=>{
+      const col=(c.match(/r="([A-Z]+)/)||[])[1];
+      let i=0;(col||'A').split('').forEach(ch=>{i=i*26+(ch.charCodeAt(0)-64)});
+      const tipo=(c.match(/t="([^"]+)"/)||[])[1]||'n';
+      let v='';
+      if(tipo==='inlineStr'){v=(c.match(/<t[^>]*>([\s\S]*?)<\/t>/)||[])[1]||''; v=desescapar(v.replace(/<[^>]+>/g,''))}
+      else{const m=c.match(/<v>([\s\S]*?)<\/v>/); v=m?m[1]:'';
+        if(tipo==='s')v=ss[+v]||''; else v=desescapar(v);}
+      cel[i-1]=String(v).trim();
+    });
+    for(let i=0;i<cel.length;i++)if(cel[i]===undefined)cel[i]='';
+    if(cel.some(x=>x!==''))filas.push(cel.join(';'));
+  });
+  return filas.join('\n');
+}
+function desescapar(t){return String(t).replace(/&lt;/g,'<').replace(/&gt;/g,'>')
+  .replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,d)=>String.fromCharCode(+d)).replace(/&amp;/g,'&')}
+function centroPorNombre(t){
+  const q=String(t||'').toLowerCase().trim().replace(/[áàä]/g,'a').replace(/[éè]/g,'e').replace(/[íì]/g,'i').replace(/[óò]/g,'o').replace(/[úù]/g,'u');
+  return CEN.find(c=>c.id===q)||CEN.find(c=>c.n.toLowerCase().replace(/[^a-z]/g,'').startsWith(q.replace(/[^a-z]/g,'').slice(0,5)))||null;
+}
 function procesarMasiva(){
   const txt=$('mm-ta').value.trim();
   if(!txt){toast('No hay nada que procesar','Pega las filas o usa Ver plantilla.');return}
   const ls=txt.split(/\r?\n/).filter(l=>l.trim());
   let add=0,upd=0,mal=0;const nuevasCat=[],nuevosTipo=[];
+  const sinRef=new Set(),sinMat=new Set(),sinCen=new Set(),cerradas=new Set(),tocadas=new Set()
+  const vaciadas=new Set();
   ls.forEach(l=>{
     const p=partes(l);
     if(masivaModo==='prod'){
@@ -5020,21 +5142,53 @@ function procesarMasiva(){
       const ex=byRef(r);
       if(ex){ex.n=n;ex.cat=cat;ex.sub=sub;if(dep)ex.dep=dep;if(marca)ex.marca=marca;if(col)ex.col=col;upd++}
       else{REFS.push({r,n,cat,sub,dep,marca,col,cu:'',creado:hoyISO()});FICHAS[r]=nuevaFicha(recetaDe(cat,sub));add++}
-    }else{
+    }else if(masivaModo==='mat'){
       if(p.length<5||/^cod/i.test(p[0])){mal++;return}
       const it={c:MAY(p[0]),d:MAY(p[1]),k:['mp','ins','dec','srv'].includes(p[2].toLowerCase())?p[2].toLowerCase():'ins',um:p[3],p:num(p[4]),f:hoy()};
       const ex=byCode(it.c);
       if(ex){Object.assign(ex,it);upd++}else{CAT.push(it);add++}
+    }else if(masivaModo==='receta'){
+      /* Referencia ; Codigo del material ; Consumo ; Desperdicio % */
+      if(p.length<3||/^ref/i.test(p[0])){mal++;return}
+      const r=MAY(p[0]),cod=MAY(p[1]),q=num(p[2]),d=num(p[3]||0);
+      const x=byRef(r); if(!x){sinRef.add(r);return}
+      const m=byCode(cod); if(!m){sinMat.add(cod);return}
+      const f=FICHAS[r]||(FICHAS[r]=nuevaFicha({lines:[],cen:{}}));
+      if(f.saved&&!f.edit){cerradas.add(r);return}
+      /* si se pide reemplazar, la primera linea de cada referencia borra lo que habia
+         (las sugeridas del tipo) para que quede solo lo que trae el archivo */
+      if($('mm-reemp')&&$('mm-reemp').checked&&!vaciadas.has(r)){f.lines=[];vaciadas.add(r)}
+      const ex=f.lines.find(l=>l.c===cod);
+      if(ex){ex.q=q;ex.d=d;upd++}else{f.lines.push({c:cod,q,d});add++}
+      f.av=hoy();tocadas.add(r);
+    }else if(masivaModo==='tiempos'){
+      /* Referencia ; Centro ; Tiempo (el bordado va en puntadas) */
+      if(p.length<3||/^ref/i.test(p[0])){mal++;return}
+      const r=MAY(p[0]),v=num(p[2]);
+      const x=byRef(r); if(!x){sinRef.add(r);return}
+      const c=centroPorNombre(p[1]); if(!c){sinCen.add(p[1]);return}
+      const f=FICHAS[r]||(FICHAS[r]=nuevaFicha({lines:[],cen:{}}));
+      if(f.saved&&!f.edit){cerradas.add(r);return}
+      f.cen[c.id]={on:v>0,val:v};
+      upd++;f.av=hoy();tocadas.add(r);
     }
   });
   cerrar('ovl2');
   if(masivaModo==='prod'){rowsProd();rowsCats();if(REFS.length&&!byRef(cur))cur=REFS[0].r;draw()}
-  else{rowsCatMat();draw()}
+  else if(masivaModo==='mat'){rowsCatMat();draw()}
+  else{rowsProd();draw();autosave()}
+  const corto=a=>[...a].slice(0,6).join(', ')+(a.size>6?' y '+(a.size-6)+' más':'');
   const extra=[nuevasCat.length?nuevasCat.length+' familia(s) nueva(s): '+nuevasCat.join(', '):'',
                nuevosTipo.length?nuevosTipo.length+' tipo(s) nuevo(s)':'',
+               tocadas.size?tocadas.size+' ficha(s) tocada(s)':'',
+               sinRef.size?'referencias que no existen: '+corto(sinRef):'',
+               sinMat.size?'materiales que no existen: '+corto(sinMat):'',
+               sinCen.size?'centros que no entendí: '+corto(sinCen):'',
+               cerradas.size?'fichas ya cerradas (no se tocaron): '+corto(cerradas):'',
                mal?mal+' líneas ignoradas (encabezado o formato incompleto)':''].filter(Boolean).join(' · ');
+  const aviso=(sinRef.size||sinMat.size||sinCen.size||cerradas.size)?'warn':'ok';
   toast('Carga masiva lista · '+add+' nuevos, '+upd+' actualizados',
-    extra||'Todas las líneas se procesaron.');
+    extra||'Todas las líneas se procesaron.',aviso);
 }
 function cerrar(id){$(id).classList.add('hide')}
 
