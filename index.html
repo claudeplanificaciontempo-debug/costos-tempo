@@ -966,7 +966,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <button class="btn ghost sm" style="margin-left:auto" onclick="limpiarSelMat()">Cancelar selección</button>
     </div>
     <table>
-      <thead><tr><th style="width:22px"><input type="checkbox" id="mat-all" onchange="toggleAllMat(this.checked)"></th><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th class="l">Familia</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th><th></th></tr></thead>
+      <thead><tr><th style="width:22px"><input type="checkbox" id="mat-all" onchange="toggleAllMat(this.checked)"></th><th class="l">Código</th><th class="l">Descripción</th><th class="l">Categoría</th><th class="l">Familia</th><th>UM</th><th>Costo</th><th class="l">Actualizado</th><th title="En cuántas fichas se está usando">Se usa en</th><th></th></tr></thead>
       <tbody id="tb-cat"></tbody>
     </table>
     <datalist id="dl-fam"></datalist>
@@ -1448,6 +1448,13 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <div id="dif-cuerpo"></div>
     </div>
     <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-dif')">Cerrar</button></div>
+  </div>
+</div>
+<div id="ovl-usos" class="ovl hide">
+  <div class="modal" style="max-width:980px">
+    <div class="modal-h"><h2 id="usos-t">¿Dónde se usa?</h2><div class="mini" id="usos-s" style="margin:4px 0 0"></div></div>
+    <div class="modal-b"><div id="usos-b"></div></div>
+    <div class="modal-f"><button class="btn ghost" onclick="cerrar('ovl-usos')">Cerrar</button></div>
   </div>
 </div>
 <div id="ovl2" class="ovl hide">
@@ -2218,6 +2225,7 @@ function borrarMat(i){
   const x=CAT[i];if(!x)return;
   let usos=0;
   REFS.forEach(r=>{const f=FICHAS[r.r];if(f)usos+=f.lines.filter(l=>l.c===x.c).length});
+  if(usos&&confirm('"'+x.d+'" se usa en '+usos+' ficha'+(usos===1?'':'s')+'.\n\n¿Quieres ver primero en cuáles está costeado?')){verUsos(x.c);return}
   const aviso=usos?' Se usa en '+usos+' ficha'+(usos===1?'':'s')+'; se quitará de ahí también.':'';
   if(!confirm('¿Borrar "'+x.d+'" ('+x.c+')?'+aviso))return;
   CAT.splice(i,1);
@@ -5239,9 +5247,55 @@ function matLista(){
     return ws.every(w=>t.includes(w));
   });
 }
+/* En qué fichas se usa cada material. Se recorre el catálogo una sola vez y
+   queda el conteo listo para toda la tabla. */
+function contarUsos(){
+  const u={};
+  REFS.forEach(x=>{const f=FICHAS[x.r];if(!f)return;
+    new Set((f.lines||[]).map(l=>l.c)).forEach(c=>{u[c]=(u[c]||0)+1})});
+  return u;
+}
+/* Las fichas que tienen ese material, con su consumo y en qué estado están */
+function usosDeMat(cod){
+  const out=[];
+  REFS.forEach(x=>{
+    const f=FICHAS[x.r];if(!f)return;
+    const l=(f.lines||[]).find(z=>z.c===cod);if(!l)return;
+    out.push({x,f,q:l.q,d:l.d||0});
+  });
+  return out.sort((a,b)=>String(a.x.r).localeCompare(String(b.x.r),'es'));
+}
+function verUsos(cod){
+  const m=byCode(cod);if(!m)return;
+  const lista=usosDeMat(cod);
+  const g=cur;
+  const filas=lista.map(({x,f,q,d})=>{
+    cur=x.r;calc();
+    const pu=precio({c:cod,q,d},m),imp=q*(1+d/100)*pu;
+    return `<tr>
+      <td class="l"><a onclick="cerrar('ovl-usos');verFicha('${escR(x.r)}')" style="color:var(--vino-2);cursor:pointer;font-weight:700">${escR(x.r)}</a></td>
+      <td class="l">${escR(x.n||'')}<div class="mini" style="margin:0">${escR(x.cat||'')}${x.sub?' · '+escR(x.sub):''}${x.col?' · '+escR(x.col):''}</div></td>
+      <td><span class="pill${(f.saved&&!f.edit)?' ok':''}">${escR(estadoProd(x))}</span></td>
+      <td style="text-align:right">${(+q).toLocaleString('es',{maximumFractionDigits:4})}${d?' +'+d+'%':''} ${escR(m.um||'')}</td>
+      <td style="text-align:right">${fmt(imp)}</td>
+      <td style="text-align:right">${fmt(TOT.total)}</td></tr>`;
+  }).join('');
+  cur=g;calc();
+  const cerradas=lista.filter(({f})=>f.saved&&!f.edit).length;
+  $('usos-t').textContent=m.d+' · '+m.c;
+  $('usos-s').textContent=lista.length?lista.length+' ficha'+(lista.length===1?'':'s')+(cerradas?' · '+cerradas+' ya cerrada'+(cerradas===1?'':'s'):''):'no se usa en ninguna ficha';
+  $('usos-b').innerHTML=lista.length
+    ? `<table class="lptab" style="font-size:12.5px"><thead><tr><th class="l">Ref.</th><th class="l">Producto</th><th>Estado</th>
+        <th style="text-align:right">Consumo</th><th style="text-align:right">$ del material</th><th style="text-align:right">Costo total</th></tr></thead>
+       <tbody>${filas}</tbody></table>
+       ${cerradas?`<div class="mini" style="margin:10px 0 0;color:var(--vino-2)"><b>Ojo:</b> ${cerradas} de estas fichas ya están cerradas. Si borras el material, la línea se va de la ficha y el costo guardado deja de cuadrar.</div>`:''}`
+    : `<div class="empty">Ningún producto tiene este material en su ficha. Se puede borrar sin tocar ningún costeo.</div>`;
+  $('ovl-usos').classList.remove('hide');
+}
 function rowsCatMat(f){
   catF=f||catF;
   const lista=matLista();
+  const usoMat=contarUsos();
   SELM.forEach(c=>{if(!byCode(c))SELM.delete(c)});
   $('tb-cat').innerHTML=lista.map(({x,i})=>`
     <tr><td><input type="checkbox" ${SELM.has(x.c)?'checked':''} onchange="toggleMat('${x.c}',this.checked)"></td>
@@ -5252,6 +5306,9 @@ function rowsCatMat(f){
     <td><input class="fld" style="width:76px;text-align:center" value="${x.um}" onchange="setMat(${i},'um',this.value)"></td>
     <td>${soloPrearmado()?'<span class="ro">—</span>':`<input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()">`}</td>
     <td class="l ro" id="mf-${i}">${x.f}</td>
+    <td>${(()=>{const u=usoMat[x.c]||0;
+      return u?`<button class="btn ghost sm" style="padding:3px 10px;white-space:nowrap" title="Ver en qué fichas está" onclick="verUsos('${x.c}')">${u} ficha${u===1?'':'s'}</button>`
+        :'<span class="ro" title="Ningún producto lo tiene en su ficha">—</span>'})()}</td>
     <td>${soloPrearmado()?'':`<button class="x" title="Borrar material" onclick="borrarMat(${i})">×</button>`}</td></tr>`).join('');
   $('nav-mat').textContent=CAT.length;
   $('mat-sub').textContent=lista.length+' de '+CAT.length;
