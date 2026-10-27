@@ -1091,7 +1091,18 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
       <thead><tr><th class="l">Nombre</th><th class="l">Correo</th><th class="l">Permiso</th></tr></thead>
       <tbody id="tb-usr"></tbody>
     </table>
-    <div class="addrow"><span class="mini" style="margin:0">El nombre y el permiso se cambian aquí mismo. El correo es el usuario con el que entra la persona: se crea y se cambia en el panel de Supabase (Authentication → Users), y esta lista se actualiza sola con el correo nuevo.</span></div>
+    <div class="addrow" style="flex-wrap:wrap;gap:8px;align-items:center">
+      <b style="white-space:nowrap">Crear usuario</b>
+      <input id="nu-mail" class="fld" type="email" placeholder="correo@ejemplo.com" style="flex:1;min-width:190px">
+      <input id="nu-nom" class="fld" placeholder="Nombre que se ve" style="width:170px">
+      <select id="nu-rol" class="fld" style="width:auto"></select>
+      <input id="nu-clave" class="fld" type="text" placeholder="Contraseña · mínimo 8" style="width:190px">
+      <button class="btn ghost sm" onclick="claveSugerida()">Sugerir clave</button>
+      <button class="btn" id="nu-btn" onclick="crearUsuario()">Crear</button>
+    </div>
+    <div class="addrow" style="border-top:0;padding-top:0">
+      <span class="mini" id="nu-msg" style="margin:0">La persona entra con ese correo y esa contraseña. Dile que la cambie cuando entre. El nombre y el permiso se cambian aquí mismo cuando quieras; el correo, en el panel de Supabase.</span>
+    </div>
   </div>
   </div>
 
@@ -1129,7 +1140,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="tab" id="lp-m-todas" onclick="modoLp('todas')">Todas</button>
       </div>
       <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
-      <button class="btn sm" style="margin-left:8px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios()">Excel con costo</button>
+      <button class="btn sm" id="lp-xcosto" style="margin-left:8px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios()">Excel con costo</button>
       <div class="sub" id="lp-s"></div></div>
     <div class="addrow" style="border-bottom:1px solid var(--line-soft);flex-wrap:wrap">
       <span class="mini" style="margin:0">Filtrar</span>
@@ -2247,7 +2258,7 @@ function rowsPantones(){
   tb.innerHTML=orden.map(({p,i})=>`<tr>
     <td class="l"><input class="fld" style="width:100px" value="${p.pan}" onchange="setPantone(${i},'pan',this.value)"></td>
     <td class="l"><input class="fld" style="width:100%" value="${p.nombre}" onchange="setPantone(${i},'nombre',this.value)"></td>
-    <td>${soloPrearmado()?'':`<button class="x" title="Borrar pantón" onclick="borrarPantone(${i})">×</button>`}</td></tr>`).join('')
+    <td>${puedeCatalogo()?`<button class="x" title="Borrar pantón" onclick="borrarPantone(${i})">×</button>`:''}</td></tr>`).join('')
     ||'<tr><td colspan="3" class="empty">Sin pantones todavía.</td></tr>';
   $('pan-sub').textContent=PANTONES.length+' color'+(PANTONES.length===1?'':'es');
 }
@@ -2781,7 +2792,7 @@ function pintarPirModal(){
    costo final: la ficha sigue abierta, pero queda la foto de con qué números se
    ofreció, para poder mirar después cuánto se movió. */
 function guardarPre(){
-  const f=F();if(!f||!puedeEditarCostos())return;
+  const f=F();if(!f||!puedePreCostear())return;
   if(f.saved&&!f.edit){toast('Ya está costeada','El pre costeo es para antes de cerrar el costo final.');return}
   calc();
   const antes=f.pre;
@@ -2962,7 +2973,7 @@ async function guardar(){
   const f=F(),ref=cur,b=$('bt-save');
   if(b)b.disabled=true;
   try{
-    if(soloPrearmado()){
+    if(enviaAprobacion()){
       f.aprob='pendiente';
       draw();rowsProd();
       const eV=await guardarVersion(ref);
@@ -3020,7 +3031,7 @@ function rowsHist(){
   if(bp)bp.classList.add('hide');
   /* el pre costeo solo tiene sentido mientras la ficha no esté cerrada */
   if(bpr){
-    bpr.classList.toggle('hide',RO()||!puedeEditarCostos());
+    bpr.classList.toggle('hide',RO()||!puedePreCostear());
     bpr.textContent=f.pre?'Actualizar el pre costeo · '+fmt(f.pre.total):'Guardar pre costeo · para la propuesta';
   }
   if(RO()){
@@ -3036,10 +3047,12 @@ function rowsHist(){
     bs.classList.remove('hide');br.classList.add('hide');
     /* Dos pasos: se va guardando el avance las veces que haga falta, y solo al
        final se aprueba, que es lo que congela el costo y cierra la versión. */
-    bs.textContent=soloPrearmado()?'Enviar para aprobación':(f.saved?'Aprobar re-costeo · cerrar v'+(f.ver+1):'Aprobar costo · cerrar v'+f.ver);
-    if(bp&&!soloPrearmado())bp.classList.remove('hide');
+    bs.textContent=enviaAprobacion()?'Enviar para aprobación':(f.saved?'Aprobar re-costeo · cerrar v'+(f.ver+1):'Aprobar costo · cerrar v'+f.ver);
+    if(bp&&!enviaAprobacion())bp.classList.remove('hide');
     if(bg)bg.disabled=false; if(q){q.disabled=false;q.placeholder='Buscar tela, insumo, técnica de decoración o servicio…'}
-    ph.textContent=soloPrearmado()?'Llena consumos y tiempos. Al enviar, un administrador revisa y cierra el costo con los precios vigentes.'
+    ph.textContent=enviaAprobacion()?(puedePreCostear()
+        ?'Llena consumos y tiempos. "Guardar pre costeo" deja el precio con el que se le ofrece al cliente. Al enviar, un administrador revisa y cierra el costo.'
+        :'Llena consumos y tiempos. Al enviar, un administrador revisa y cierra el costo con los precios vigentes.')
       :'Mientras trabajas usa "Guardar avance". Si vas a presentar la propuesta, "Guardar pre costeo" deja la foto del costo con el que se ofreció, sin cerrar la ficha. '
       +(f.saved?'Al aprobar se cierra la v'+(f.ver+1)+' con los costos y tarifas de hoy, y la v'+f.ver+' queda en el historial.'
       :'Al aprobar quedan congelados los costos del catálogo y las tarifas de mano de obra de hoy, y la referencia pasa a Costeada.');
@@ -3939,11 +3952,20 @@ const SB_URL='https://oepsutldxratrvozpulq.supabase.co';
 const SB_KEY='sb_publishable_pHQzXo-l10F1UjEndIc8Nw_ryvvSkMU';
 const SKEY='costos_tempo_sesion';
 let SES=null,ROL='consulta',NOMBRE='',ONLINE=false,lastSent={},syncing=false,pendiente=false;
-const puedeEditar=()=>['admin','planificacion','prearmado'].includes(ROL);
+const puedeEditar=()=>['admin','planificacion','precosteo','prearmado'].includes(ROL);
+/* cerrar la versión y aprobar: solo quien manda */
 const puedeEditarCostos=()=>['admin','planificacion'].includes(ROL);
-const puedeCrearMat=()=>['admin','planificacion','prearmado'].includes(ROL);
+const puedeCrearMat=()=>['admin','planificacion','precosteo','prearmado'].includes(ROL);
 const esAdmin=()=>ROL==='admin';
 const soloPrearmado=()=>ROL==='prearmado';
+/* llena la ficha y deja el precio de la propuesta, pero no cierra nada */
+const puedePreCostear=()=>['admin','planificacion','precosteo'].includes(ROL);
+/* el que entrega la ficha para que otro la apruebe */
+const enviaAprobacion=()=>['precosteo','prearmado'].includes(ROL);
+/* tocar el catálogo: precios de material, pantones, temporadas, colecciones */
+const puedeCatalogo=()=>['admin','planificacion'].includes(ROL);
+/* solo mira la lista de precios */
+const soloPrecios=()=>ROL==='precios';
 const hdr=(extra={})=>({apikey:SB_KEY,Authorization:'Bearer '+(SES?SES.access_token:SB_KEY),'Content-Type':'application/json',...extra});
 /* fetch con límite de tiempo: si el servidor no responde no se queda colgado, se trata como fallo para reintentar */
 async function fetchT(url,opts,ms){
@@ -4110,6 +4132,8 @@ async function entrar(){
   rowsCatMat();rowsCentros();rowsCli();rowsProd();draw();
   aplicarRolUI();
   if(soloPrearmado()){toast('Modo prearmado','Puedes crear productos y llenar consumos y tiempos. Mueve el margen o el PVP para ver cómo queda el precio. Estos números son solo para probar: no se guardan. El costo lo cierra un administrador al aprobar.');go('prod')}
+  else if(ROL==='precosteo'){toast('Modo pre costeo','Puedes crear productos, llenar consumos y tiempos y guardar el pre costeo con el precio que se le ofrece al cliente. Cerrar la versión y cambiar tarifas o precios del catálogo lo hace un administrador.');go('prod')}
+  else if(soloPrecios()){toast('Solo lista de precios','Tu usuario ve la lista de precios por cliente. No edita nada.');go('lista')}
   else if(!puedeEditar()){toast('Modo consulta','Tu usuario puede ver precios pero no editar.');go('lista')}
   setInterval(()=>sesionViva(20*60*1000),15*60*1000);
   /* Al volver a la pestaña (o al despertar el equipo) los temporizadores pueden
@@ -4118,11 +4142,16 @@ async function entrar(){
   window.addEventListener('pageshow',()=>sesionViva());
 }
 function aplicarRolUI(){
-  const oculta=soloPrearmado();
-  ['centros','lista','exp'].forEach(s=>{
-    const el=document.querySelector('.nav-item[data-screen="'+s+'"]');
-    if(el)el.classList.toggle('hide',oculta);
+  /* qué pantallas ve cada permiso */
+  const fuera=soloPrearmado()?['centros','lista','exp']
+    :ROL==='precosteo'?['centros','exp']
+    :soloPrecios()?['prod','ficha','cons','mat','cat','centros','rep','exp']
+    :[];
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('hide',fuera.includes(el.dataset.screen));
   });
+  /* el Excel con costo no es para quien solo consulta precios */
+  const xc=$('lp-xcosto');if(xc)xc.classList.toggle('hide',!puedeEditar());
 }
 /* Red de seguridad: si por lo que sea quedaran dos productos con la misma
    referencia, se le pone sufijo al segundo en vez de dejar que la nube rechace
@@ -5304,12 +5333,12 @@ function rowsCatMat(f){
     <td class="l"><select class="fld" style="width:auto" onchange="setMat(${i},'k',this.value)">${Object.keys(KN).map(k=>`<option value="${k}" ${k===x.k?'selected':''}>${KN[k][0]}</option>`).join('')}</select></td>
     <td class="l"><input class="fld may" list="dl-fam" style="width:150px" value="${x.fam||''}" placeholder="—" onchange="setMat(${i},'fam',this.value)"></td>
     <td><input class="fld" style="width:76px;text-align:center" value="${x.um}" onchange="setMat(${i},'um',this.value)"></td>
-    <td>${soloPrearmado()?'<span class="ro">—</span>':`<input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()">`}</td>
+    <td>${puedeCatalogo()?`<input class="n" value="${x.p}" onchange="setPrecio(${i},this.value)" onfocus="this.select()">`:'<span class="ro">'+x.p+'</span>'}</td>
     <td class="l ro" id="mf-${i}">${x.f}</td>
     <td>${(()=>{const u=usoMat[x.c]||0;
       return u?`<button class="btn ghost sm" style="padding:3px 10px;white-space:nowrap" title="Ver en qué fichas está" onclick="verUsos('${x.c}')">${u} ficha${u===1?'':'s'}</button>`
         :'<span class="ro" title="Ningún producto lo tiene en su ficha">—</span>'})()}</td>
-    <td>${soloPrearmado()?'':`<button class="x" title="Borrar material" onclick="borrarMat(${i})">×</button>`}</td></tr>`).join('');
+    <td>${puedeCatalogo()?`<button class="x" title="Borrar material" onclick="borrarMat(${i})">×</button>`:''}</td></tr>`).join('');
   $('nav-mat').textContent=CAT.length;
   $('mat-sub').textContent=lista.length+' de '+CAT.length;
   const fams=[...new Set(CAT.map(x=>x.fam).filter(Boolean))].sort();
@@ -5420,6 +5449,14 @@ function verCfg(g){
   if(g==='maestros'){rowsTemporadas();rowsColecciones();rowsBase()}
   window.scrollTo(0,0);
 }
+const ROLES_UI=[
+  ['admin','Administrador · todo'],
+  ['planificacion','Edita y cierra costos'],
+  ['precosteo','Pre costeo · sin cerrar'],
+  ['prearmado','Prearmado · sin precios'],
+  ['precios','Solo lista de precios'],
+  ['consulta','Solo consulta']];
+const nombreRol=r=>(ROLES_UI.find(x=>x[0]===r)||[r,r])[1];
 async function rowsUsr(){
   const c=$('card-usr');if(!c)return;
   const cr=$('card-respaldo'),bu=$('cfg-usr'),br=$('cfg-resp');
@@ -5433,9 +5470,12 @@ async function rowsUsr(){
   try{
     const r=await fetch(SB_URL+'/rest/v1/perfiles?select=id,email,nombre,rol&order=creado',{headers:hdr()});
     const us=await r.json();
+    const sel=$('nu-rol');
+    if(sel&&!sel.options.length)sel.innerHTML=ROLES_UI.filter(x=>x[0]!=='admin')
+      .map(([x,t])=>`<option value="${x}" ${x==='precosteo'?'selected':''}>${t}</option>`).join('');
     $('tb-usr').innerHTML=us.map(u=>`<tr><td class="l"><input class="fld" style="width:auto;max-width:220px" value="${(u.nombre||'').replace(/"/g,'&quot;')}" onchange="setNombreUsr('${u.id}',this.value)"></td><td class="l ro">${u.email||''}</td>
       <td class="l"><select class="fld" style="border-color:var(--line);width:auto" onchange="setRol('${u.id}',this.value)" ${u.id===(SES.user&&SES.user.id)?'disabled':''}>
-        ${['admin','planificacion','prearmado','consulta'].map(x=>`<option value="${x}" ${x===u.rol?'selected':''}>${x==='admin'?'Administrador':x==='planificacion'?'Edita costos':x==='prearmado'?'Prearmado · sin precios':'Solo consulta'}</option>`).join('')}
+        ${ROLES_UI.map(([x,t])=>`<option value="${x}" ${x===u.rol?'selected':''}>${t}</option>`).join('')}
       </select></td></tr>`).join('');
   }catch(e){$('tb-usr').innerHTML='<tr><td colspan="3" class="empty">No se pudo leer la lista.</td></tr>'}
 }
@@ -5443,6 +5483,38 @@ async function rowsUsr(){
    El correo no: ese es el usuario con el que entra la persona y vive en
    Authentication. Se cambia en el panel de Supabase y un disparador lo copia
    solo a perfiles, así que aquí aparece el nuevo sin tocar nada. */
+/* La llave de administrador no puede vivir en esta página: cualquiera que abra
+   el enlace la vería. Vive en el servidor, dentro de la función "crear-usuario",
+   que comprueba que quien pide sea admin antes de crear nada. */
+function claveSugerida(){
+  const pal=['Tempo','Costos','Prenda','Tela','Ficha','Molde','Hilo','Corte'];
+  const c=pal[Math.floor(Math.random()*pal.length)]+'.'+(Math.floor(Math.random()*9000)+1000);
+  $('nu-clave').value=c;$('nu-clave').focus();$('nu-clave').select();
+}
+async function crearUsuario(){
+  const b=$('nu-btn'),m=$('nu-msg');
+  const email=($('nu-mail').value||'').trim().toLowerCase();
+  const nombre=($('nu-nom').value||'').trim();
+  const rol=$('nu-rol').value||'consulta';
+  const clave=$('nu-clave').value||'';
+  const falla=t=>{m.style.color='var(--red)';m.textContent=t};
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return falla('Escribe un correo válido.');
+  if(clave.length<8)return falla('La contraseña debe tener al menos 8 caracteres. Pulsa "Sugerir clave" si quieres una.');
+  b.disabled=true;m.style.color='';m.textContent='Creando…';
+  try{
+    await sesionViva();
+    const r=await fetch(SB_URL+'/functions/v1/crear-usuario',{method:'POST',headers:hdr(),
+      body:JSON.stringify({email,nombre,rol,clave})});
+    const j=await r.json().catch(()=>({}));
+    if(!r.ok||j.error)throw new Error(j.error||('No se pudo crear (error '+r.status+').'));
+    m.style.color='var(--green)';
+    m.textContent=email+' ya puede entrar con esa contraseña, como "'+nombreRol(rol)+'". Pásasela y dile que la cambie.';
+    $('nu-mail').value='';$('nu-nom').value='';
+    toast('Usuario creado',email+' · '+nombreRol(rol));
+    rowsUsr();
+  }catch(e){falla(String(e.message||e))}
+  b.disabled=false;
+}
 async function setNombreUsr(id,nom){
   const n=String(nom||'').trim();
   try{
@@ -5510,7 +5582,7 @@ function rowsTemporadas(){
   const tb=$('tb-temp');if(!tb)return;
   tb.innerHTML=TEMPORADAS.map((t,i)=>`<tr>
     <td class="l"><input class="fld" style="width:100%" value="${t}" onchange="setTemporada(${i},this.value)"></td>
-    <td>${soloPrearmado()?'':`<button class="x" title="Borrar temporada" onclick="borrarTemporada(${i})">×</button>`}</td></tr>`).join('')
+    <td>${puedeCatalogo()?`<button class="x" title="Borrar temporada" onclick="borrarTemporada(${i})">×</button>`:''}</td></tr>`).join('')
     ||'<tr><td colspan="2" class="empty">Sin temporadas todavía.</td></tr>';
   $('temp-sub').textContent=TEMPORADAS.length+' temporada'+(TEMPORADAS.length===1?'':'s');
   rowsColecciones();rowsBase();
@@ -5521,7 +5593,7 @@ function rowsColecciones(){
     return `<tr>
     <td class="l"><input class="fld may" style="width:100%" value="${escR(c)}" onchange="setColeccion(${i},this.value)"></td>
     <td>${u}</td>
-    <td>${soloPrearmado()?'':`<button class="x" title="Borrar colección" onclick="borrarColeccion(${i})">×</button>`}</td></tr>`}).join('')
+    <td>${puedeCatalogo()?`<button class="x" title="Borrar colección" onclick="borrarColeccion(${i})">×</button>`:''}</td></tr>`}).join('')
     ||'<tr><td colspan="3" class="empty">Sin colecciones todavía. Créalas aquí abajo o desde la lista de productos.</td></tr>';
   $('col-sub').textContent=COLECCIONES.length+' colección'+(COLECCIONES.length===1?'':'es');
 }
