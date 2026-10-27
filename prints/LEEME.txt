@@ -1,0 +1,53 @@
+COSTOS TEMPO · PAQUETE PARA EL EQUIPO DE ODOO
+TEMPOCODECA S.A. · v2 · 27-oct-2026
+
+QUÉ HAY AQUÍ
+------------
+Costos_TEMPO_en_Odoo.pdf   Especificación funcional v2.0. Es el documento
+                           principal: qué hace el sistema, con qué fórmulas,
+                           qué hay que construir y cómo se da por recibido.
+                           La sección 1.1 dice qué cambió desde la v1.0.
+
+TEMPO_Plan_Odoo19.pdf      Plan de desarrollo v2: las pantallas de hoy, qué
+                           trae Odoo 19 de fábrica, qué hay que programar,
+                           por dónde empezar y preguntas para el equipo.
+
+pantallas/                 Las 22 capturas del sistema en uso, en alta
+                           resolución, por si quieren verlas en grande.
+
+LAS CAPTURAS
+------------
+01  Productos · lista editable
+02  Productos · filtros y agrupación
+03  Productos · mural de fotos
+04  Ficha · prenda y materiales
+05  Ficha · tiempos, costo y precio por cliente
+06  Ficha · historial de versiones
+07  Consolidados · la tanda del cliente
+08  Lista de precios
+09  Reportes · avance de muestras
+10  Reportes · cómo va la temporada
+11  Materiales · precio vigente
+12  Categorías · familia y tipo
+13  Configuración · centros y tarifas
+14  Configuración · clientes y márgenes
+15  Configuración · temporadas y colecciones
+16  Configuración · usuarios y roles
+17  Ficha · pirámide de precios del tipo de prenda      NUEVO
+18  Lista de precios · pre costeadas y lista de envío   NUEVO
+19  Carga masiva · receta desde Excel                   NUEVO
+20  Materiales · en cuántas fichas se usa cada uno      NUEVO
+21  Material · en qué fichas está costeado              NUEVO
+22  Productos · filtro por el día en que se registró    NUEVO
+
+EL SISTEMA HOY
+--------------
+309 referencias (308 con foto) · 203 materiales · 24 categorías ·
+5 centros de trabajo · 5 clientes · 185 fichas con el costo cerrado ·
+30 referencias en pre costeo · 29 ya en su segunda o tercera versión.
+
+LO QUE PEDIMOS AL COTIZAR
+-------------------------
+Una estimación separada por bloque, del A1 al A14 (sección 3 de la
+especificación), diciendo en cada uno qué se resuelve configurando Odoo
+y qué hay que desarrollar.
