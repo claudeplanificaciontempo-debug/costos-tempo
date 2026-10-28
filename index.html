@@ -1192,7 +1192,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   <div class="kpis" id="kpis-cons"></div>
   <div class="card">
     <div class="card-h"><h2>Consolidados</h2><div class="sub" id="cons-sub"></div>
-      <button class="btn org sm" style="margin-left:auto" onclick="nuevoConsolidado()">+ Nuevo consolidado</button></div>
+      <button class="btn org sm hide" id="bt-nuevo-cons" style="margin-left:auto" onclick="nuevoConsolidado()">+ Nuevo consolidado</button></div>
     <div id="cons-lista"></div>
   </div>
   <input type="file" id="cons-fotos-in" accept="image/*" multiple webkitdirectory directory class="hide" onchange="cargarColeccion(this.files)">
@@ -2346,7 +2346,11 @@ function rowsSum(){
   pintarPre();
 }
 /* ---- La pantalla de Consolidados ---- */
+/* Consulta mira las tandas, pero no las toca: ni crea, ni borra, ni les mete
+   o les saca prendas, ni les cambia el estado o el cliente. */
+function sinPermiso(){toast('Solo para consulta','Tu usuario puede ver los consolidados, pero no modificarlos.');return false}
 function nuevoConsolidado(){
+  if(!puedeEditar())return sinPermiso();
   const nom=MAY((prompt('Nombre del consolidado (por ejemplo: HOLIDAY 27 · PRIMERA TANDA):')||'').trim());
   if(!nom)return;
   const id='c'+Date.now().toString(36);
@@ -2355,11 +2359,13 @@ function nuevoConsolidado(){
   toast('Consolidado creado',nom+'. Ahora cárgale las referencias: con las fotos de una carpeta, con carga masiva, o seleccionándolas en Productos.');
 }
 function setCons(id,campo,v){
+  if(!puedeEditar())return sinPermiso();
   const c=consPorId(id);if(!c)return;
   c[campo]=campo==='nom'?MAY(v):v;
   rowsCons();rowsProd();autosave();
 }
 function borrarCons(id){
+  if(!puedeEditar())return sinPermiso();
   const c=consPorId(id);if(!c)return;
   const n=refsDeCons(id).length;
   if(!confirm('¿Borrar el consolidado "'+c.nom+'"?'+(n?'\n\nSus '+n+' referencia(s) NO se borran: siguen en el catálogo.':'')))return;
@@ -2390,6 +2396,7 @@ function resumenCons(id){
    y se agrega tal cual, con el costo que ya tenga. */
 let AR_CONS='',AR_SEL=new Set();
 function abrirAddRef(id){
+  if(!puedeEditar())return sinPermiso();
   const c=consPorId(id);if(!c)return;
   AR_CONS=id;AR_SEL=new Set();
   $('ar-t').textContent=c.nom;
@@ -2461,7 +2468,7 @@ function confirmarAddRef(){
   toast(n+' referencia(s) agregada(s)',nombreCons(AR_CONS)+' queda con '+refsDeCons(AR_CONS).length+'.');
 }
 let consFotos='';                 /* a qué consolidado van las fotos que se carguen */
-function fotosDeCons(id){consFotos=id;$('cons-fotos-in').click()}
+function fotosDeCons(id){if(!puedeEditar())return sinPermiso();consFotos=id;$('cons-fotos-in').click()}
 /* Abre el catálogo filtrado por esta tanda, en fotos o en lista */
 function verCons(id,vista){
   FPROD={cons:[id]};FDESDE=FHASTA='';
@@ -2484,14 +2491,14 @@ function rowsCons(){
         <div class="sb">${escR(nombreCli(c.cliId)||c.cli||'sin cliente')} · recibido ${fechaBonita(c.fecha)}${c.fechaProp?' · propuesta enviada '+fechaBonita(c.fechaProp):''}</div>
         <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
           <span class="pill est-${c.estado}">${e.t}</span>
-          <select class="fld" style="width:auto;font-size:11px" onchange="cambiarEstadoCons('${c.id}',this.value)">
+          ${puedeEditar()?`<select class="fld" style="width:auto;font-size:11px" onchange="cambiarEstadoCons('${c.id}',this.value)">
             ${CONS_ESTADOS.map(o=>`<option value="${o.k}" ${o.k===c.estado?'selected':''}>${o.t}</option>`).join('')}
           </select>
           <select class="fld" style="width:auto;font-size:11px" title="A qué cliente se le presenta esta tanda"
             onchange="setCons('${c.id}','cliId',this.value)">
             <option value="">Cliente…</option>
             ${CLI.map(z=>`<option value="${z.id}" ${z.id===(c.cliId||'')?'selected':''}>${escR(z.cli)} · ${escR(z.zona)}</option>`).join('')}
-          </select>
+          </select>`:''}
         </div>
       </div>
       <div class="nums">
@@ -2509,10 +2516,10 @@ function rowsCons(){
         <button class="btn sm" onclick="abrirCons('${c.id}')" title="Ver las prendas de esta tanda y quitar las que no van">${CONS_ABIERTO.has(c.id)?'▴ Ocultar las prendas':'▾ Ver las '+R.n+' prenda'+(R.n===1?'':'s')}</button>
         <button class="btn org sm" onclick="pdfPropuesta('${c.id}')" title="La hoja que se le manda al cliente: foto, referencia y precio. Sin costos.">PDF de la propuesta</button>
         <button class="btn sm" onclick="verCons('${c.id}','mural')" title="Ver las prendas de esta tanda como fotos">▦ Ver el mural</button>
-        <button class="btn ghost sm" onclick="abrirAddRef('${c.id}')" title="Agregar referencias que ya existen, de cualquier temporada">+ Agregar referencias</button>
-        <button class="btn ghost sm" onclick="fotosDeCons('${c.id}')" title="Cargar una carpeta de fotos a esta tanda">Cargar fotos</button>
-        <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista para editarlas">☰ Lista</button>
-        <button class="btn ghost sm" title="Borrar la tanda entera · las prendas no se borran" onclick="borrarCons('${c.id}')">× Borrar la tanda</button>
+        ${puedeEditar()?`<button class="btn ghost sm" onclick="abrirAddRef('${c.id}')" title="Agregar referencias que ya existen, de cualquier temporada">+ Agregar referencias</button>
+        <button class="btn ghost sm" onclick="fotosDeCons('${c.id}')" title="Cargar una carpeta de fotos a esta tanda">Cargar fotos</button>`:''}
+        <button class="btn ghost sm" onclick="verCons('${c.id}','lista')" title="Verlas en la lista">☰ Lista</button>
+        ${puedeEditar()?`<button class="btn ghost sm" title="Borrar la tanda entera · las prendas no se borran" onclick="borrarCons('${c.id}')">× Borrar la tanda</button>`:''}
       </div>
       ${CONS_ABIERTO.has(c.id)?filasCons(c.id):''}
     </div>`;
@@ -2529,7 +2536,7 @@ function filasCons(id){
   const c=consPorId(id);if(!c)return '';
   const lista=refsDeCons(id);
   let ci=CLI.findIndex(z=>z.id===c.cliId);if(ci<0)ci=clienteBase();
-  if(!lista.length)return `<div class="cons-refs"><div class="empty" style="padding:14px">Esta tanda todavía no tiene referencias. Usa <b>+ Agregar referencias</b> o <b>Cargar fotos</b>.</div></div>`;
+  if(!lista.length)return `<div class="cons-refs"><div class="empty" style="padding:14px">Esta tanda todavía no tiene referencias.${puedeEditar()?' Usa <b>+ Agregar referencias</b> o <b>Cargar fotos</b>.':''}</div></div>`;
   const filas=lista.map(x=>{
     const e=estadoProd(x),p=precioPropuesta(x.r,ci);
     const cls=e==='Costeada'?'ok':(e==='Pre costeada'||e==='Por aprobar'?'pend':'');
@@ -2540,13 +2547,14 @@ function filasCons(id){
       <span class="dt">${escR([x.col,x.temporada].filter(Boolean).join(' · '))}</span>
       <span class="pill ${cls}">${e}</span>
       <span class="px">${p.pvp?fmt(p.pvp):'sin precio'}</span>
-      <button class="x" title="Quitar de esta tanda · la prenda no se borra" onclick="sacarDeCons('${id}','${x.r}')">×</button>
+      ${puedeEditar()?`<button class="x" title="Quitar de esta tanda · la prenda no se borra" onclick="sacarDeCons('${id}','${x.r}')">×</button>`:'<span></span>'}
     </div>`}).join('');
   return `<div class="cons-refs">
-    <div class="mini" style="margin:0 0 6px">Las prendas de esta tanda · la <b>×</b> la saca de aquí, no la borra del catálogo</div>
+    <div class="mini" style="margin:0 0 6px">Las prendas de esta tanda${puedeEditar()?' · la <b>×</b> la saca de aquí, no la borra del catálogo':''}</div>
     ${filas}</div>`;
 }
 function sacarDeCons(id,r){
+  if(!puedeEditar())return sinPermiso();
   const x=byRef(r);
   if(!confirm('¿Quitar '+r+(x&&x.n?' · '+x.n:'')+' de "'+nombreCons(id)+'"?\n\nLa prenda NO se borra: sigue en el catálogo y en sus otras tandas.'))return;
   quitarDeCons(id,[r]);
@@ -2555,6 +2563,7 @@ function sacarDeCons(id,r){
 }
 /* Al mandar la propuesta se guarda la fecha sola: es el dato que después falta. */
 function cambiarEstadoCons(id,v){
+  if(!puedeEditar())return sinPermiso();
   const c=consPorId(id);if(!c)return;
   c.estado=v;
   if(v==='enviado'&&!c.fechaProp)c.fechaProp=hoyISO();
@@ -4190,6 +4199,8 @@ function aplicarRolUI(){
   });
   /* el Excel con costo no es para quien solo consulta precios */
   const xc=$('lp-xcosto');if(xc)xc.classList.toggle('hide',!puedeEditar());
+  /* crear o borrar tandas tampoco */
+  const nc=$('bt-nuevo-cons');if(nc)nc.classList.toggle('hide',!puedeEditar());
 }
 /* Red de seguridad: si por lo que sea quedaran dos productos con la misma
    referencia, se le pone sufijo al segundo en vez de dejar que la nube rechace
