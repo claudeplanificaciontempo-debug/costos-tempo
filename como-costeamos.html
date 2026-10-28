@@ -1,4 +1,4 @@
-<title>Cómo costeamos</title>
+<title>Cómo se saca el costo</title>
 <meta charset="utf-8">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -80,23 +80,15 @@ li{margin:5px 0}
 
 <header>
   <div class="sello">TEMPOCODECA S.A.</div>
-  <h1>Cómo costeamos una prenda</h1>
-  <p class="bajada">El esqueleto del método: de qué partes se compone el costo, con qué fórmulas se
-    calcula y cómo queda firme.</p>
+  <h1>Cómo se saca el costo de una prenda</h1>
+  <p class="bajada">Se costea el estilo —no la talla ni el color— y todo el cálculo es por prenda,
+    en dólares.</p>
 </header>
 
 <section>
-  <h2><span class="num">01</span>Qué se costea</h2>
-  <p class="medida">Se costea <strong>el estilo</strong>, no la talla ni el color. Cada estilo tiene
-    su referencia y su <strong>ficha de costos</strong>, y una misma prenda en otro color entra como
-    otra referencia con su propia ficha.</p>
-  <p class="medida">Todo el costo es <strong>por prenda</strong>, en dólares.</p>
-</section>
-
-<section>
-  <h2><span class="num">02</span>De qué se compone el costo</h2>
-  <p class="medida">El costo es la suma de <strong>seis partes</strong>, y nada más. Lo que no esté en
-    una de estas seis, no entra.</p>
+  <h2><span class="num">01</span>El costo son seis partes</h2>
+  <p class="medida">El costo de una prenda es la suma de <strong>seis partes</strong>, y nada más.
+    Lo que no esté en una de estas seis, no entra.</p>
 
   <div class="cajas">
     <div class="cj"><b>1 · Materia prima</b><span>Las telas.</span></div>
@@ -107,25 +99,26 @@ li{margin:5px 0}
     <div class="cj"><b>6 · Mano de obra indirecta</b><span>El mismo tiempo por la tarifa indirecta.</span></div>
   </div>
 
-  <p class="medida">Las cuatro primeras salen de la <strong>receta</strong>: una línea por material,
-    con su consumo por prenda. Las dos últimas salen de los <strong>tiempos</strong> que la prenda
-    pasa en cada centro de trabajo (corte, estampado, bordado, confección, empaque).</p>
+  <p class="medida">Las cuatro primeras se calculan material por material, con el consumo que lleva una
+    prenda. Las dos últimas se calculan con el tiempo que la prenda pasa en cada centro de trabajo:
+    corte, estampado, bordado, confección y empaque.</p>
 </section>
 
 <section>
-  <h2><span class="num">03</span>Las fórmulas</h2>
+  <h2><span class="num">02</span>Las fórmulas</h2>
 
-  <h3>Cada línea de material</h3>
+  <h3>Cada material</h3>
   <div class="formula">
-    <b>costo de la línea</b> = consumo × (1 + desperdicio ÷ 100) × precio unitario del material
+    <b>costo del material</b> = consumo por prenda × (1 + desperdicio ÷ 100) × precio unitario
   </div>
-  <p class="medida">Las líneas se suman agrupadas por familia, y de ahí salen las cuatro primeras
-    partes del costo.</p>
+  <p class="medida">El desperdicio es un porcentaje propio de cada material, para la merma de corte
+    cuando la hay. Sumando los materiales agrupados por su tipo salen las cuatro primeras partes:
+    materia prima, insumos, decoración y servicios.</p>
 
   <h3>Cada centro de trabajo</h3>
-  <p class="medida">Cada centro tiene dos tarifas, una directa y una indirecta, y una base de medida.
-    Casi todos se miden en <strong>minutos</strong>; el bordado se mide en <strong>puntadas</strong> y
-    su tarifa es por cada mil.</p>
+  <p class="medida">Cada centro tiene dos tarifas, una directa y una indirecta. Casi todos se miden en
+    <strong>minutos</strong>; el bordado se mide en <strong>puntadas</strong>, y su tarifa es por cada
+    mil.</p>
   <div class="formula">
     <b>por minutos:</b> &nbsp; mano de obra = minutos × tarifa<br>
     <b>por puntadas:</b> &nbsp; mano de obra = (puntadas ÷ 1.000) × tarifa<br>
@@ -134,104 +127,55 @@ li{margin:5px 0}
   <p class="medida">El <strong>SAM</strong> de la prenda —sus minutos totales— suma solo los centros
     que se miden en minutos.</p>
 
-  <h3>El costo total</h3>
+  <h3>El total</h3>
   <div class="formula">
-    <b>costo</b> = materia prima + insumos + decoración + servicios + mano de obra directa + indirecta
+    <b>costo de la prenda</b> = materia prima + insumos + decoración + servicios<br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; + mano de obra directa + mano de obra indirecta
   </div>
-
-  <h3>El precio de venta</h3>
-  <p class="medida">Cada cliente tiene un <strong>margen meta</strong>, y el margen se calcula
-    <strong>sobre el precio de venta</strong>, no sobre el costo.</p>
-  <div class="formula">
-    <b>precio</b> = costo ÷ (1 − margen ÷ 100)<br>
-    <b>margen %</b> = (precio − costo) ÷ precio × 100 &nbsp;<span class="cmt">— el camino inverso</span>
-  </div>
-  <p class="medida">Un cliente puede ir <strong>atado a otro</strong>: su precio no sale del costo
-    sino del precio del cliente base, con un recargo encima.</p>
-  <div class="formula">
-    <b>precio del cliente atado</b> = precio del cliente base × (1 + recargo ÷ 100)
-  </div>
-  <div class="nota">
-    <span class="et">El precio se puede fijar a mano</span>
-    <p>Para cerrar en una cifra comercial o porque ya hay un precio acordado. Cuando eso pasa se
-      recalcula el <strong>margen real</strong> de ese precio y el sistema avisa si queda bajo la meta
-      o si no cubre el costo. El costo nunca se mueve para encajar un precio.</p>
-  </div>
+  <p class="medida">Los precios de los materiales y las tarifas de mano de obra que se usan son los
+    <strong>vigentes el día en que se cierra el costo</strong>, y quedan guardados con él: un costo ya
+    cerrado no cambia después aunque suba la tela.</p>
 </section>
 
 <section>
-  <h2><span class="num">04</span>Cómo se ve, con números de muestra</h2>
-  <p class="medida">Una camiseta cualquiera, solo para mostrar el armado. <strong>Los números son
-    inventados</strong>: sirven para seguir las fórmulas, no son nuestros costos.</p>
+  <h2><span class="num">03</span>Cómo se ve armado</h2>
+  <p class="medida">Una camiseta cualquiera, solo para seguir las fórmulas. <strong>Los números son
+    inventados</strong>, no son nuestros costos.</p>
 
   <div class="tabla-caja">
     <table>
-      <thead><tr><th>Concepto</th><th>Cómo sale</th><th class="num">$</th></tr></thead>
+      <thead><tr><th>Parte del costo</th><th>Cómo sale</th><th class="num">$</th></tr></thead>
       <tbody>
-        <tr><td>Tela</td><td>0,250 kg × 8,00</td><td class="num">2,0000</td></tr>
-        <tr><td>Insumos (hilo, etiquetas, cuello)</td><td>suma de sus líneas</td><td class="num">0,4000</td></tr>
+        <tr><td>Materia prima · tela</td><td>0,250 kg × 8,00</td><td class="num">2,0000</td></tr>
+        <tr><td>Insumos · hilo, etiquetas, cuello</td><td>suma de cada uno</td><td class="num">0,4000</td></tr>
         <tr><td>Decoración · estampado</td><td>1 × 0,35</td><td class="num">0,3500</td></tr>
+        <tr><td>Servicios</td><td>no lleva</td><td class="num">0,0000</td></tr>
         <tr><td>Mano de obra directa</td><td>15 min × 0,09</td><td class="num">1,3500</td></tr>
         <tr><td>Mano de obra indirecta</td><td>15 min × 0,07</td><td class="num">1,0500</td></tr>
         <tr class="tot"><td>Costo de la prenda</td><td>SAM 15 minutos</td><td class="num">5,1500</td></tr>
       </tbody>
     </table>
   </div>
-
-  <div class="tabla-caja">
-    <table>
-      <thead><tr><th>Cliente</th><th>Cómo sale su precio</th><th class="num">Precio</th></tr></thead>
-      <tbody>
-        <tr><td>Cliente base · meta 30 %</td><td>5,15 ÷ (1 − 0,30)</td><td class="num">7,3571</td></tr>
-        <tr><td>Cliente atado · + 5 %</td><td>7,3571 × 1,05</td><td class="num">7,7250</td></tr>
-        <tr><td>Otro cliente · meta 20 %</td><td>5,15 ÷ (1 − 0,20)</td><td class="num">6,4375</td></tr>
-      </tbody>
-    </table>
-  </div>
 </section>
 
 <section>
-  <h2><span class="num">05</span>Cuándo el costo es firme</h2>
-  <p class="medida">Una ficha se va guardando mientras se trabaja, pero el costo <strong>solo es firme
-    cuando se cierra la versión</strong>. En ese momento quedan copiados dentro de la versión los
-    precios de los materiales y las tarifas de mano de obra de ese día, junto con los consumos, los
-    tiempos y el precio de cada cliente.</p>
-
-  <div class="tabla-caja">
-    <table>
-      <thead><tr><th>Estado</th><th>Qué significa</th><th>¿Firme?</th></tr></thead>
-      <tbody>
-        <tr><td><strong>En avance</strong></td><td>La ficha se está llenando.</td><td>No</td></tr>
-        <tr><td><strong>Pre costeada</strong></td><td>Se guardó el costo y el precio de ese día para cotizarle al cliente, sin cerrar.</td><td>No · es provisional y lleva fecha</td></tr>
-        <tr><td><strong>Costeada v1</strong></td><td>Aprobada: el costo queda congelado y la ficha de solo lectura.</td><td><strong>Sí</strong></td></tr>
-        <tr><td><strong>Re-costeo v2</strong></td><td>Cambió un precio o un consumo: se abre la versión siguiente.</td><td>La v1 sigue firme en el historial</td></tr>
-      </tbody>
-    </table>
-  </div>
-
-  <div class="nota regla">
-    <span class="et">La regla que sostiene todo</span>
-    <p>Un costo cerrado <strong>no cambia nunca</strong>. Si mañana sube el precio de la tela, la
-      versión guardada sigue mostrando el costo con el que se cotizó; el precio nuevo entra en la
-      versión siguiente, y queda registrado qué cambió entre una y otra. Eso es lo que permite
-      sustentar un precio ante el cliente meses después.</p>
-  </div>
-</section>
-
-<section>
-  <h2><span class="num">06</span>Qué no entra en el costo</h2>
+  <h2><span class="num">04</span>Qué no entra en el costo</h2>
   <ul>
-    <li><strong>Gastos generales, administración y ventas.</strong> No hay porcentaje de prorrateo:
-      eso vive en el margen, no en el costo.</li>
+    <li><strong>Gastos generales, administración y ventas.</strong> No hay ningún porcentaje de
+      prorrateo repartido sobre la prenda: eso vive en el margen, no en el costo.</li>
     <li><strong>Transporte, aranceles y nacionalización.</strong> Si un material importado los lleva,
       van dentro de su precio unitario, no como línea aparte.</li>
-    <li><strong>Desperdicio general de corte.</strong> Solo existe el porcentaje de desperdicio por
-      línea de material.</li>
-    <li><strong>La secuencia de operaciones.</strong> Se registra como base técnica, pero el costo de
-      mano de obra sale de los tiempos por centro.</li>
+    <li><strong>Desperdicio general de corte.</strong> Solo existe el porcentaje de desperdicio propio
+      de cada material.</li>
   </ul>
+  <div class="nota">
+    <span class="et">Del costo al precio</span>
+    <p>Al costo se le aplica el margen de cada cliente, y el margen se calcula <strong>sobre el precio
+      de venta</strong>, no sobre el costo: <code>precio = costo ÷ (1 − margen ÷ 100)</code>. Con el
+      ejemplo de arriba y un margen del 30 %, el precio sería 7,3571.</p>
+  </div>
 </section>
 
-<p class="pie">TEMPOCODECA S.A. · Cómo costeamos una prenda · 28-oct-2026</p>
+<p class="pie">TEMPOCODECA S.A. · Cómo se saca el costo de una prenda · 28-oct-2026</p>
 
 </div>
