@@ -1,0 +1,401 @@
+<title>Esquema de costeo</title>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@600;700;900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --papel:#faf7f6; --tinta:#221b1e; --tinta-2:#6b5a5f; --tinta-3:#9b8a8f;
+  --vino:#9c3b4e; --vino-hondo:#6b2434; --linea:#e6dcdd; --linea-suave:#f0e9ea;
+  --caja:#ffffff; --suave:#f6eff0;
+  --verde:#14663a; --verde-suave:#e7f4ec; --ambar:#6b4708; --ambar-suave:#fdf6e7;
+  --azul:#2c4f73; --azul-suave:#e9eff6;
+  --display:'Chivo','Helvetica Neue',Arial,sans-serif;
+  --texto:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --papel:#171315; --tinta:#f4ecee; --tinta-2:#bda9ae; --tinta-3:#8d7a80;
+  --vino:#d4788c; --vino-hondo:#f0a5b5; --linea:#3a2f33; --linea-suave:#2a2226;
+  --caja:#1f191b; --suave:#2a2226; --verde:#5fd6a0; --verde-suave:#11301f;
+  --ambar:#f0c674; --ambar-suave:#332608; --azul:#9cc3ef; --azul-suave:#16222e;}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--papel);color:var(--tinta);font-family:var(--texto);
+  font-size:15px;line-height:1.62;-webkit-font-smoothing:antialiased}
+.envoltura{max-width:980px;margin:0 auto;padding:46px 26px 70px}
+h1{font-family:var(--display);font-size:39px;line-height:1.08;margin:6px 0 12px;letter-spacing:-.02em}
+h2{font-family:var(--display);font-size:22px;margin:0 0 4px;letter-spacing:-.01em;display:flex;align-items:baseline;gap:12px}
+h2 .num{font-family:var(--mono);font-size:12px;color:var(--vino);font-weight:600}
+h3{font-family:var(--display);font-size:16px;margin:26px 0 8px}
+section{padding:26px 0 2px;border-top:1px solid var(--linea);margin-top:22px}
+.sello{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--vino)}
+.bajada{font-size:17px;color:var(--tinta-2);max-width:66ch;margin:0 0 22px}
+.medida{max-width:68ch}
+dl.ficha-doc{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px 22px;margin:22px 0 0;
+  padding-top:18px;border-top:2px solid var(--vino)}
+dl.ficha-doc dt{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--tinta-3)}
+dl.ficha-doc dd{margin:2px 0 0;font-weight:600;font-size:14px}
+.tabla-caja{border:1px solid var(--linea);border-radius:12px;overflow:hidden;margin:16px 0;background:var(--caja)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{background:var(--suave);text-align:left;padding:9px 12px;font-size:10.5px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--vino-hondo);font-weight:700;border-bottom:1px solid var(--linea)}
+td{padding:9px 12px;border-bottom:1px solid var(--linea-suave);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:12.5px}
+tr.tot td{background:var(--suave);font-weight:700}
+code{font-family:var(--mono);font-size:.88em;background:var(--suave);padding:1px 5px;border-radius:4px}
+.formula{font-family:var(--mono);font-size:13px;background:var(--caja);border:1px solid var(--linea);
+  border-left:3px solid var(--vino);border-radius:0 10px 10px 0;padding:14px 18px;margin:14px 0;line-height:1.95}
+.formula b{color:var(--vino-hondo)}
+.formula .cmt{color:var(--tinta-3)}
+.nota{border-left:3px solid var(--vino);background:var(--caja);padding:13px 17px;border-radius:0 10px 10px 0;margin:16px 0}
+.nota.ok{border-color:var(--verde);background:var(--verde-suave)}
+.nota.ojo{border-color:var(--ambar);background:var(--ambar-suave)}
+.nota.regla{border-color:var(--azul);background:var(--azul-suave)}
+.nota .et{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--vino);display:block;margin-bottom:5px}
+.nota.ok .et{color:var(--verde)} .nota.ojo .et{color:var(--ambar)} .nota.regla .et{color:var(--azul)}
+.nota p{margin:0}
+.pie{font-size:12px;color:var(--tinta-3);border-top:1px solid var(--linea);padding-top:16px;margin-top:40px}
+ul{max-width:68ch}
+li{margin:5px 0}
+.cajas{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:16px 0}
+.cj{border:1px solid var(--linea);border-radius:10px;padding:12px 14px;background:var(--caja)}
+.cj b{display:block;font-size:13px;color:var(--vino-hondo)}
+.cj span{font-size:12.5px;color:var(--tinta-2)}
+@media print{
+  :root,:root[data-theme]{--papel:#fff;--caja:#fff;--tinta:#1e1a1b;--tinta-2:#55484c;--tinta-3:#87777c;
+    --vino:#9c3b4e;--vino-hondo:#6b2434;--linea:#ded3d5;--linea-suave:#efe8e9;--suave:#f7eff0;
+    --verde:#14663a;--verde-suave:#e7f4ec;--ambar:#6b4708;--ambar-suave:#fdf6e7;
+    --azul:#2c4f73;--azul-suave:#e9eff6;color-scheme:light}
+  body{background:#fff;font-size:10.5pt;orphans:3;widows:3}
+  .envoltura{max-width:none;padding:0}
+  h1{font-size:28pt} h2{font-size:16pt} h3{font-size:12pt}
+  h2,h3{break-after:avoid}
+  .tabla-caja,.formula,.nota,.cajas{break-inside:avoid}
+  section{break-inside:auto}
+}
+</style>
+<div class="envoltura">
+
+<header>
+  <div class="sello">TEMPOCODECA · Costos TEMPO</div>
+  <h1>Esquema de costeo</h1>
+  <p class="bajada">Cómo se arma el costo de una prenda: de qué partes se compone, con qué fórmulas
+    exactas, con qué tarifas, y cómo queda congelado al cerrar una versión.</p>
+  <dl class="ficha-doc">
+    <div><dt>Empresa</dt><dd>TEMPOCODECA S.A.</dd></div>
+    <div><dt>Sistema</dt><dd>Costos TEMPO</dd></div>
+    <div><dt>Al día</dt><dd>28-oct-2026</dd></div>
+    <div><dt>Moneda</dt><dd>USD por prenda</dd></div>
+    <div><dt>Unidad de costeo</dt><dd>El estilo (la referencia)</dd></div>
+    <div><dt>En uso</dt><dd>319 referencias · 195 costos cerrados</dd></div>
+  </dl>
+</header>
+
+<section>
+  <h2><span class="num">01</span>De qué se compone el costo</h2>
+  <p class="medida">El costo de una prenda es la suma de <strong>seis partes</strong>, y nada más. No
+    hay porcentajes de gasto general, ni prorrateos, ni cargas ocultas: lo que no esté en una de estas
+    seis no entra al costo.</p>
+
+  <div class="cajas">
+    <div class="cj"><b>1 · Materia prima</b><span>Telas: jersey, ribb, fleece, plana…</span></div>
+    <div class="cj"><b>2 · Insumos</b><span>Hilo, etiquetas, botones, cierres, cordón…</span></div>
+    <div class="cj"><b>3 · Decoración</b><span>Estampado, bordado, DTF, sublimado, vinil…</span></div>
+    <div class="cj"><b>4 · Servicios</b><span>Tinturado, lavado y otros procesos de terceros.</span></div>
+    <div class="cj"><b>5 · Mano de obra directa</b><span>MOD: los minutos de cada centro por su tarifa.</span></div>
+    <div class="cj"><b>6 · Mano de obra indirecta</b><span>MOI: los mismos minutos por la tarifa indirecta.</span></div>
+  </div>
+
+  <p class="medida">Las cuatro primeras salen de la <strong>receta</strong> de la ficha: una línea por
+    material, con su consumo. Las dos últimas salen de los <strong>tiempos por centro</strong>.</p>
+
+  <div class="nota regla">
+    <span class="et">Dos cosas que conviene dejar claras</span>
+    <p>El costo es <strong>por prenda</strong> y corresponde al <strong>estilo</strong>, no a la talla
+      ni al color: una misma prenda en otro color es otra referencia, con su propia ficha. Y el
+      <strong>SAM</strong> (minutos totales de la prenda) suma solo los centros que se miden en
+      minutos; el bordado se mide en puntadas y por eso no entra al SAM, aunque sí al costo.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">02</span>Las fórmulas</h2>
+  <p class="medida">Son las que están programadas en el sistema, tal cual. El costo se recalcula en
+    vivo cada vez que se toca un consumo o un minuto; no hay botón de calcular.</p>
+
+  <h3>2.1 Una línea de material</h3>
+  <div class="formula">
+    <b>costo de la línea</b> = consumo × (1 + desperdicio ÷ 100) × precio unitario del material<br>
+    <span class="cmt">— el desperdicio es un % por línea; normalmente va en 0</span><br>
+    <span class="cmt">— el precio es el del catálogo de materiales el día que se cierra el costo</span>
+  </div>
+  <p class="medida">Las líneas se suman <strong>agrupadas por familia</strong>, y así salen las cuatro
+    primeras partes del costo:</p>
+  <div class="formula">
+    <b>materia prima</b> = Σ de las líneas de familia <i>mp</i><br>
+    <b>insumos</b> = Σ de las líneas de familia <i>ins</i><br>
+    <b>decoración</b> = Σ de las líneas de familia <i>dec</i><br>
+    <b>servicios</b> = Σ de las líneas de familia <i>srv</i>
+  </div>
+
+  <h3>2.2 Un centro de trabajo</h3>
+  <p class="medida">Cada centro tiene dos tarifas —directa (MOD) e indirecta (MOI)— y una base de
+    medida. Solo entran al costo los centros que estén <strong>activos</strong> en esa ficha y con un
+    valor distinto de cero.</p>
+  <div class="formula">
+    <b>si el centro se mide en minutos:</b><br>
+    &nbsp;&nbsp;MOD del centro = minutos × tarifa directa<br>
+    &nbsp;&nbsp;MOI del centro = minutos × tarifa indirecta<br>
+    &nbsp;&nbsp;SAM += minutos<br><br>
+    <b>si el centro se mide en puntadas (bordado):</b><br>
+    &nbsp;&nbsp;MOD del centro = (puntadas ÷ 1000) × tarifa directa<br>
+    &nbsp;&nbsp;MOI del centro = (puntadas ÷ 1000) × tarifa indirecta<br>
+    &nbsp;&nbsp;<span class="cmt">— no suma al SAM</span>
+  </div>
+
+  <h3>2.3 El costo total</h3>
+  <div class="formula">
+    <b>costo total</b> = materia prima + insumos + decoración + servicios + MOD + MOI
+  </div>
+
+  <h3>2.4 El precio de venta de cada cliente</h3>
+  <p class="medida">El margen se calcula <strong>sobre el precio de venta</strong>, no sobre el costo.
+    Es la diferencia que más confusión causa, así que conviene dejarla escrita.</p>
+  <div class="formula">
+    <b>PVP</b> = costo ÷ (1 − margen ÷ 100)<br>
+    <b>margen %</b> = (PVP − costo) ÷ PVP × 100 &nbsp;<span class="cmt">— el camino inverso</span><br>
+    <b>ganancia por prenda</b> = PVP − costo
+  </div>
+  <p class="medida">Hay clientes <strong>atados a otro</strong>: su precio no se calcula del costo
+    sino del precio del cliente base, con un recargo encima.</p>
+  <div class="formula">
+    <b>PVP del cliente atado</b> = PVP del cliente base × (1 + recargo ÷ 100)
+  </div>
+  <div class="nota ojo">
+    <span class="et">El precio se puede escribir a mano</span>
+    <p>Cualquier precio se puede fijar a mano —para cerrar en una cifra redonda, o porque el cliente
+      ya tiene un precio acordado—. Cuando eso pasa, el sistema recalcula el <strong>margen
+      real</strong> de ese precio y avisa si queda bajo la meta o si no cubre el costo. El costo
+      nunca se mueve para encajar un precio.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">03</span>Las tarifas y los márgenes vigentes</h2>
+  <p class="medida">Las tarifas de mano de obra son <strong>por minuto</strong>, salvo el bordado, que
+    es por cada mil puntadas. Cada una lleva su fecha de vigencia: cambiarlas no altera ningún costo
+    ya cerrado.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Centro de trabajo</th><th>Se mide en</th><th class="num">Tarifa directa (MOD)</th>
+        <th class="num">Tarifa indirecta (MOI)</th><th>Vigente desde</th></tr></thead>
+      <tbody>
+        <tr><td>Corte</td><td>minutos</td><td class="num">0,0000</td><td class="num">0,0000</td><td>19-sep-2026</td></tr>
+        <tr><td>Estampado / Serigrafía</td><td>minutos</td><td class="num">0,0000</td><td class="num">0,0000</td><td>19-sep-2026</td></tr>
+        <tr><td>Bordado</td><td>cada 1.000 puntadas</td><td class="num">0,1200</td><td class="num">0,0000</td><td>21-sep-2026</td></tr>
+        <tr><td>Confección</td><td>minutos</td><td class="num">0,0900</td><td class="num">0,0700</td><td>19-sep-2026</td></tr>
+        <tr><td>Empaque</td><td>minutos</td><td class="num">0,0000</td><td class="num">0,0000</td><td>19-sep-2026</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nota ojo">
+    <span class="et">Ojo con los ceros</span>
+    <p>Corte, estampado y empaque están hoy en cero: sus minutos se registran en la ficha pero no
+      suman al costo mientras la tarifa siga en cero. Quien reciba este esquema debe saberlo, porque
+      el costo de hoy es, en la práctica, materiales + confección + bordado.</p>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Cliente</th><th>Zona</th><th class="num">Margen meta</th><th>Cómo se calcula su precio</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Fashion Club</strong></td><td>Ecuador</td><td class="num">30 %</td><td>Del costo. Es el <strong>cliente base</strong>.</td></tr>
+        <tr><td><strong>Aero Dep</strong></td><td>Ecuador</td><td class="num">35 %</td><td>Atado a Fashion Club: su precio <strong>+ 5 %</strong>.</td></tr>
+        <tr><td><strong>JL Fashion Club</strong></td><td>Colombia</td><td class="num">15 %</td><td>Del costo.</td></tr>
+        <tr><td><strong>Price</strong></td><td>Ecuador</td><td class="num">20 %</td><td>Del costo.</td></tr>
+        <tr><td><strong>Otros clientes</strong></td><td>Ecuador</td><td class="num">40 %</td><td>Del costo.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>3.1 Insumos que lleva toda prenda</h3>
+  <p class="medida">Al crear una ficha, estas tres líneas entran solas. Se pueden cambiar o quitar en
+    cada prenda.</p>
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Código</th><th>Insumo</th><th class="num">Consumo de arranque</th></tr></thead>
+      <tbody>
+        <tr><td><code>IN-HILOPARACOSE</code></td><td>Hilo para coser</td><td class="num">0,010</td></tr>
+        <tr><td><code>IN-ETIQUETAS</code></td><td>Etiquetas de talla</td><td class="num">2</td></tr>
+        <tr><td><code>IN-INS001</code></td><td>Etiqueta de lavado</td><td class="num">1</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="medida">Además, cada <strong>tipo de prenda</strong> (Camiseta CR, Hoodies, Jeans…) tiene
+    una receta sugerida: los materiales típicos con su consumo de arranque, que se cargan de un clic y
+    después se ajustan.</p>
+</section>
+
+<section>
+  <h2><span class="num">04</span>Un costeo real, paso a paso</h2>
+  <p class="medida">Referencia <strong>1130 · HENLEY ML CROP MUJER AERO NY</strong>, costo cerrado en
+    la versión 1 el 15-oct-2026. Los números son los del sistema, no un ejemplo inventado.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Material</th><th>Código</th><th>Familia</th><th>UM</th><th class="num">Consumo</th>
+        <th class="num">Desperd.</th><th class="num">Costo unit.</th><th class="num">$ de la línea</th></tr></thead>
+      <tbody>
+        <tr><td>RIBB 2X2 LIVIANO</td><td><code>MP-RIBB2X2LIVIA</code></td><td>Materia prima</td><td>kg</td><td class="num">0,220</td><td class="num">0 %</td><td class="num">8,70</td><td class="num">1,9140</td></tr>
+        <tr><td>RIBB 24/1</td><td><code>MP-RIBB241</code></td><td>Materia prima</td><td>kg</td><td class="num">0,020</td><td class="num">0 %</td><td class="num">8,60</td><td class="num">0,1720</td></tr>
+        <tr><td>BOTONES</td><td><code>IN-BOTONES</code></td><td>Insumos</td><td>u</td><td class="num">6</td><td class="num">0 %</td><td class="num">0,02</td><td class="num">0,1200</td></tr>
+        <tr><td>HILO PARA COSER</td><td><code>IN-HILOPARACOSE</code></td><td>Insumos</td><td>u</td><td class="num">0,006</td><td class="num">0 %</td><td class="num">7,00</td><td class="num">0,0420</td></tr>
+        <tr><td>ETIQUETAS TALLAS</td><td><code>IN-ETIQUETAS</code></td><td>Insumos</td><td>u</td><td class="num">2</td><td class="num">0 %</td><td class="num">0,02</td><td class="num">0,0400</td></tr>
+        <tr><td>ETIQUETA DE LAVADO</td><td><code>IN-INS001</code></td><td>Insumos</td><td>u</td><td class="num">2</td><td class="num">0 %</td><td class="num">0,02</td><td class="num">0,0400</td></tr>
+        <tr><td>MATERIALES DE BORDADO</td><td><code>IN-MATERIALESDE</code></td><td>Insumos</td><td>m</td><td class="num">0,025</td><td class="num">0 %</td><td class="num">4,00</td><td class="num">0,1000</td></tr>
+        <tr class="tot"><td colspan="7">Materia prima</td><td class="num">2,0860</td></tr>
+        <tr class="tot"><td colspan="7">Insumos</td><td class="num">0,3420</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Centro</th><th>Se mide en</th><th class="num">Valor</th><th class="num">Tarifa MOD</th>
+        <th class="num">Tarifa MOI</th><th class="num">MOD</th><th class="num">MOI</th></tr></thead>
+      <tbody>
+        <tr><td>Bordado</td><td>puntadas</td><td class="num">9.459</td><td class="num">0,1200</td><td class="num">0,0000</td><td class="num">1,1351</td><td class="num">0,0000</td></tr>
+        <tr><td>Confección</td><td>minutos</td><td class="num">15</td><td class="num">0,0900</td><td class="num">0,0700</td><td class="num">1,3500</td><td class="num">1,0500</td></tr>
+        <tr class="tot"><td colspan="5">Mano de obra · SAM 15 minutos</td><td class="num">2,4851</td><td class="num">1,0500</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="formula">
+    <b>costo total</b> = 2,0860 + 0,3420 + 0 + 0 + 2,4851 + 1,0500 = <b>5,9631</b><br>
+    <span class="cmt">— materia prima + insumos + decoración + servicios + MOD + MOI · SAM 15 min</span>
+  </div>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Cliente</th><th>Cómo sale</th><th class="num">PVP calculado</th>
+        <th class="num">PVP cerrado</th><th class="num">Margen real</th><th class="num">Gana</th></tr></thead>
+      <tbody>
+        <tr><td>Fashion Club</td><td>5,9631 ÷ (1 − 0,30)</td><td class="num">8,5187</td><td class="num">8,50</td><td class="num">29,8 %</td><td class="num">2,5369</td></tr>
+        <tr><td>Aero Dep</td><td>8,50 × 1,05</td><td class="num">8,9250</td><td class="num">8,99</td><td class="num">33,7 %</td><td class="num">3,0269</td></tr>
+        <tr><td>JL Fashion Club</td><td>5,9631 ÷ (1 − 0,15)</td><td class="num">7,0154</td><td class="num">7,50</td><td class="num">20,5 %</td><td class="num">1,5369</td></tr>
+        <tr><td>Price</td><td>5,9631 ÷ (1 − 0,20)</td><td class="num">7,4538</td><td class="num">7,80</td><td class="num">23,5 %</td><td class="num">1,8369</td></tr>
+        <tr><td>Otros clientes</td><td>5,9631 ÷ (1 − 0,40)</td><td class="num">9,9385</td><td class="num">9,99</td><td class="num">40,3 %</td><td class="num">4,0269</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="nota ok">
+    <span class="et">Por qué el cerrado no es igual al calculado</span>
+    <p>En esta referencia los cinco precios se fijaron <strong>a mano</strong>, para cerrar en cifras
+      comerciales (8,50 · 8,99 · 7,50 · 7,80 · 9,99). El sistema guarda el precio puesto y recalcula
+      el margen real de cada uno, que es la columna de la derecha. El costo, 5,9631, es el mismo en
+      todos los casos.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">05</span>Cómo queda congelado</h2>
+  <p class="medida">Un costo solo es firme cuando se <strong>cierra la versión</strong>. En ese
+    momento el sistema copia dentro de la versión los precios de los materiales y las tarifas de mano
+    de obra de ese día, junto con los consumos, los tiempos y el precio de cada cliente.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Estado</th><th>Qué significa</th><th>¿El costo es firme?</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Borrador</strong></td><td>El producto existe, la ficha está vacía.</td><td>No</td></tr>
+        <tr><td><strong>En avance</strong></td><td>Ya tiene tela o tiempos. Se guarda cuantas veces haga falta.</td><td>No</td></tr>
+        <tr><td><strong>Pre costeada</strong></td><td>Se guardó el costo y el precio de ese día para cotizarle al cliente, sin cerrar la ficha.</td><td>No · es provisional, lleva su fecha</td></tr>
+        <tr><td><strong>Por aprobar</strong></td><td>Quien la llenó la mandó a revisión.</td><td>No</td></tr>
+        <tr><td><strong>Costeada v1</strong></td><td>Un administrador aprobó: el costo se congela y la ficha queda de solo lectura.</td><td><strong>Sí</strong></td></tr>
+        <tr><td><strong>Re-costeo v2</strong></td><td>Cambió un precio o un consumo: se abre la versión siguiente.</td><td>La v1 sigue firme en el historial</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="nota regla">
+    <span class="et">La regla que sostiene todo</span>
+    <p>Un costo cerrado <strong>no cambia nunca</strong>. Si mañana sube el precio de la tela, la
+      versión guardada sigue mostrando el costo con el que se cotizó; el precio nuevo entra en la
+      versión siguiente, y el historial deja ver qué cambió entre una y otra. Hoy hay
+      <strong>242 versiones</strong> guardadas de 198 referencias.</p>
+  </div>
+</section>
+
+<section>
+  <h2><span class="num">06</span>Qué NO entra en el costo</h2>
+  <ul>
+    <li><strong>Gastos generales, administración y ventas.</strong> No hay ningún porcentaje de
+      prorrateo: eso vive en el margen, no en el costo.</li>
+    <li><strong>Transporte, aranceles y nacionalización.</strong> Si un material importado los lleva,
+      van dentro de su precio unitario en el catálogo, no como línea aparte.</li>
+    <li><strong>Desperdicio de corte global.</strong> Solo existe el % de desperdicio por línea de
+      material, que hoy se usa en cero.</li>
+    <li><strong>Las operaciones de ingeniería.</strong> La secuencia de operaciones de una prenda se
+      registra como base técnica, pero <strong>no afecta el costo</strong>: el costo de mano de obra
+      sale de los minutos por centro.</li>
+    <li><strong>La pirámide de precios del cliente.</strong> Es una tabla de referencia para decidir a
+      qué nivel se apunta la prenda; no interviene en ningún cálculo.</li>
+  </ul>
+</section>
+
+<section>
+  <h2><span class="num">07</span>Dónde vive cada dato</h2>
+  <p class="medida">Para quien lo pida en términos técnicos. La base es PostgreSQL (Supabase); cada
+    tabla guarda una llave de texto y el registro en un campo <code>jsonb</code> llamado
+    <code>data</code>.</p>
+
+  <div class="tabla-caja">
+    <table>
+      <thead><tr><th>Tabla</th><th>Filas</th><th>Qué guarda · campos</th></tr></thead>
+      <tbody>
+        <tr><td><code>cst_productos</code></td><td class="num">319</td>
+          <td><code>r</code> referencia · <code>n</code> nombre · <code>cat</code>/<code>sub</code> categoría y tipo ·
+            <code>marca</code> · <code>dep</code> departamento · <code>anio</code> · <code>temporada</code> ·
+            <code>col</code> colección · <code>cu</code> código único · <code>foto</code> enlace ·
+            <code>creado</code> día de registro · <code>ent</code> entrega · <code>arch</code> archivada</td></tr>
+        <tr><td><code>cst_fichas</code></td><td class="num">319</td>
+          <td><code>lines[]</code> la receta: <code>c</code> código del material, <code>q</code> consumo,
+            <code>d</code> desperdicio % · <code>cen{}</code> los tiempos por centro:
+            <code>on</code> activo, <code>val</code> minutos o puntadas · <code>pl[]</code> el precio por
+            cliente · <code>ver</code> versión · <code>saved</code>/<code>edit</code> estado ·
+            <code>fecha</code> día del cierre · <code>pre{}</code> el pre costeo · <code>hist[]</code> historial</td></tr>
+        <tr><td><code>cst_materiales</code></td><td class="num">207</td>
+          <td><code>c</code> código · <code>d</code> descripción · <code>k</code> familia
+            (<code>mp</code>, <code>ins</code>, <code>dec</code>, <code>srv</code>) · <code>um</code> unidad ·
+            <code>p</code> precio vigente · <code>f</code> fecha de ese precio · <code>fam</code> familia propia</td></tr>
+        <tr><td><code>cst_centros</code></td><td class="num">5</td>
+          <td><code>id</code> · <code>n</code> nombre · <code>tD</code> tarifa directa ·
+            <code>tI</code> tarifa indirecta · <code>base</code> (<code>min</code> o <code>punt</code>) ·
+            <code>desde</code> vigencia</td></tr>
+        <tr><td><code>cst_clientes</code></td><td class="num">5</td>
+          <td><code>id</code> · <code>cli</code> · <code>zona</code> · <code>meta</code> margen meta ·
+            <code>base</code> cliente base · <code>vinc</code> atado a · <code>mas</code> recargo %</td></tr>
+        <tr><td><code>cst_versiones</code></td><td class="num">242</td>
+          <td>La foto congelada: <code>ref</code> · <code>ver</code> · <code>fecha</code> ·
+            <code>total</code> · <code>sam</code> · <code>lines[]</code> y <code>cen{}</code> copiados ·
+            <code>pvp[]</code> el precio de cada cliente ese día</td></tr>
+        <tr><td><code>cst_categorias</code></td><td class="num">24</td>
+          <td>Las categorías con sus tipos de prenda y la receta sugerida de cada tipo</td></tr>
+        <tr><td><code>cst_base</code></td><td class="num">3</td>
+          <td>Los insumos que lleva toda prenda, con su consumo de arranque</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="medida">Hay además tablas para pantones, marcas, temporadas, colecciones, consolidados y
+    el catálogo de 595 operaciones. El respaldo del 28-oct-2026 las lleva todas.</p>
+</section>
+
+<p class="pie">TEMPOCODECA S.A. · Esquema de costeo de Costos TEMPO · 28-oct-2026 · Las tarifas y los
+  márgenes son los vigentes a esa fecha. El ejemplo de la sección 4 es la referencia 1130, con su
+  costo cerrado en la versión 1 el 15-oct-2026, y sus cifras se comprobaron contra el sistema.</p>
+
+</div>
