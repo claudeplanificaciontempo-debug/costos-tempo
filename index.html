@@ -8,6 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
+.vermas{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px;margin:6px 0 0;
+  background:var(--vino-soft,#f6eff0);border-radius:10px;font-size:13px}
+
 /* ====== TEMA "VINO PASTEL" ======
    Los colores de señal (verde, naranja, ámbar) son deliberadamente ajenos al vino
    de la marca, para que "guardado", "error" y "advertencia" no se confundan con ella. */
@@ -956,7 +959,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
   </div>
   <div class="card">
     <div class="card-h">
-      <input id="mat-q" class="lpq" type="text" placeholder="Buscar código, descripción o familia…" oninput="rowsCatMat()">
+      <input id="mat-q" class="lpq" type="text" placeholder="Buscar código, descripción o familia…" oninput="buscarLuego(rowsCatMat)">
       <div class="sub" id="mat-sub"></div>
     </div>
     <div id="bulk-mat" class="hide" style="display:flex;gap:10px;align-items:center;padding:10px 14px;background:var(--vino-soft);border-radius:10px;margin:0 14px 10px">
@@ -1139,7 +1142,7 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
         <button class="tab" id="lp-m-pre" onclick="modoLp('pre')">Pre costeadas</button>
         <button class="tab" id="lp-m-todas" onclick="modoLp('todas')">Todas</button>
       </div>
-      <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="rowsLista()">
+      <input id="lp-q" class="lpq" type="text" placeholder="Buscar referencia o producto…" oninput="buscarLuego(rowsLista)">
       <button class="btn sm" id="lp-xcosto" style="margin-left:8px" title="Hoja horizontal con la foto, el detalle, el costo de TEMPO y una columna por cliente" onclick="xlsxPrecios()">Excel con costo</button>
       <div class="sub" id="lp-s"></div></div>
     <div class="addrow" style="border-bottom:1px solid var(--line-soft);flex-wrap:wrap">
@@ -3488,7 +3491,7 @@ function setRegistro(cual,v){if(cual==='d')RDESDE=v;else RHASTA=v;rowsProd()}
 /* el atajo de todos los días: ver solo lo que entró hoy */
 function registroHoy(){RDESDE=RHASTA=hoyISO();rowsProd();
   toast('Lo que registraste hoy',fechaBonita(hoyISO())+' · '+prodLista().length+' producto(s).');}
-function limpiarFiltros(){FPROD={};FDESDE=FHASTA='';RDESDE=RHASTA='';rowsProd()}
+function limpiarFiltros(){FPROD={};FDESDE=FHASTA='';RDESDE=RHASTA='';topeProd=TANDA;rowsProd()}
 /* la fila de globos deja ver de un vistazo qué se está mirando */
 function pintarChips(){
   const c=$('chips-prod');if(!c)return;
@@ -3504,12 +3507,44 @@ function pintarChips(){
   c.innerHTML=h;
   c.classList.toggle('hide',!h);
 }
+/* Con 300 productos, dibujar los siete desplegables de cada fila con todas sus
+   opciones son veinte mil etiquetas <option> que el navegador tiene que construir
+   cada vez que se repinta la lista: eso es lo que la ponía lenta. Ahora cada
+   desplegable nace con una sola opción —la que está puesta— y se llena entero
+   la primera vez que se toca. Se ve y se usa igual. */
+const OPC_PROD={
+  marca:    {lista:()=>MARCAS,      nueva:'+ Nueva marca…'},
+  dep:      {lista:()=>DEPS},
+  anio:     {lista:()=>aniosLista()},
+  temporada:{lista:()=>TEMPORADAS,  nueva:'+ Nueva temporada…'},
+  col:      {lista:()=>COLECCIONES, nueva:'+ Nueva colección…'},
+  cat:      {lista:()=>Object.keys(CATEG), sinVacio:true},
+  sub:      {lista:i=>(CATEG[(REFS[i]||{}).cat]||[]), sinVacio:true}
+};
+function selProd(i,campo,valor,accion,estilo){
+  const v=valor==null?'':String(valor);
+  return `<select class="fld${v?'':' sindef'}" data-op="${campo}" data-i="${i}"${estilo?` style="${estilo}"`:''}
+    onchange="${accion}"><option value="${escR(v)}" selected>${v?escR(v):'sin definir'}</option></select>`;
+}
+function llenarSel(el){
+  if(!el||el.dataset.lleno)return;
+  const campo=el.dataset.op,i=+el.dataset.i,cfg=OPC_PROD[campo];if(!cfg)return;
+  const v=el.value,lista=cfg.lista(i)||[];
+  el.innerHTML=(cfg.sinVacio&&v?'':`<option value="" ${v?'':'selected'}>sin definir</option>`)
+    +lista.map(o=>`<option value="${escR(String(o))}" ${String(o)===v?'selected':''}>${escR(String(o))}</option>`).join('')
+    +(cfg.nueva?`<option value="__nueva__">${cfg.nueva}</option>`:'');
+  el.value=v;el.dataset.lleno='1';
+}
+/* una sola escucha para toda la lista, en vez de una por fila */
+document.addEventListener('mousedown',e=>{const s=e.target.closest&&e.target.closest('select[data-op]');if(s)llenarSel(s)},true);
+document.addEventListener('focusin',e=>{const s=e.target.closest&&e.target.closest('select[data-op]');if(s)llenarSel(s)});
+document.addEventListener('keydown',e=>{const s=e.target.closest&&e.target.closest('select[data-op]');if(s)llenarSel(s)},true);
 function filaProd({x,i}){
   const f=FICHAS[x.r],t=totRef(x.r);
   return `<div class="prow">
       <div><input type="checkbox" class="prsel" ${SELP.has(x.r)?'checked':''} onchange="toggleProd('${x.r}',this.checked)"></div>
       <div class="mth" onclick="verFicha('${x.r}')" title="Abrir la ficha de costos"
-        ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
+        ${FOTO[x.r]?`data-zoom="${escR(FOTO[x.r])}" data-zoom-t="${escR(x.r)} · ${escR(x.n)}"`:''}>${FOTO[x.r]?`<img loading="lazy" decoding="async" src="${FOTO[x.r]}">`:'<div class="nof">sin<br>foto</div>'}
         <button class="edf" title="Cambiar la foto" onclick="event.stopPropagation();pedirFoto(${i})">✎</button></div>
       <div><input class="fld cod may" style="font-weight:600" value="${x.r}" onchange="setP(${i},'r',this.value)"></div>
       <div><input class="fld cod${x.cu?'':' sindef'}" value="${x.cu||''}" placeholder="sin definir" title="Código con el que este producto se empata con el otro sistema" onchange="setP(${i},'cu',this.value)"></div>
@@ -3524,30 +3559,13 @@ function filaProd({x,i}){
             <input type="date" value="${x.ent||''}" title="Día en que el taller entregó la muestra terminada" onchange="setP(${i},'ent',this.value)">
           </span></div>
       </div>
-      <div><select class="fld${x.marca?'':' sindef'}" onchange="marcaSel(${i},this)">
-        <option value="" ${x.marca?'':'selected'}>sin definir</option>
-        ${MARCAS.map(m=>`<option ${m===x.marca?'selected':''}>${m}</option>`).join('')}
-        <option value="__nueva__">+ Nueva marca…</option></select></div>
-      <div><select class="fld${x.dep?'':' sindef'}" onchange="setP(${i},'dep',this.value)">
-        <option value="" ${x.dep?'':'selected'}>sin definir</option>
-        ${DEPS.map(d=>`<option ${d===x.dep?'selected':''}>${d}</option>`).join('')}</select></div>
-      <div><select class="fld${x.anio?'':' sindef'}" style="width:100%;text-align:center" onchange="setP(${i},'anio',this.value)">
-        <option value="" ${x.anio?'':'selected'}>sin definir</option>
-        ${aniosLista().map(a=>`<option ${String(a)===String(x.anio||'')?'selected':''}>${a}</option>`).join('')}</select></div>
-      <div><select class="fld${x.temporada?'':' sindef'}" onchange="temporadaSel(${i},this)">
-        <option value="" ${x.temporada?'':'selected'}>sin definir</option>
-        ${TEMPORADAS.map(t=>`<option ${t===x.temporada?'selected':''}>${t}</option>`).join('')}
-        <option value="__nueva__">+ Nueva temporada…</option></select></div>
-      <div><select class="fld${x.col?'':' sindef'}" onchange="coleccionSel(${i},this)">
-        <option value="" ${x.col?'':'selected'}>sin definir</option>
-        ${COLECCIONES.map(c=>`<option ${c===x.col?'selected':''}>${c}</option>`).join('')}
-        <option value="__nueva__">+ Nueva colección…</option></select></div>
-      <div><select class="fld${x.cat?'':' sindef'}" onchange="setP(${i},'cat',this.value)">
-        ${x.cat?'':'<option value="" selected>sin definir</option>'}
-        ${Object.keys(CATEG).map(c=>`<option ${c===x.cat?'selected':''}>${c}</option>`).join('')}</select></div>
-      <div><select class="fld${x.sub?'':' sindef'}" onchange="setP(${i},'sub',this.value)">
-        ${x.sub?'':'<option value="" selected>sin definir</option>'}
-        ${(CATEG[x.cat]||[]).map(s=>`<option ${s===x.sub?'selected':''}>${s}</option>`).join('')}</select></div>
+      <div>${selProd(i,'marca',x.marca,`marcaSel(${i},this)`)}</div>
+      <div>${selProd(i,'dep',x.dep,`setP(${i},'dep',this.value)`)}</div>
+      <div>${selProd(i,'anio',x.anio,`setP(${i},'anio',this.value)`,'width:100%;text-align:center')}</div>
+      <div>${selProd(i,'temporada',x.temporada,`temporadaSel(${i},this)`)}</div>
+      <div>${selProd(i,'col',x.col,`coleccionSel(${i},this)`)}</div>
+      <div>${selProd(i,'cat',x.cat,`setP(${i},'cat',this.value)`)}</div>
+      <div>${selProd(i,'sub',x.sub,`setP(${i},'sub',this.value)`)}</div>
       <div style="text-align:right"><b${t.total?'':' style="color:var(--falta)"'}>${fmt(t.total)}</b><br>
         ${f.aprob==='pendiente'?`<span class="pill pend">Por aprobar</span>`:
           f.saved&&!f.edit
@@ -3561,13 +3579,33 @@ function filaProd({x,i}){
       </div>
     </div>`;
 }
+/* Pintar las 300 y pico de una sola vez son miles de casillas que el navegador
+   tiene que construir, y la lista se repinta con cada cambio. Se pintan por
+   tandas: lo que cabe en pantalla y un poco más, con un botón para traer el
+   resto. Los filtros, la búsqueda y las cuentas siguen mirando TODAS. */
+/* Al escribir en un buscador no hace falta repintar la lista con cada letra:
+   se espera a que la persona pare de teclear. */
+let tBusca=null;
+function buscarLuego(f){clearTimeout(tBusca);tBusca=setTimeout(f,160)}
+const TANDA=80;
+let topeProd=TANDA,firmaProd='';
+function verMasProd(){topeProd+=200;rowsProd();}
+function verTodasProd(){topeProd=1e9;rowsProd();}
 function rowsProd(){
   kpis();
   /* borrar de verdad solo se ofrece mientras se mira el archivo */
   const bda=$('bt-arch-del');if(bda)bda.classList.toggle('hide',prodF!=='arch');
+  /* si cambió el filtro, la agrupación o la vista, se vuelve a la primera tanda */
+  const firma=JSON.stringify([prodF,FPROD,FDESDE,FHASTA,RDESDE,RHASTA,prodAgrupa,prodVista]);
+  if(firma!==firmaProd){firmaProd=firma;topeProd=TANDA}
   const lista=prodLista();
   SELP.forEach(r=>{if(!byRef(r))SELP.delete(r)});
-  const html=grupoHtml(lista,0);
+  const corta=lista.length>topeProd;
+  const html=grupoHtml(corta?lista.slice(0,topeProd):lista,0)
+    +(corta?`<div class="vermas">Se están mostrando <b>${topeProd}</b> de ${lista.length} referencias.
+        <button class="btn ghost sm" onclick="verMasProd()">Ver 200 más</button>
+        <button class="btn ghost sm" onclick="verTodasProd()">Ver todas</button>
+        <span class="mini" style="margin:0">Los filtros, el buscador y los totales de arriba cuentan las ${lista.length}.</span></div>`:'');
   $('pr-rows').innerHTML=html||`<div class="empty">${prodF==='todos'?'Sin productos. Usa Carga masiva.':'Ninguna referencia en este estado. <button class="btn ghost sm" onclick="filtrarProd(\'todos\')">Ver todas</button>'}</div>`;
   autosave();
   $('prod-sub').innerHTML=(prodF==='pend'
