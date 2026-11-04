@@ -4292,11 +4292,23 @@ async function cargarNube(){
     ultimoError=avisoLectura;
     setTimeout(()=>toast('Atención: la nube devolvió vacío',avisoLectura),700);
   }
-  /* se vacían y rellenan en su sitio (no se reasignan) para no perder la reactividad */
-  if(mk&&mk.length){MARCAS.length=0;mk.sort(porOrden).forEach(x=>MARCAS.push(x.data.nombre))}
-  if(pt&&pt.length){PANTONES.length=0;pt.sort(porOrden).forEach(x=>{const {orden,...p}=x.data;PANTONES.push(p)})}
-  if(tp&&tp.length){TEMPORADAS.length=0;tp.sort(porOrden).forEach(x=>TEMPORADAS.push(x.data.nombre))}
-  if(co&&co.length){COLECCIONES.length=0;co.sort(porOrden).forEach(x=>COLECCIONES.push(x.data.nombre))}
+  /* se vacían y rellenan en su sitio (no se reasignan) para no perder la reactividad.
+     Los nombres repetidos se descartan: dos filas con el mismo nombre dejaban la lista
+     con el nombre dos veces, y al borrar uno el otro seguía ahí y parecía que el cambio
+     no se guardaba. */
+  const sinRepes=(lista,filas,campo)=>{
+    lista.length=0;const visto=new Set();
+    filas.sort(porOrden).forEach(x=>{
+      const n=String((x.data||{})[campo]||'').trim();if(!n)return;
+      const k=n.toLowerCase();if(visto.has(k))return;visto.add(k);lista.push(n);
+    });
+  };
+  if(mk&&mk.length)sinRepes(MARCAS,mk,'nombre');
+  if(pt&&pt.length){PANTONES.length=0;const vp=new Set();
+    pt.sort(porOrden).forEach(x=>{const {orden,...p}=x.data;const k=String(p.pan||'').toLowerCase();
+      if(k&&vp.has(k))return;if(k)vp.add(k);PANTONES.push(p)})}
+  if(tp&&tp.length)sinRepes(TEMPORADAS,tp,'nombre');
+  if(co&&co.length)sinRepes(COLECCIONES,co,'nombre');
   if(bs&&bs.length){BASE.length=0;bs.sort(porOrden).forEach(x=>{const {orden,...b}=x.data;BASE.push(b)})}
   /* los consolidados: manda la nube */
   if(cn){CONS.length=0;cn.sort(porOrden).forEach(x=>{const {orden,...c}=x.data;c.refs=c.refs||[];CONS.push(c)})}
@@ -4322,6 +4334,21 @@ async function cargarNube(){
   const Fs=filasLimpias();
   T.forEach((t,i)=>{const enNube=new Set(R[i].map(x=>x.id));const s=snapshot(Fs[t]);
     Object.keys(s).forEach(id=>{if(!enNube.has(id))delete s[id]});lastSent[t]=s});
+  /* Maestros: una fila de la nube cuya llave no es la que genera la app (por ejemplo
+     "BULL DOG" en vez de "bull-dog") quedaba repetida para siempre, porque la app
+     nunca la había escrito y por tanto nunca la borraba. Si su nombre ya está bajo la
+     llave correcta, se apunta como enviada para que el guardado la quite. */
+  ['cst_marcas','cst_temporadas','cst_colecciones'].forEach((t,k)=>{
+    const filas=R[T.indexOf(t)];if(!filas)return;
+    const buenas=new Set(Object.keys(snapshot(Fs[t])));let sobran=0;
+    filas.forEach(x=>{
+      const n=String((x.data||{}).nombre||'').trim();if(!n)return;
+      const llave=n.toLowerCase().replace(/[^a-z0-9]+/g,'-');
+      if(x.id!==llave&&buenas.has(llave)){lastSent[t][x.id]=JSON.stringify(x.data);sobran++}
+    });
+    if(sobran){SUCIO=true;pendiente=true;
+      console.warn('Maestros: '+sobran+' fila(s) repetida(s) en '+t+' se quitarán al guardar.');}
+  });
   ONLINE=true;
   if(n.nm||n.np)setTimeout(()=>toast('Archivo actualizado',[n.nm?n.nm+' materiales nuevos':'',n.np?n.np+' productos nuevos':''].filter(Boolean).join(' y ')+' se agregaron a la nube.'),400);
   CARGANDO=false;
@@ -6250,7 +6277,9 @@ function rowsLista(){
   const pon=(id,vals,etq,etiqueta)=>{const e=$(id);if(!e)return;const v=e.value;
     e.innerHTML='<option value="">'+etq+'</option>'+vals.map(x=>`<option value="${escR(x)}" ${x===v?'selected':''}>${escR(etiqueta?etiqueta(x):x)}</option>`).join('');
     if(vals.indexOf(v)>=0)e.value=v;};
-  const con=activos().filter(x=>FICHAS[x.r].saved);
+  /* las opciones salen de lo que se está viendo en esta pestaña, no solo de lo
+     cerrado: si no, una colección en pre costeo no aparecía nunca en el filtro */
+  const con=activos().filter(x=>enLpModo(x.r));
   pon('lp-f-cons',CONS.filter(c=>refsDeCons(c.id).length).map(c=>c.id),'Todos los consolidados',nombreCons);
   pon('lp-f-col',[...new Set(con.map(x=>x.col).filter(Boolean))].sort(),'Todas las colecciones');
   pon('lp-f-cat',[...new Set(con.map(x=>x.cat).filter(Boolean))].sort(),'Todas las categorías');
