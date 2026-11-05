@@ -6318,7 +6318,8 @@ function rowsLista(){
         <td class="l" style="text-align:left">
           <div class="lpnm">${x.n}</div>
           <span class="lpref">${x.r}</span>
-          <div class="lptipo">${x.marca?x.marca+' · ':''}${x.dep?x.dep+' · ':''}${x.cat} · ${x.sub} · ${
+          <div class="lptipo">${x.marca?x.marca+' · ':''}${x.dep?x.dep+' · ':''}${x.cat} · ${x.sub}${
+            x.col?' · <b style="font-weight:600">'+escR(x.col)+'</b>':''} · ${
             (f.saved&&!f.edit)?'v'+f.ver:(f.pre?'pre costeo '+f.pre.fecha:'en avance')}</div></td>
         ${px}</tr>`;
     });
