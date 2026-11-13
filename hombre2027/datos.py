@@ -1,0 +1,72 @@
+# -*- coding: utf-8 -*-
+# ref, pagina(parte_pag), nombre, categoria, tipo, [(codigo, consumo, um, de_donde)], minutos, decoracion
+J='MP-JERSEYALGODO';J2='MP-JERSEYALGODO2';JE='MP-JERSEYESPECI';JL='MP-JERSEYLISTAD';JY='MP-JERSEYLYCRA'
+R='MP-RIBB241';RG='MP-RIBB2X2GRUES';FP='MP-FLEECEPERCHA';FT='MP-FRENCHTERRY';GA='MP-GALLETA'
+PQ='MP-PIQUE';PL='MP-PIQUELYCRA';PD='MP-PIQUEDOBLE';CU='MP-CUELLOSTEJID';PU='MP-PUOSTEJIDOS'
+FH='NUEVO-MWDLJ8R7';RH='NUEVO-MWDLJVEO';LI='NUEVO-MUOMEJ4C';TW='NUEVO-MUCSXGIA';MF='NUEVO-MUPPIA8Q';DE='TJ-DEN001'
+EL='IN-ELASTICO';CO='IN-CORDONREDOND';CZ='IN-CIERRENYLON';BO='IN-BOTONES';OJ='IN-OJALILLO';RE='IN-REATA'
+BJ='NUEVO-MUBIILEI';CJ='NUEVO-MUBIKQGY';RM='IN-REMACHESMETA'
+
+P=[
+("5114","1-13","Camiseta manga corta cuello redondo relaxed","CAMISETAS","Camiseta CR",[(J,.180,'kg'),(R,.020,'kg')],5,""),
+("5115","1-15","Camiseta manga corta basica slim","CAMISETAS","Camiseta CR",[(JY,.180,'kg'),(R,.020,'kg')],5,""),
+("5116","1-19","Polo manga corta pique","POLOS","Polo Basica",[(PL,.270,'kg'),(CU,1,'u'),(PU,2,'u')],13.5,""),
+("5117","1-21","Polo manga corta listado","POLOS","Polo Basica",[(JL,.270,'kg'),(CU,1,'u'),(PU,2,'u')],13.5,""),
+("5118","1-23","Camiseta manga corta liviana con bolsillo","CAMISETAS","Camiseta Bolsillo",[(J,.185,'kg'),(R,.020,'kg')],6,"BORDADO"),
+("5119","1-25","Camiseta raglan manga corta estampada","CAMISETAS","MC Ranglan",[(JE,.215,'kg'),(R,.020,'kg')],6.5,"ESTAMPADO"),
+("5120","1-27","Camiseta manga corta pesada estampada","CAMISETAS","Fashion Graphics",[(J,.180,'kg'),(R,.020,'kg')],5,"ESTAMPADO"),
+("5121","1-29","Camiseta manga corta pesada con bolsillo","CAMISETAS","Camiseta Bolsillo",[(J2,.185,'kg'),(R,.020,'kg')],6,""),
+("5122","1-31","Camiseta manga corta fantasia con grafico","CAMISETAS","Fashion Graphics",[(JE,.180,'kg'),(R,.020,'kg')],5,"ESTAMPADO"),
+("5123","1-33","Camiseta manga corta listada","CAMISETAS","Camiseta CR",[(JL,.180,'kg'),(R,.020,'kg')],5,""),
+("5124","1-35","Camiseta ringer manga corta estampada","CAMISETAS","MC Ranglan",[(JE,.215,'kg'),(R,.020,'kg')],6.5,"ESTAMPADO"),
+("5125","1-37","Bividi cuello redondo","BVD","BVD",[(J,.138,'kg')],6,""),
+("5126","1-39","Camiseta manga corta estampado espalda y bordado frente","CAMISETAS","Fashion Graphics",[(J,.180,'kg'),(R,.020,'kg')],5,"ESTAMPADO; BORDADO"),
+("5127","1-41","Bividi con estampado en espalda","BVD","BVD",[(J,.138,'kg')],6,"ESTAMPADO"),
+("5128","1-43","Polo manga corta con bordado A87","POLOS","Polo Moda",[(PQ,.230,'kg'),(CU,1,'u')],11,"BORDADO"),
+("5129","1-45","Camiseta henley manga corta","HENLEY","Henley MC",[(J,.215,'kg'),(R,.020,'kg'),(BO,3,'u')],11,""),
+("5130","1-47","Camiseta henley manga corta relaxed","HENLEY","Henley MC",[(J,.215,'kg'),(R,.020,'kg'),(BO,3,'u')],11,""),
+("5131","1-49","Camiseta henley manga larga","HENLEY","Henley ML",[(J2,.250,'kg'),(R,.030,'kg'),(BO,3,'u')],13,""),
+("5132","1-51","Camisa manga corta listada","CAMISAS","Camisas MC",[(LI,.295,'kg'),(BO,8,'u')],20,""),
+("5133","1-53","Camisa manga larga","CAMISAS","Camisas ML",[(LI,.360,'kg'),(BO,10,'u')],24,""),
+("5134","1-55","Polo manga larga pique doble","POLOS","Polo Basica",[(PD,.330,'kg'),(CU,1,'u'),(PU,2,'u')],15,""),
+("5135","1-57","Buzo con capucha liso","HODDIE","Hoodies",[(GA,.535,'kg'),(RG,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],15,""),
+("5136","1-59","Buzo cuello polo fleece","FLEECE PESADO","Crew Moda",[(FP,.415,'kg'),(RG,.120,'kg'),(CU,1,'u'),(BO,2,'u')],16,"BORDADO"),
+("5137","2-1","Buzo con capucha estampado AERO 1987","HODDIE","Hoodies",[(FH,.535,'kg'),(RH,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],15,"ESTAMPADO"),
+("5138","2-3","Buzo cuello redondo estampado AERO escudo","FLEECE BASICO","Crew",[(FP,.390,'kg'),(RG,.170,'kg')],11,"ESTAMPADO"),
+("5139","2-3","Buzo cuello redondo AEROPOSTALE 1987 NORTH SHORE","FLEECE BASICO","Crew",[(FP,.390,'kg'),(RG,.170,'kg')],11,"ESTAMPADO"),
+("5140","2-3","Buzo cuello redondo AEROPOSTALE 1987 ATHLETIC DIV","FLEECE BASICO","Crew",[(FP,.390,'kg'),(RG,.170,'kg')],11,"ESTAMPADO"),
+("5141","2-3","Pantalon carpintero bota ancha","PANTALONES PLANOS","Pantalon Moda",[(TW,1.170,'m'),(BO,1,'u'),(CZ,1,'u')],15,""),
+("5142","2-5","Buzo con capucha y cierre estampado Aero 87","CHOMPA","Capucha Cierre",[(FP,.613,'kg'),(RG,.170,'kg'),(CZ,1,'u'),(CO,1.3,'u')],18,"ESTAMPADO"),
+("5143","2-7","Buzo con capucha y cierre AERO-NYC 1987","CHOMPA","Capucha Cierre",[(FP,.613,'kg'),(RG,.170,'kg'),(CZ,1,'u'),(CO,1.3,'u')],18,"ESTAMPADO"),
+("5144","2-9","Buzo con capucha y cierre AERO 1987 ORIG BRAND","CHOMPA","Capucha Cierre",[(FP,.613,'kg'),(RG,.170,'kg'),(CZ,1,'u'),(CO,1.3,'u')],18,"ESTAMPADO"),
+("5146","2-11","Buzo con capucha listado","HODDIE","Hoodies",[(FT,.535,'kg'),(RG,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],15,""),
+("5147","2-13","Buzo con capucha y cierre listado","CHOMPA","Capucha Cierre",[(FT,.613,'kg'),(RG,.170,'kg'),(CZ,1,'u'),(CO,1.3,'u')],18,""),
+("5148","2-15","Buzo con capucha estampado 87","HODDIE","Hoodies",[(FP,.535,'kg'),(RG,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],15,"ESTAMPADO"),
+("5149","2-17","Buzo con capucha bloques de color","HODDIE","Hoodies Moda",[(FP,.525,'kg'),(RG,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],22.5,""),
+("5150","2-19","Buzo con capucha cerrado liso","HODDIE","Hoodies",[(FP,.535,'kg'),(RG,.170,'kg'),(CO,1.3,'u'),(OJ,2,'u')],15,""),
+("5151","2-21","Buzo con capucha y cierre liso","CHOMPA","Capucha Cierre",[(FP,.613,'kg'),(RG,.170,'kg'),(CZ,1,'u'),(CO,1.3,'u')],18,""),
+("5152","2-23","Buzo henley cuello redondo boxy","FLEECE BASICO","Crew",[(FP,.390,'kg'),(RG,.170,'kg'),(BO,3,'u')],13,""),
+("5153","2-25","Buzo medio cierre con franja en el pecho","FLEECE PESADO","Crew Zip",[(FP,.520,'kg'),(RG,.065,'kg'),(CZ,1,'u')],16,""),
+("5154","2-28","Short de lino con pretina elastica","SHORT PLANOS","Short Basico",[(LI,.650,'m'),(EL,1.0,'m'),(CO,1.3,'u')],17,""),
+("5155","2-30","Short fleece super baggy","SHORT FLEECE","Short Fleece Moda",[(FP,.280,'kg'),(EL,1.0,'m'),(CO,1.3,'u')],13,""),
+("5156","2-32","Short fleece con estampado a87","SHORT FLEECE","Short Fleece Basico",[(FP,.250,'kg'),(EL,1.0,'m'),(CO,1.3,'u')],9.5,"ESTAMPADO"),
+("5157","2-34","Short fleece con tirillas en costados","SHORT FLEECE","Short Fleece Moda",[(FP,.280,'kg'),(EL,1.0,'m'),(RE,2,'m')],13,""),
+("5158","2-36","Bermuda denim super baggy 12.5 pulgadas","DENIM","Short Denim",[(DE,.900,'m'),(BJ,1,'u'),(CJ,1,'u'),(RM,4,'u')],20,""),
+("5159","2-38","Short fleece liso","SHORT FLEECE","Short Fleece Basico",[(FP,.250,'kg'),(EL,1.0,'m'),(CO,1.3,'u')],9.5,""),
+("5160","2-40","Pantalon recto fleece","JOGGER","Jogger Moda",[(FP,.415,'kg'),(EL,1.0,'m'),(CO,1.3,'u')],14,""),
+("5161","2-42","Pantalon barrel fleece","JOGGER","Jogger Moda",[(FP,.550,'kg'),(EL,1.0,'m'),(CO,1.3,'u')],14,""),
+("5162","2-44","Pantalon recto french terry estampado 1987","JOGGER","Jogger Moda",[(FT,.415,'kg'),(EL,1.0,'m'),(CO,1.3,'u'),(CZ,2,'u')],16,"ESTAMPADO"),
+("5163","2-46","Pantalon recto con vivos y cierres en basta","PANTALONES PLANOS","Pantalon Moda",[(MF,1.170,'m'),(EL,1.0,'m'),(CZ,2,'u'),(RE,2,'m')],18,""),
+("5164","2-48","Short gabardina 7.5 pulgadas","SHORT PLANOS","Short Basico",[(TW,.650,'m'),(EL,1.0,'m'),(CO,1.3,'u')],17,"BORDADO"),
+("5165","2-50","Short gabardina camuflado 7.5 pulgadas","SHORT PLANOS","Short Basico",[(TW,.650,'m'),(EL,1.0,'m'),(CO,1.3,'u')],17,"BORDADO"),
+("5166","2-52","Short cargo gabardina 10 pulgadas","SHORT PLANOS","Short Cargo",[(TW,.970,'m'),(EL,1.0,'m'),(CO,1.3,'u')],22,""),
+("5167","2-54","Short cargo gabardina camuflado 10 pulgadas","SHORT PLANOS","Short Cargo",[(TW,.970,'m'),(EL,1.0,'m'),(CO,1.3,'u')],22,""),
+]
+PUNT={'CAMISETAS':2561,'POLOS':1200,'FLEECE BASICO':6325,'FLEECE PESADO':3133,'HODDIE':5600,
+ 'JOGGER':5566,'BVD':2725,'HENLEY':2561,'CHOMPA':5600,'SHORT FLEECE':2561,'SHORT PLANOS':4237,
+ 'PANTALONES PLANOS':4230,'CAMISAS':2561,'DENIM':4237}
+SUST={'NUEVO-MUCSXGIA':'no hay GABARDINA en el catalogo; se puso TWILL TINTURADA, cambiala si quieres',
+ 'NUEVO-MUPPIA8Q':'no hay POLIESTER RIPSTOP; se puso MICROFIBRA PLANA CHINA, cambiala si quieres',
+ 'NUEVO-MUOMEJ4C':'lino o lienzo del PDF; se puso LINO CHINA APT',
+ 'MP-JERSEYESPECI':'jersey flame / fantasia del PDF; se puso JERSEY ESPECIAL',
+ 'MP-FLEECEPERCHA':'fleece / pique nido de abeja perchado del PDF; se puso FLEECE PERCHADO'}
