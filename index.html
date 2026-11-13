@@ -1260,6 +1260,15 @@ textarea.ta:focus{border-color:var(--vino);outline:none}
     </table>
   </div>
   <div class="card">
+    <div class="card-h"><h2>Muestras costeadas por día</h2><div class="sub" id="rep-cost-sub"></div></div>
+    <div class="hint">El día en que se guardó el costo. Solo cuenta las fichas que quedaron cerradas: las que siguen en costeo o esperando aprobación todavía no aparecen aquí.</div>
+    <div class="avbar"><div class="mb" id="rep-cost-bar"></div><div class="avtxt" id="rep-cost-pct"></div></div>
+    <table>
+      <thead><tr><th class="l">Día</th><th>Costeadas</th><th>Acumulado</th><th class="l">Por categoría</th></tr></thead>
+      <tbody id="rep-cost"></tbody>
+    </table>
+  </div>
+  <div class="card">
     <div class="card-h"><h2>Muestras registradas por día</h2><div class="sub" id="rep-dia-sub"></div></div>
     <table>
       <thead><tr><th class="l">Día</th><th>Muestras</th><th class="l">Por categoría</th></tr></thead>
@@ -2928,6 +2937,18 @@ function fechaBonita(iso){
   const M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
   const p=String(iso).split('-');if(p.length!==3)return iso;
   return (+p[2])+'-'+M[(+p[1])-1]+'-'+p[0];
+}
+/* La ficha guarda la fecha en bonito ("13-nov-2026"). Para agrupar y ordenar
+   por día hace falta en el orden año-mes-día. */
+const MESN={ene:1,feb:2,mar:3,abr:4,may:5,jun:6,jul:7,ago:8,sep:9,oct:10,nov:11,dic:12};
+function isoDeFecha(f){
+  if(!f)return '';
+  const p=String(f).split('-');
+  if(p.length!==3)return '';
+  if(/^\d{4}$/.test(p[0]))return f;
+  const m=MESN[String(p[1]).toLowerCase()];
+  if(!m)return '';
+  return p[2]+'-'+String(m).padStart(2,'0')+'-'+String(+p[0]).padStart(2,'0');
 }
 function hoy(){
   const d=new Date(),M=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
@@ -6043,6 +6064,41 @@ function rowsRep(){
       <td class="l"><div class="dcat" title="${escR(g.map(x=>x.r).join(', '))}">${
         cs.map(c=>`<span class="dc">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
   }).join('')||`<tr><td colspan="3" class="empty">Todavía no hay muestras con fecha de registro. Los productos que crees desde ahora la llevan sola.</td></tr>`;
+
+  /* cuántas se costearon cada día: la fecha en que se cerró la ficha */
+  const cos={},sinFC=[];
+  lista.forEach(x=>{
+    if(estadoRep(x.r)!=='costeada')return;
+    const d=isoDeFecha((FICHAS[x.r]||{}).fecha);
+    if(!d){sinFC.push(x);return}
+    (cos[d]=cos[d]||[]).push(x);
+  });
+  const cds=Object.keys(cos).sort();
+  const acumC={};let sumaC=0;
+  cds.forEach(d=>{sumaC+=cos[d].length;acumC[d]=sumaC});
+  const ordC=REP_ASC?cds:[...cds].reverse();
+  /* el promedio por día solo puede salir de las que sí tienen fecha */
+  const conFecha=T.costeada-sinFC.length;
+  const promC=cds.length?(conFecha/cds.length).toFixed(1):'0';
+  $('rep-cost-sub').textContent=T.costeada
+    ? T.costeada+' costeada'+(T.costeada===1?'':'s')+' · faltan '+(T.n-T.costeada)
+      +(cds.length?' · '+conFecha+' en '+cds.length+' día'+(cds.length===1?'':'s')+', '+promC+' por día':'')
+      +(sinFC.length?' · '+sinFC.length+' sin fecha':'')
+    : 'Todavía no hay ninguna ficha cerrada con este filtro.';
+  if($('rep-cost-bar'))$('rep-cost-bar').innerHTML=
+    `<b style="width:${T.n?(T.costeada/T.n*100).toFixed(1):0}%;background:var(--green)"></b>`;
+  if($('rep-cost-pct'))$('rep-cost-pct').innerHTML=`<b>${pct}%</b> costeado · ${T.costeada} de ${T.n}`;
+  const filasC=ordC.map(d=>{
+    const g=cos[d],porCat={};
+    g.forEach(x=>{const c=x.cat||'(sin categoría)';porCat[c]=(porCat[c]||0)+1});
+    const kc=Object.keys(porCat).sort((a,b)=>porCat[b]-porCat[a]||a.localeCompare(b));
+    return `<tr><td class="l">${fechaBonita(d)}</td><td class="tot">${g.length}</td><td>${acumC[d]}</td>
+      <td class="l"><div class="dcat" title="${escR(g.map(x=>x.r).join(', '))}">${
+        kc.map(c=>`<span class="dc">${escR(c)} <b>${porCat[c]}</b></span>`).join('')}</div></td></tr>`;
+  }).join('')
+  +(sinFC.length?`<tr><td class="l">Sin fecha</td><td class="tot">${sinFC.length}</td><td>—</td>
+      <td class="l"><div class="dcat" title="${escR(sinFC.map(x=>x.r).join(', '))}"><span class="dc">fichas cerradas antes de que se guardara el día</span></div></td></tr>`:'');
+  $('rep-cost').innerHTML=filasC||`<tr><td colspan="4" class="empty">Cuando guardes un costo, el día aparece aquí.</td></tr>`;
 }
 /* La temporada en plata: por grupo, cuánto cuesta y a cuánto se vende. */
 function pintarPlata(lista,campo,etiqueta){
